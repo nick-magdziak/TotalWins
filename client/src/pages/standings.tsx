@@ -47,8 +47,8 @@ export default function Standings() {
               <Badge className="bg-retro-lime text-retro-charcoal px-3 py-1 rounded-full font-bold text-xs">
                 LIVE
               </Badge>
-              <Badge className="bg-retro-orange text-white px-3 py-1 rounded-full font-bold text-xs">
-                SEASON COMPLETE
+              <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
+                WEEK 9 COMPLETE
               </Badge>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function Standings() {
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
               <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
-                WEEK 18 RESULTS
+                WEEK 9 RESULTS
               </h4>
               <div className="space-y-3">
                 {recentGames && recentGames.length > 0 ? (
@@ -113,7 +113,7 @@ export default function Standings() {
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
               <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
-                PLAYOFF WILD CARD
+                WEEK 10 PREVIEW
               </h4>
               <div className="space-y-3">
                 {upcomingGames && upcomingGames.length > 0 ? (
