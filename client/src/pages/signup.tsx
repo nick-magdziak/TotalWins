@@ -124,7 +124,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-retro-cream py-8">
+    <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <section className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
@@ -267,7 +267,7 @@ export default function Signup() {
                   )}
                 </div>
                 
-                <div className="bg-retro-cream p-4 rounded-lg">
+                <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-bold text-retro-charcoal mb-2 retro-font">League Preferences</h4>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
