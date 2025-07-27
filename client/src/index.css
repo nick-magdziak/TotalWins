@@ -66,11 +66,13 @@
   body {
     @apply font-sans antialiased text-foreground;
     background: 
-      linear-gradient(45deg, #ff1493 25%, transparent 25%, transparent 75%, #ff1493 75%),
-      linear-gradient(45deg, #8a2be2 25%, transparent 25%, transparent 75%, #8a2be2 75%),
+      linear-gradient(45deg, rgba(255, 20, 147, 0.3) 25%, transparent 25%), 
+      linear-gradient(-45deg, rgba(255, 20, 147, 0.3) 25%, transparent 25%), 
+      linear-gradient(45deg, transparent 75%, rgba(138, 43, 226, 0.3) 75%), 
+      linear-gradient(-45deg, transparent 75%, rgba(138, 43, 226, 0.3) 75%),
       linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
-    background-size: 60px 60px, 60px 60px, 100% 100%;
-    background-position: 0 0, 30px 30px, 0 0;
+    background-size: 20px 20px, 20px 20px, 20px 20px, 20px 20px, 100% 100%;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px, 0 0;
     min-height: 100vh;
   }
 }
