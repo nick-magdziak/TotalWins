@@ -236,6 +236,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(games);
   });
 
+  app.get("/api/leagues/:leagueId/games/upcoming", async (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const games = await storage.getUpcomingGamesWithOwners(req.params.leagueId, limit);
+    res.json(games);
+  });
+
   // Admin endpoints
   app.post("/api/admin/sync-scores", async (req, res) => {
     try {

@@ -25,6 +25,10 @@ export default function Standings() {
   const { data: recentGames } = useQuery<any[]>({
     queryKey: ["/api/leagues", leagueId, "games/recent"],
   });
+
+  const { data: upcomingGames } = useQuery<any[]>({
+    queryKey: ["/api/leagues", leagueId, "games/upcoming"],
+  });
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   return (
@@ -105,30 +109,44 @@ export default function Standings() {
             </CardContent>
           </Card>
 
-          {/* League Stats */}
-          <Card className="bg-gradient-to-br from-retro-pink to-retro-purple rounded-2xl shadow-xl">
-            <CardContent className="p-6 text-white">
-              <h4 className="text-xl font-bold mb-4 retro-font">
-                <TrendingUp className="inline mr-2" />
-                LEAGUE STATS
+          {/* Next Week's Games */}
+          <Card className="bg-white rounded-2xl retro-border shadow-xl">
+            <CardContent className="p-6">
+              <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
+                PLAYOFF WILD CARD
               </h4>
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span>Total Games Tracked:</span>
-                  <span className="font-bold">272</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Average Wins per Player:</span>
-                  <span className="font-bold">29.4</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Highest Single Team:</span>
-                  <span className="font-bold">15 wins (DET)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Season Status:</span>
-                  <span className="font-bold">COMPLETE</span>
-                </div>
+                {upcomingGames && upcomingGames.length > 0 ? (
+                  upcomingGames.slice(0, 4).map((game) => (
+                    <div
+                      key={game.id}
+                      className="flex justify-between items-center bg-retro-cream p-3 rounded-lg border-l-4 border-retro-orange"
+                    >
+                      <div className="flex-1">
+                        <div className="font-bold text-retro-charcoal retro-font text-sm">
+                          {game.awayTeamId} @ {game.homeTeamId}
+                        </div>
+                        <div className="text-sm text-retro-charcoal">
+                          {new Date(game.gameDate).toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                        <div className="text-xs text-retro-charcoal opacity-75 mt-1 border-t border-gray-200 pt-1">
+                          {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
+                        </div>
+                      </div>
+                      <Badge className="bg-retro-orange text-white text-xs">SCHEDULED</Badge>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-retro-charcoal opacity-75">No upcoming games</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
