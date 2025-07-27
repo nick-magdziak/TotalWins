@@ -197,13 +197,12 @@ export default function Draft() {
               </h3>
               
               <div className="max-h-64 overflow-y-auto space-y-2">
-                {console.log("Draft picks data:", draftPicks, "Teams data:", teams?.length)}
                 {draftPicks && draftPicks.length > 0 ? (
                   // Show most recent picks first (reverse order), limit to recent picks
                   [...draftPicks].reverse().map((pick, index) => {
-                    console.log("Processing pick:", pick);
-                    const team = teams?.find(t => t.id === pick.teamId);
-                    console.log("Found team:", team);
+                    // Use embedded team data from the API response
+                    const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
+                    const user = (pick as any).user;
                     return (
                       <div key={pick.id} className="bg-white bg-opacity-20 p-3 rounded-lg">
                         <div className="flex justify-between items-center">
@@ -216,7 +215,7 @@ export default function Draft() {
                             </div>
                           </div>
                           <div className="text-xs text-right">
-                            <div className="font-bold">Player</div>
+                            <div className="font-bold">{user?.displayName || "Player"}</div>
                             <div className="opacity-75">{team?.division || "N/A"}</div>
                           </div>
                         </div>
@@ -225,7 +224,7 @@ export default function Draft() {
                   })
                 ) : (
                   <div className="text-center py-4">
-                    <p className="opacity-75">No picks made yet (Debug: {draftPicks?.length || 0} picks)</p>
+                    <p className="opacity-75">No picks made yet</p>
                   </div>
                 )}
               </div>
