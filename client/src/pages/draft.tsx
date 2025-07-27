@@ -13,11 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { type League } from "@shared/schema";
 
 export default function Draft() {
-  console.log("Draft component rendering");
   const [selectedDivision, setSelectedDivision] = useState<string>("AFC East");
   const currentUser = getCurrentUser();
   const { toast } = useToast();
-  console.log("Current user:", currentUser);
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -36,10 +34,9 @@ export default function Draft() {
     queryKey: ["/api/teams"],
   });
 
-  const { data: draftPicks } = useQuery<DraftPick[]>({
+  const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "draft", "picks"],
   });
-  console.log("Draft picks from query:", draftPicks);
 
   const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
@@ -200,8 +197,11 @@ export default function Draft() {
               </h3>
               
               <div className="max-h-64 overflow-y-auto space-y-2">
-                {console.log("Recent Picks section - draftPicks:", draftPicks, "length:", draftPicks?.length)}
-                {draftPicks && draftPicks.length > 0 ? (
+                {picksLoading ? (
+                  <div className="text-center py-4">
+                    <p className="opacity-75 text-white">Loading picks...</p>
+                  </div>
+                ) : draftPicks && draftPicks.length > 0 ? (
                   // Show most recent picks first (reverse order), limit to recent picks
                   [...draftPicks].reverse().map((pick, index) => {
                     // Use embedded team data from the API response
@@ -228,7 +228,7 @@ export default function Draft() {
                   })
                 ) : (
                   <div className="text-center py-4">
-                    <p className="opacity-75">No picks made yet</p>
+                    <p className="opacity-75 text-white">No picks made yet</p>
                   </div>
                 )}
               </div>
