@@ -54,7 +54,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
           <thead className="bg-gradient-to-r from-retro-pink to-retro-teal text-white">
             <tr>
               <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font" style={{ width: '24px' }}>RANK</th>
-              <th className="pl-0 pr-0 py-3 text-left font-bold text-xs retro-font" style={{ width: '100px' }}>PLAYER</th>
+              <th className="pl-0 pr-0 py-3 text-left font-bold text-xs retro-font" style={{ width: '120px' }}>PLAYER</th>
               <th className="pl-0 pr-2 py-3 text-center font-bold text-xs retro-font" style={{ width: '60px' }}>WINS</th>
               <th className="px-2 py-3 text-left font-bold text-xs retro-font">TEAMS</th>
             </tr>
@@ -65,7 +65,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                 <td className="pl-2 pr-0 py-3 text-sm font-bold text-retro-charcoal" style={{ width: '24px' }}>
                   {standing.rank}
                 </td>
-                <td className="pl-0 pr-0 py-3" style={{ width: '100px' }}>
+                <td className="pl-0 pr-0 py-3" style={{ width: '120px' }}>
                   <div className="font-bold text-sm text-retro-charcoal retro-font truncate">
                     {standing.displayName}
                   </div>
