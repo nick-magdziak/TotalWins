@@ -13,9 +13,11 @@ import { useToast } from "@/hooks/use-toast";
 import { type League } from "@shared/schema";
 
 export default function Draft() {
+  console.log("Draft component rendering");
   const [selectedDivision, setSelectedDivision] = useState<string>("AFC East");
   const currentUser = getCurrentUser();
   const { toast } = useToast();
+  console.log("Current user:", currentUser);
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -37,6 +39,7 @@ export default function Draft() {
   const { data: draftPicks } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "draft", "picks"],
   });
+  console.log("Draft picks from query:", draftPicks);
 
   const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
@@ -197,6 +200,7 @@ export default function Draft() {
               </h3>
               
               <div className="max-h-64 overflow-y-auto space-y-2">
+                {console.log("Recent Picks section - draftPicks:", draftPicks, "length:", draftPicks?.length)}
                 {draftPicks && draftPicks.length > 0 ? (
                   // Show most recent picks first (reverse order), limit to recent picks
                   [...draftPicks].reverse().map((pick, index) => {
@@ -204,19 +208,19 @@ export default function Draft() {
                     const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
                     const user = (pick as any).user;
                     return (
-                      <div key={pick.id} className="bg-white bg-opacity-20 p-3 rounded-lg">
+                      <div key={pick.id} className="bg-white bg-opacity-30 p-4 rounded-lg border border-white border-opacity-50 mb-2">
                         <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-bold retro-font text-sm">
+                          <div className="flex-1">
+                            <div className="font-bold retro-font text-lg text-white">
                               {team ? `${team.city} ${team.name}` : `Unknown Team (${pick.teamId})`}
                             </div>
-                            <div className="text-xs opacity-75">
+                            <div className="text-sm text-white opacity-90">
                               Pick #{pick.pickNumber} • Round {pick.round}
                             </div>
                           </div>
-                          <div className="text-xs text-right">
+                          <div className="text-sm text-right text-white">
                             <div className="font-bold">{user?.displayName || "Player"}</div>
-                            <div className="opacity-75">{team?.division || "N/A"}</div>
+                            <div className="opacity-90">{team?.division || "N/A"}</div>
                           </div>
                         </div>
                       </div>
