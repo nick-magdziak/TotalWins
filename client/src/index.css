@@ -66,8 +66,13 @@
   body {
     @apply font-sans antialiased text-foreground;
     background: 
-      linear-gradient(45deg, var(--retro-pink) 25%, var(--retro-purple) 25%, var(--retro-purple) 50%, var(--retro-pink) 50%, var(--retro-pink) 75%, var(--retro-purple) 75%);
-    background-size: 20px 20px;
+      linear-gradient(45deg, rgba(255, 20, 147, 0.3) 25%, transparent 25%), 
+      linear-gradient(-45deg, rgba(255, 20, 147, 0.3) 25%, transparent 25%), 
+      linear-gradient(45deg, transparent 75%, rgba(138, 43, 226, 0.3) 75%), 
+      linear-gradient(-45deg, transparent 75%, rgba(138, 43, 226, 0.3) 75%),
+      linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
+    background-size: 20px 20px, 20px 20px, 20px 20px, 20px 20px, 100% 100%;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px, 0 0;
     min-height: 100vh;
   }
 }
