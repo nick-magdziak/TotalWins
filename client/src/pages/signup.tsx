@@ -124,24 +124,24 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <section className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-8 rounded-3xl retro-border">
-              <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
-                <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
+    <div className="min-h-screen py-4 px-4">
+      <div className="w-full max-w-md mx-auto">
+        <section>
+          <div className="text-center mb-6">
+            <div className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-4 sm:p-6 rounded-2xl retro-border">
+              <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
+                <h2 className="text-retro-yellow text-2xl sm:text-3xl font-bold mb-3 neon-glow retro-font">
                   TOTAL WINS
                 </h2>
-                <p className="text-white text-xl md:text-2xl font-bold">JOIN THE LEAGUE</p>
+                <p className="text-white text-sm sm:text-base font-bold">JOIN THE LEAGUE</p>
               </div>
             </div>
           </div>
 
-          <Card className="bg-white rounded-2xl retro-border shadow-2xl">
-            <CardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+          <Card className="bg-white rounded-xl retro-border shadow-2xl">
+            <CardContent className="p-4 sm:p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName" className="block text-retro-charcoal font-bold mb-2">
                       First Name
@@ -151,8 +151,8 @@ export default function Signup() {
                       type="text"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      className="w-full p-4 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-lg"
-                      placeholder="Enter your first name"
+                      className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-base"
+                      placeholder="First name"
                     />
                     {errors.firstName && (
                       <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
@@ -168,8 +168,8 @@ export default function Signup() {
                       type="text"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      className="w-full p-4 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-lg"
-                      placeholder="Enter your last name"
+                      className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-base"
+                      placeholder="Last name"
                     />
                     {errors.lastName && (
                       <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
@@ -186,7 +186,7 @@ export default function Signup() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="w-full p-4 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-lg"
+                    className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-base"
                     placeholder="your.email@example.com"
                   />
                   {errors.email && (

@@ -82,29 +82,29 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8">
-      <div className="container mx-auto px-4">
-        <section className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-retro-teal to-retro-purple p-8 rounded-3xl retro-border">
-              <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
-                <Volleyball className="text-retro-yellow text-5xl neon-glow mx-auto mb-4" />
-                <h2 className="text-retro-yellow text-3xl md:text-5xl font-bold mb-2 neon-glow retro-font">
+    <div className="min-h-screen flex items-center justify-center py-4 px-4">
+      <div className="w-full max-w-sm mx-auto">
+        <section>
+          <div className="text-center mb-6">
+            <div className="bg-gradient-to-r from-retro-teal to-retro-purple p-4 sm:p-6 rounded-2xl retro-border">
+              <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
+                <Volleyball className="text-retro-yellow text-4xl neon-glow mx-auto mb-3" />
+                <h2 className="text-retro-yellow text-2xl sm:text-3xl font-bold mb-2 neon-glow retro-font">
                   TOTAL WINS
                 </h2>
-                <p className="text-white text-lg md:text-xl font-bold">WELCOME BACK, CHAMPION!</p>
+                <p className="text-white text-sm sm:text-base font-bold">WELCOME BACK!</p>
               </div>
             </div>
           </div>
 
-          <Card className="bg-white rounded-2xl retro-border shadow-2xl">
-            <CardContent className="p-8">
-              <div className="text-center mb-6">
-                <h3 className="text-retro-purple text-2xl font-bold retro-font">SIGN IN TO YOUR ACCOUNT</h3>
-                <p className="text-retro-charcoal opacity-75 mt-2">Enter your credentials to access the league</p>
+          <Card className="bg-white rounded-xl retro-border shadow-2xl">
+            <CardContent className="p-4 sm:p-6">
+              <div className="text-center mb-4">
+                <h3 className="text-retro-purple text-lg sm:text-xl font-bold retro-font">SIGN IN</h3>
+                <p className="text-retro-charcoal opacity-75 mt-1 text-sm">Enter your credentials</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="email" className="block text-retro-charcoal font-bold mb-2">
                     Email Address
@@ -114,7 +114,7 @@ export default function Login() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="w-full p-4 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-lg"
+                    className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-base"
                     placeholder="your.email@example.com"
                   />
                   {errors.email && (
@@ -132,7 +132,7 @@ export default function Login() {
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
-                      className="w-full p-4 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-lg pr-12"
+                      className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none text-base pr-12"
                       placeholder="Enter your password"
                     />
                     <Button

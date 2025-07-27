@@ -61,11 +61,11 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-4 sticky top-0 z-50">
+      <header className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-3 sticky top-0 z-50">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Volleyball className="text-retro-yellow text-3xl neon-glow" />
-            <h1 className="text-white text-2xl md:text-4xl font-bold tracking-wider retro-font">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <Volleyball className="text-retro-yellow text-2xl sm:text-3xl neon-glow" />
+            <h1 className="text-white text-lg sm:text-2xl md:text-3xl font-bold tracking-wider retro-font">
               TOTAL WINS
             </h1>
           </div>
@@ -102,8 +102,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-retro-charcoal text-white">
-              <div className="flex flex-col space-y-4 mt-8">
+            <SheetContent side="right" className="bg-retro-charcoal text-white w-64">
+              <div className="flex flex-col space-y-3 mt-6">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location === item.path;

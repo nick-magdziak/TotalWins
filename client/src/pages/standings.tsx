@@ -18,18 +18,18 @@ export default function Standings() {
   return (
     <>
       {/* Hero Section */}
-      <section className="text-center mb-12 relative">
-        <div className="bg-gradient-to-r from-retro-purple to-retro-pink p-8 rounded-3xl retro-border mb-8">
-          <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
-            <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
+      <section className="text-center mb-8 relative px-4">
+        <div className="bg-gradient-to-r from-retro-purple to-retro-pink p-4 sm:p-6 rounded-2xl retro-border mb-6">
+          <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
+            <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
               TOTAL WINS
             </h2>
-            <p className="text-white text-xl md:text-2xl font-bold">WEEK 18 • FINAL STANDINGS</p>
-            <div className="mt-4 flex justify-center space-x-4 flex-wrap gap-2">
-              <Badge className="bg-retro-lime text-retro-charcoal px-4 py-2 rounded-full font-bold">
+            <p className="text-white text-sm sm:text-base md:text-lg font-bold">WEEK 18 • FINAL STANDINGS</p>
+            <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
+              <Badge className="bg-retro-lime text-retro-charcoal px-3 py-1 rounded-full font-bold text-xs">
                 LIVE
               </Badge>
-              <Badge className="bg-retro-orange text-white px-4 py-2 rounded-full font-bold">
+              <Badge className="bg-retro-orange text-white px-3 py-1 rounded-full font-bold text-xs">
                 SEASON COMPLETE
               </Badge>
             </div>
@@ -38,9 +38,9 @@ export default function Standings() {
       </section>
 
       {/* Current Standings Table */}
-      <section className="mb-12">
-        <h3 className="text-retro-purple text-3xl font-bold mb-6 text-center retro-font">
-          <Trophy className="inline text-retro-yellow mr-3" />
+      <section className="mb-8 px-4">
+        <h3 className="text-retro-purple text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+          <Trophy className="inline text-retro-yellow mr-2 w-5 h-5 sm:w-6 sm:h-6" />
           FINAL STANDINGS
         </h3>
         
@@ -48,9 +48,9 @@ export default function Standings() {
       </section>
 
       {/* Recent Updates Section */}
-      <section className="mb-12">
-        <h3 className="text-retro-pink text-3xl font-bold mb-6 text-center retro-font">
-          <Clock className="inline text-retro-teal mr-3" />
+      <section className="mb-8 px-4">
+        <h3 className="text-retro-pink text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+          <Clock className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
           RECENT UPDATES
         </h3>
         
