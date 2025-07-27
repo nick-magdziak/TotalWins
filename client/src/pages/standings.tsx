@@ -19,12 +19,12 @@ export default function Standings() {
     enabled: !!currentUser?.id,
   });
 
-  const { data: recentGames } = useQuery<Game[]>({
-    queryKey: ["/api/games/recent"],
-  });
-
   // Determine current league
   const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
+
+  const { data: recentGames } = useQuery<any[]>({
+    queryKey: ["/api/leagues", leagueId, "games/recent"],
+  });
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   return (
@@ -88,6 +88,9 @@ export default function Standings() {
                         </div>
                         <div className="text-sm text-retro-charcoal font-bold">
                           {game.awayScore} - {game.homeScore}
+                        </div>
+                        <div className="text-xs text-retro-charcoal opacity-75 mt-1 border-t border-gray-200 pt-1">
+                          {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
                       <Badge className="bg-retro-lime text-retro-charcoal text-xs">FINAL</Badge>

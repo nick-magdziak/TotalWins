@@ -475,6 +475,43 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(games.completedAt))
       .limit(limit);
   }
+
+  async getRecentGamesWithOwners(leagueId: string, limit: number): Promise<any[]> {
+    const recentGames = await this.getRecentCompletedGames(limit);
+    
+    const gamesWithOwners = await Promise.all(
+      recentGames.map(async (game) => {
+        // Find owners of home and away teams in this league
+        const homeOwner = await db
+          .select({ user: users })
+          .from(draftPicks)
+          .innerJoin(users, eq(draftPicks.userId, users.id))
+          .where(and(
+            eq(draftPicks.leagueId, leagueId),
+            eq(draftPicks.teamId, game.homeTeamId!)
+          ))
+          .limit(1);
+
+        const awayOwner = await db
+          .select({ user: users })
+          .from(draftPicks)
+          .innerJoin(users, eq(draftPicks.userId, users.id))
+          .where(and(
+            eq(draftPicks.leagueId, leagueId),
+            eq(draftPicks.teamId, game.awayTeamId!)
+          ))
+          .limit(1);
+
+        return {
+          ...game,
+          homeOwner: homeOwner[0]?.user || null,
+          awayOwner: awayOwner[0]?.user || null,
+        };
+      })
+    );
+
+    return gamesWithOwners;
+  }
 }
 
 export const storage = new DatabaseStorage();
