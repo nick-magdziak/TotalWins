@@ -188,39 +188,43 @@ export default function Draft() {
             </CardContent>
           </Card>
 
-          {/* Current Player's Roster */}
+          {/* Recent Draft Picks */}
           <Card className="bg-gradient-to-br from-retro-orange to-retro-pink rounded-2xl text-white shadow-xl">
             <CardContent className="p-6">
               <h3 className="text-xl font-bold mb-4 retro-font">
                 <Users className="inline mr-2" />
-                YOUR ROSTER
+                RECENT PICKS
               </h3>
               
-              <div className="space-y-3">
-                {userPicks && userPicks.length > 0 ? (
-                  userPicks.map((pick, index) => {
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {draftPicks && draftPicks.length > 0 ? (
+                  // Show most recent picks first (reverse order), limit to recent picks
+                  [...draftPicks].reverse().map((pick, index) => {
                     const team = teams?.find(t => t.id === pick.teamId);
                     return (
-                      <div key={pick.id} className="bg-white bg-opacity-20 p-3 rounded-lg flex justify-between items-center">
-                        <span className="font-bold retro-font">
-                          {team ? `${team.city} ${team.name}` : "Unknown Team"}
-                        </span>
-                        <span className="text-sm">{team?.division}</span>
+                      <div key={pick.id} className="bg-white bg-opacity-20 p-3 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-bold retro-font text-sm">
+                              {team ? `${team.city} ${team.name}` : "Unknown Team"}
+                            </div>
+                            <div className="text-xs opacity-75">
+                              Pick #{pick.pickNumber} • Round {pick.round}
+                            </div>
+                          </div>
+                          <div className="text-xs text-right">
+                            <div className="font-bold">Player</div>
+                            <div className="opacity-75">{team?.division}</div>
+                          </div>
+                        </div>
                       </div>
                     );
                   })
                 ) : (
                   <div className="text-center py-4">
-                    <p className="opacity-75">No teams drafted yet</p>
+                    <p className="opacity-75">No picks made yet</p>
                   </div>
                 )}
-                
-                {/* Show remaining pick slots */}
-                {Array.from({ length: 4 - (userPicks?.length || 0) }).map((_, index) => (
-                  <div key={index} className="border-2 border-dashed border-white border-opacity-50 p-3 rounded-lg text-center">
-                    <span className="opacity-75">Pick #{(userPicks?.length || 0) + index + 1}</span>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
