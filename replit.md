@@ -28,7 +28,8 @@ Preferred communication style: Simple, everyday language.
 - **API Structure**: RESTful endpoints organized by feature
 
 ### Styling & Theme
-- **Design System**: Custom retro 90s theme with vibrant colors (pink, teal, purple, yellow)
+- **Design System**: Custom retro 90s theme with pink-to-purple gradient background and teal accents
+- **Background**: Beautiful pink (#ff1493) to purple (#8a2be2) to blue (#4169e1) gradient
 - **Typography**: Custom retro fonts with neon glow effects
 - **Layout**: Responsive design with mobile-first approach
 - **Components**: Reusable UI components from Shadcn/ui library

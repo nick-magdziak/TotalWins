@@ -3,24 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(60, 100%, 97%);
+  --background: hsl(0, 0%, 100%);
   --foreground: hsl(0, 0%, 18%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --muted: hsl(0, 0%, 96%);
+  --muted-foreground: hsl(0, 0%, 45%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --popover-foreground: hsl(0, 0%, 18%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
+  --card-foreground: hsl(0, 0%, 18%);
+  --border: hsl(0, 0%, 90%);
+  --input: hsl(0, 0%, 90%);
   --primary: hsl(315, 100%, 47%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
+  --secondary: hsl(0, 0%, 96%);
+  --secondary-foreground: hsl(0, 0%, 18%);
+  --accent: hsl(0, 0%, 96%);
+  --accent-foreground: hsl(0, 0%, 18%);
   --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(315, 100%, 47%);
   --radius: 0.5rem;
   
@@ -64,7 +64,9 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background: linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
+    min-height: 100vh;
   }
 }
 
@@ -133,15 +135,15 @@
   }
   
   .nav-btn {
-    @apply px-4 py-2 rounded-full font-bold text-sm transition-all duration-200 text-white hover:bg-retro-yellow hover:text-retro-charcoal;
+    @apply px-4 py-2 rounded-full font-bold text-sm transition-all duration-200 text-white hover:bg-retro-teal hover:text-retro-charcoal;
   }
   
   .nav-btn.active {
-    @apply bg-retro-yellow text-retro-charcoal;
+    @apply bg-retro-teal text-retro-charcoal;
   }
   
   .team-card-available {
-    @apply hover:scale-105 transform transition-all duration-200 shadow-lg border-2 border-transparent hover:border-retro-yellow cursor-pointer;
+    @apply hover:scale-105 transform transition-all duration-200 shadow-lg border-2 border-transparent hover:border-retro-teal cursor-pointer;
   }
   
   .team-card-taken {
