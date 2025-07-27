@@ -29,7 +29,7 @@ export default function Layout({ children }: LayoutProps) {
 
   if (!currentUser && location !== "/signup" && location !== "/login") {
     return (
-      <div className="min-h-screen bg-retro-cream flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-8 rounded-3xl retro-border mb-8">
             <h1 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
@@ -59,7 +59,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-retro-cream">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-4 sticky top-0 z-50">
         <div className="container mx-auto flex justify-between items-center">

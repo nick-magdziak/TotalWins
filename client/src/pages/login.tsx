@@ -82,7 +82,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-retro-cream flex items-center justify-center py-8">
+    <div className="min-h-screen flex items-center justify-center py-8">
       <div className="container mx-auto px-4">
         <section className="max-w-md mx-auto">
           <div className="text-center mb-8">
