@@ -79,21 +79,21 @@ export default function Standings() {
               <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
                 WEEK 9 RESULTS
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recentGames && recentGames.length > 0 ? (
-                  recentGames.slice(0, 4).map((game) => (
+                  recentGames.map((game) => (
                     <div
                       key={game.id}
-                      className="flex justify-between items-center bg-retro-cream p-3 rounded-lg border-l-4 border-retro-lime"
+                      className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-lime"
                     >
                       <div className="flex-1">
-                        <div className="font-bold text-retro-charcoal retro-font text-sm">
+                        <div className="font-bold text-retro-charcoal retro-font text-xs">
                           {game.awayTeamId} @ {game.homeTeamId}
                         </div>
-                        <div className="text-sm text-retro-charcoal font-bold">
+                        <div className="text-xs text-retro-charcoal font-bold">
                           {game.awayScore} - {game.homeScore}
                         </div>
-                        <div className="text-xs text-retro-charcoal opacity-75 mt-1 border-t border-gray-200 pt-1">
+                        <div className="text-xs text-retro-charcoal opacity-75 border-t border-gray-200 pt-1">
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
@@ -105,6 +105,18 @@ export default function Standings() {
                     <p className="text-retro-charcoal opacity-75">No recent game updates</p>
                   </div>
                 )}
+                
+                {/* Bye Week Teams */}
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <div className="text-xs font-bold text-retro-purple mb-2">WEEK 9 BYES:</div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {['CIN', 'CLE', 'LV', 'NYG'].map((team) => (
+                      <div key={team} className="bg-gray-100 p-2 rounded text-xs text-center font-bold text-retro-charcoal">
+                        {team} - BYE
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -115,18 +127,18 @@ export default function Standings() {
               <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
                 WEEK 10 PREVIEW
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {upcomingGames && upcomingGames.length > 0 ? (
-                  upcomingGames.slice(0, 4).map((game) => (
+                  upcomingGames.map((game) => (
                     <div
                       key={game.id}
-                      className="flex justify-between items-center bg-retro-cream p-3 rounded-lg border-l-4 border-retro-orange"
+                      className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-orange"
                     >
                       <div className="flex-1">
-                        <div className="font-bold text-retro-charcoal retro-font text-sm">
+                        <div className="font-bold text-retro-charcoal retro-font text-xs">
                           {game.awayTeamId} @ {game.homeTeamId}
                         </div>
-                        <div className="text-sm text-retro-charcoal">
+                        <div className="text-xs text-retro-charcoal">
                           {new Date(game.gameDate).toLocaleDateString('en-US', { 
                             weekday: 'short', 
                             month: 'short', 
@@ -135,7 +147,7 @@ export default function Standings() {
                             minute: '2-digit'
                           })}
                         </div>
-                        <div className="text-xs text-retro-charcoal opacity-75 mt-1 border-t border-gray-200 pt-1">
+                        <div className="text-xs text-retro-charcoal opacity-75 border-t border-gray-200 pt-1">
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
@@ -147,6 +159,18 @@ export default function Standings() {
                     <p className="text-retro-charcoal opacity-75">No upcoming games</p>
                   </div>
                 )}
+                
+                {/* Bye Week Teams */}
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <div className="text-xs font-bold text-retro-purple mb-2">WEEK 10 BYES:</div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {['CHI', 'DAL', 'DET', 'PHI'].map((team) => (
+                      <div key={team} className="bg-gray-100 p-2 rounded text-xs text-center font-bold text-retro-charcoal">
+                        {team} - BYE
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
