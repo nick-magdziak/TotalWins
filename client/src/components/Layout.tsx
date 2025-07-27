@@ -193,44 +193,6 @@ export default function Layout({ children }: LayoutProps) {
             </SheetTrigger>
             <SheetContent side="right" className="bg-retro-charcoal text-white w-64">
               <div className="flex flex-col space-y-3 mt-6">
-                {/* League Selector for Mobile */}
-                {currentLeague && (
-                  <div className="mb-4 p-3 bg-retro-purple/30 rounded-lg">
-                    <h4 className="text-white text-sm font-bold mb-2 retro-font">CURRENT LEAGUE</h4>
-                    <div className="text-white text-sm">
-                      <div className="font-bold">{currentLeague.name}</div>
-                      <div className="opacity-75">{currentLeague.sport} • {currentLeague.season}</div>
-                    </div>
-                    
-                    {userLeagues && userLeagues.length > 1 && (
-                      <div className="mt-3">
-                        <h5 className="text-white text-xs font-bold mb-2 opacity-75">SWITCH TO:</h5>
-                        <div className="space-y-1">
-                          {userLeagues
-                            .filter(league => league.id !== currentLeagueId)
-                            .map((league) => (
-                            <Button
-                              key={league.id}
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                window.location.href = `/standings?league=${league.id}`;
-                                setMobileMenuOpen(false);
-                              }}
-                              className="w-full justify-start text-xs text-white hover:bg-white/10 h-auto py-2"
-                            >
-                              <div className="text-left">
-                                <div className="font-bold">{league.name}</div>
-                                <div className="opacity-75">{league.sport}</div>
-                              </div>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location === item.path;
