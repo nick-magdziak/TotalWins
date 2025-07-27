@@ -237,8 +237,7 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="bg-retro-charcoal text-white p-8 mt-16">
         <div className="container mx-auto text-center">
           <div className="checkered-bg h-4 mb-6 rounded-full opacity-50"></div>
-          <p className="text-lg font-bold mb-2 retro-font">WINS POOL CHAMPIONSHIP SERIES</p>
-          <p className="opacity-75">Bringing the excitement of 90s sports culture to modern fantasy leagues</p>
+          {/* Reserved space for future features */}
         </div>
       </footer>
     </div>
