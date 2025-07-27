@@ -39,8 +39,8 @@ export default function Standings() {
 
       {/* Current Standings Table */}
       <section className="mb-8 px-4">
-        <h3 className="text-retro-purple text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
-          <Trophy className="inline text-retro-yellow mr-2 w-5 h-5 sm:w-6 sm:h-6" />
+        <h3 className="text-retro-pink text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+          <Trophy className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
           FINAL STANDINGS
         </h3>
         

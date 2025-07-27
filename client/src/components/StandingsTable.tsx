@@ -15,12 +15,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-3xl retro-border overflow-hidden shadow-2xl">
-        <div className="checkered-bg p-4">
-          <h4 className="text-retro-charcoal text-2xl font-bold text-center retro-font">
-            CHAMPIONSHIP RESULTS
-          </h4>
-        </div>
+      <div className="bg-white rounded-2xl retro-border overflow-hidden shadow-xl">
         <div className="p-8 text-center">
           <div className="animate-spin w-8 h-8 border-4 border-retro-pink border-t-transparent rounded-full mx-auto"></div>
           <p className="mt-4 text-retro-charcoal">Loading standings...</p>
@@ -31,12 +26,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
 
   if (!standings || standings.length === 0) {
     return (
-      <div className="bg-white rounded-3xl retro-border overflow-hidden shadow-2xl">
-        <div className="checkered-bg p-4">
-          <h4 className="text-retro-charcoal text-2xl font-bold text-center retro-font">
-            CHAMPIONSHIP RESULTS
-          </h4>
-        </div>
+      <div className="bg-white rounded-2xl retro-border overflow-hidden shadow-xl">
         <div className="p-8 text-center">
           <p className="text-retro-charcoal">No standings data available.</p>
         </div>
@@ -84,13 +74,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
   };
 
   return (
-    <div className="bg-white rounded-3xl retro-border overflow-hidden shadow-2xl">
-      <div className="checkered-bg p-4">
-        <h4 className="text-retro-charcoal text-2xl font-bold text-center retro-font">
-          CHAMPIONSHIP RESULTS
-        </h4>
-      </div>
-      
+    <div className="bg-white rounded-2xl retro-border overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gradient-to-r from-retro-pink to-retro-teal text-white">
