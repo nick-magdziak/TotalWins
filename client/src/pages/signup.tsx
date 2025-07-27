@@ -44,8 +44,10 @@ export default function Signup() {
         title: "Account created successfully!",
         description: "Welcome to the Wins Pool Championship Series.",
       });
-      // Redirect to standings page after successful signup
-      window.location.href = "/standings";
+      // Force a page reload to ensure auth state is properly loaded
+      setTimeout(() => {
+        window.location.href = "/standings";
+      }, 100);
     },
     onError: (error: any) => {
       toast({

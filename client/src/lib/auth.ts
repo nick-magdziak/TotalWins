@@ -3,7 +3,30 @@ import { type User } from "@shared/schema";
 
 export interface AuthUser extends Omit<User, 'password'> {}
 
+const AUTH_STORAGE_KEY = "total_wins_user";
+
+// Initialize from localStorage
 let currentUser: AuthUser | null = null;
+
+// Initialize currentUser from localStorage on module load
+try {
+  const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (stored) {
+    currentUser = JSON.parse(stored);
+  }
+} catch (error) {
+  console.warn("Failed to load user from localStorage:", error);
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function setCurrentUser(user: AuthUser | null): void {
+  currentUser = user;
+  if (user) {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+}
 
 export async function signup(userData: {
   email: string;
@@ -14,19 +37,19 @@ export async function signup(userData: {
 }): Promise<AuthUser> {
   const response = await apiRequest("POST", "/api/auth/signup", userData);
   const data = await response.json();
-  currentUser = data.user;
+  setCurrentUser(data.user);
   return data.user;
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {
   const response = await apiRequest("POST", "/api/auth/login", { email, password });
   const data = await response.json();
-  currentUser = data.user;
+  setCurrentUser(data.user);
   return data.user;
 }
 
 export function logout(): void {
-  currentUser = null;
+  setCurrentUser(null);
 }
 
 export function getCurrentUser(): AuthUser | null {

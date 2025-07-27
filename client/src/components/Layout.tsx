@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Trophy, Users, User, Settings, LogOut, Volleyball } from "lucide-react";
 import { getCurrentUser, isAdmin, logout } from "@/lib/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,8 +12,23 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const currentUser = getCurrentUser();
+  const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const isUserAdmin = isAdmin();
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const checkAuth = () => {
+      setCurrentUser(getCurrentUser());
+    };
+    
+    // Check initially
+    checkAuth();
+    
+    // Set up an interval to check auth state periodically
+    const interval = setInterval(checkAuth, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const navItems = [
     { path: "/standings", label: "STANDINGS", icon: Trophy },

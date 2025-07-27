@@ -31,8 +31,10 @@ export default function Login() {
         title: "Welcome back!",
         description: "Successfully signed in to your account.",
       });
-      // Redirect to standings page after successful login
-      window.location.href = "/standings";
+      // Force a page reload to ensure auth state is properly loaded
+      setTimeout(() => {
+        window.location.href = "/standings";
+      }, 100);
     },
     onError: (error: any) => {
       toast({
