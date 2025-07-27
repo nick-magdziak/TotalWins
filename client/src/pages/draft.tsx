@@ -10,14 +10,25 @@ import { NFL_DIVISIONS } from "@/lib/constants";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { type League } from "@shared/schema";
 
 export default function Draft() {
   const [selectedDivision, setSelectedDivision] = useState<string>("AFC East");
   const currentUser = getCurrentUser();
   const { toast } = useToast();
   
-  // For demo purposes, using a hardcoded league ID
-  const leagueId = "demo-league-1";
+  // Get league ID from URL params or default to first league
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLeagueId = urlParams.get('league');
+  
+  const { data: userLeagues } = useQuery<League[]>({
+    queryKey: ["/api/users", currentUser?.id, "leagues"],
+    enabled: !!currentUser?.id,
+  });
+
+  // Determine current league
+  const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
+  const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   const { data: teams } = useQuery<NFLTeam[]>({
     queryKey: ["/api/teams"],
@@ -99,11 +110,31 @@ export default function Draft() {
       {/* Hero Section */}
       <section className="text-center mb-12">
         <div className="bg-gradient-to-r from-retro-teal to-retro-purple p-8 rounded-3xl retro-border">
-          <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
-            <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
-              DRAFT CENTRAL
+          <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
+            <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
+              {currentLeague?.name || "TOTAL WINS"}
             </h2>
-            <p className="text-white text-xl md:text-2xl font-bold">SELECT YOUR CHAMPIONSHIP ROSTER</p>
+            <p className="text-white text-sm sm:text-base md:text-lg font-bold">
+              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2024-25"} • DRAFT
+            </p>
+            <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
+              <Badge className="bg-retro-lime text-retro-charcoal px-3 py-1 rounded-full font-bold text-xs">
+                LIVE
+              </Badge>
+              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${
+                !draftStatus?.isActive 
+                  ? "bg-gray-500 text-white" 
+                  : draftStatus.currentPick <= 32 
+                    ? "bg-retro-teal text-white" 
+                    : "bg-retro-orange text-white"
+              }`}>
+                {!draftStatus?.isActive 
+                  ? "DRAFT NOT STARTED" 
+                  : draftStatus.currentPick <= 32 
+                    ? "DRAFT IN PROGRESS" 
+                    : "DRAFT COMPLETED"}
+              </Badge>
+            </div>
           </div>
         </div>
       </section>
