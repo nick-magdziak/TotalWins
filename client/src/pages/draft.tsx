@@ -152,18 +152,6 @@ export default function Draft() {
               
               {draftStatus && (
                 <div className="space-y-3">
-                  <div className="bg-retro-cream p-3 rounded-lg">
-                    <div className="text-sm text-retro-charcoal opacity-75">Current Pick</div>
-                    <div className="text-xl font-bold text-retro-purple retro-font">
-                      #{draftStatus.currentPick}
-                    </div>
-                  </div>
-                  <div className="bg-retro-cream p-3 rounded-lg">
-                    <div className="text-sm text-retro-charcoal opacity-75">Round</div>
-                    <div className="text-xl font-bold text-retro-purple retro-font">
-                      {draftStatus.round}
-                    </div>
-                  </div>
                   <div className={`p-3 rounded-lg ${isCurrentUserTurn ? "bg-gradient-to-r from-retro-yellow to-retro-orange" : "bg-retro-cream"}`}>
                     <div className="text-sm text-retro-charcoal opacity-75">Current Player</div>
                     <div className="text-lg font-bold text-retro-charcoal retro-font">
@@ -172,6 +160,26 @@ export default function Draft() {
                         <Badge className="ml-2 bg-retro-purple text-white animate-pulse">
                           YOUR TURN
                         </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-retro-cream p-3 rounded-lg">
+                    <div className="text-sm text-retro-charcoal opacity-75">Current Pick</div>
+                    <div className="text-xl font-bold text-retro-purple retro-font">
+                      #{draftStatus.currentPick}
+                    </div>
+                  </div>
+                  <div className="bg-retro-cream p-3 rounded-lg">
+                    <div className="text-sm text-retro-charcoal opacity-75">Previous Team Selected</div>
+                    <div className="text-lg font-bold text-retro-purple retro-font">
+                      {draftPicks && draftPicks.length > 0 ? (
+                        (() => {
+                          const lastPick = draftPicks[draftPicks.length - 1];
+                          const lastTeam = teams?.find(t => t.id === lastPick.teamId);
+                          return lastTeam ? `${lastTeam.city} ${lastTeam.name}` : "No picks yet";
+                        })()
+                      ) : (
+                        "No picks yet"
                       )}
                     </div>
                   </div>
