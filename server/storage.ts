@@ -186,6 +186,82 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(leagueMembers).values(demoMemberships);
 
+      // Add more demo players to make the league full
+      const additionalPlayers = [
+        { id: "player-2", email: "mike@demo.com", password: "demo", firstName: "Mike", lastName: "Johnson", displayName: "Mike J" },
+        { id: "player-3", email: "sarah@demo.com", password: "demo", firstName: "Sarah", lastName: "Davis", displayName: "Sarah D" },
+        { id: "player-4", email: "tom@demo.com", password: "demo", firstName: "Tom", lastName: "Wilson", displayName: "Tom W" },
+        { id: "player-5", email: "lisa@demo.com", password: "demo", firstName: "Lisa", lastName: "Brown", displayName: "Lisa B" },
+        { id: "player-6", email: "james@demo.com", password: "demo", firstName: "James", lastName: "Miller", displayName: "James M" },
+        { id: "player-7", email: "amy@demo.com", password: "demo", firstName: "Amy", lastName: "Garcia", displayName: "Amy G" },
+        { id: "player-8", email: "steve@demo.com", password: "demo", firstName: "Steve", lastName: "Rodriguez", displayName: "Steve R" }
+      ];
+
+      await db.insert(users).values(additionalPlayers);
+
+      // Add these players to the Champions League
+      const additionalMemberships = additionalPlayers.map((player, index) => ({
+        leagueId: "demo-league-1",
+        userId: player.id,
+        draftPosition: index + 2,
+        totalWins: 0
+      }));
+
+      await db.insert(leagueMembers).values(additionalMemberships);
+
+      // Add realistic draft picks for each player (4 teams each)
+      const demoDraftPicks = [
+        // Player 1 (main user) - High performing teams
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "DET", pickNumber: 1, round: 1 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "MIN", pickNumber: 16, round: 2 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "BUF", pickNumber: 17, round: 3 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "WAS", pickNumber: 32, round: 4 },
+
+        // Player 2 - Mike J
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "KC", pickNumber: 2, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "PHI", pickNumber: 15, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "HOU", pickNumber: 18, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "GB", pickNumber: 31, round: 4 },
+
+        // Player 3 - Sarah D
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "PIT", pickNumber: 3, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "BAL", pickNumber: 14, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "TB", pickNumber: 19, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "LAR", pickNumber: 30, round: 4 },
+
+        // Player 4 - Tom W
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "LAC", pickNumber: 4, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "SEA", pickNumber: 13, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "DEN", pickNumber: 20, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "ATL", pickNumber: 29, round: 4 },
+
+        // Player 5 - Lisa B
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "CIN", pickNumber: 5, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "ARI", pickNumber: 12, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "MIA", pickNumber: 21, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "IND", pickNumber: 28, round: 4 },
+
+        // Player 6 - James M
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "NYJ", pickNumber: 6, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "SF", pickNumber: 11, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "LV", pickNumber: 22, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "NE", pickNumber: 27, round: 4 },
+
+        // Player 7 - Amy G
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "CLE", pickNumber: 7, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "CHI", pickNumber: 10, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "CAR", pickNumber: 23, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "NYG", pickNumber: 26, round: 4 },
+
+        // Player 8 - Steve R
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "DAL", pickNumber: 8, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "NO", pickNumber: 9, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "TEN", pickNumber: 24, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "JAX", pickNumber: 25, round: 4 }
+      ];
+
+      await db.insert(draftPicks).values(demoDraftPicks);
+
       console.log("Demo leagues initialized successfully");
     } catch (error) {
       console.error("Error initializing demo leagues:", error);
