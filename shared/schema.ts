@@ -76,6 +76,8 @@ export const games = pgTable("games", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+}).extend({
+  displayName: z.string().min(1).max(16, "Display name must be 16 characters or less"),
 });
 
 export const insertLeagueSchema = createInsertSchema(leagues).omit({

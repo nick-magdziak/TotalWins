@@ -79,6 +79,8 @@ export default function Signup() {
       newErrors.displayName = "Display name is required";
     } else if (formData.displayName.length < 2) {
       newErrors.displayName = "Display name must be at least 2 characters";
+    } else if (formData.displayName.length > 16) {
+      newErrors.displayName = "Display name must be 16 characters or less";
     }
 
     if (!formData.password) {
