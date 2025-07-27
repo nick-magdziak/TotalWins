@@ -22,10 +22,11 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ES modules
-- **Database ORM**: Drizzle ORM with PostgreSQL dialect
+- **Database**: PostgreSQL with Drizzle ORM
 - **Database Provider**: Neon serverless PostgreSQL
 - **Session Management**: Express sessions with PostgreSQL storage
 - **API Structure**: RESTful endpoints organized by feature
+- **Email Service**: Amazon SES for notifications and invitations
 
 ### Styling & Theme
 - **Design System**: Custom retro 90s theme with pink-to-purple gradient background and teal accents
