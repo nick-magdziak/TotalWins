@@ -57,10 +57,20 @@ export default function Standings() {
 
       {/* Current Standings Table */}
       <section className="mb-8 px-4">
-        <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+        <h3 className="text-black text-xl sm:text-2xl font-bold mb-2 text-center retro-font">
           <Trophy className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
           STANDINGS
         </h3>
+        <p className="text-xs text-gray-600 text-center mb-4">
+          Last updated: {new Date().toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short'
+          })}
+        </p>
         
         <StandingsTable leagueId={leagueId} />
       </section>
