@@ -77,20 +77,20 @@ export default function Standings() {
               </h4>
               <div className="space-y-3">
                 {recentGames && recentGames.length > 0 ? (
-                  recentGames.slice(0, 3).map((game) => (
+                  recentGames.slice(0, 4).map((game) => (
                     <div
                       key={game.id}
                       className="flex justify-between items-center bg-retro-cream p-3 rounded-lg border-l-4 border-retro-lime"
                     >
-                      <div>
-                        <span className="font-bold text-retro-charcoal retro-font">
-                          Game completed
-                        </span>
-                        <div className="text-sm text-retro-charcoal opacity-75">
-                          Score updated automatically
+                      <div className="flex-1">
+                        <div className="font-bold text-retro-charcoal retro-font text-sm">
+                          {game.awayTeamId} @ {game.homeTeamId}
+                        </div>
+                        <div className="text-sm text-retro-charcoal font-bold">
+                          {game.awayScore} - {game.homeScore}
                         </div>
                       </div>
-                      <Badge className="bg-retro-lime text-retro-charcoal">FINAL</Badge>
+                      <Badge className="bg-retro-lime text-retro-charcoal text-xs">FINAL</Badge>
                     </div>
                   ))
                 ) : (
