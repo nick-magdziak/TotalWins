@@ -90,7 +90,7 @@ export default function Login() {
               <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
                 <Volleyball className="text-retro-yellow text-5xl neon-glow mx-auto mb-4" />
                 <h2 className="text-retro-yellow text-3xl md:text-5xl font-bold mb-2 neon-glow retro-font">
-                  WINS POOL '24
+                  TOTAL WINS
                 </h2>
                 <p className="text-white text-lg md:text-xl font-bold">WELCOME BACK, CHAMPION!</p>
               </div>

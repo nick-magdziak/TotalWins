@@ -22,7 +22,7 @@ export default function Standings() {
         <div className="bg-gradient-to-r from-retro-purple to-retro-pink p-8 rounded-3xl retro-border mb-8">
           <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
             <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
-              2024 NFL SEASON
+              TOTAL WINS
             </h2>
             <p className="text-white text-xl md:text-2xl font-bold">WEEK 18 • FINAL STANDINGS</p>
             <div className="mt-4 flex justify-center space-x-4 flex-wrap gap-2">

@@ -1,8 +1,8 @@
-# Wins Pool Championship Series
+# Total Wins
 
 ## Overview
 
-This is a full-stack TypeScript application for managing NFL wins pool competitions. The application allows users to create leagues, draft NFL teams, and track standings throughout the season. It features a retro 90s-themed UI with a modern React frontend and Express backend.
+This is a full-stack TypeScript application called "Total Wins" for managing NFL wins pool competitions. The application allows users to create leagues, draft NFL teams, and track standings throughout the season. It features a retro 90s-themed UI with a modern React frontend and Express backend.
 
 ## User Preferences
 
@@ -30,10 +30,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Styling & Theme
 - **Design System**: Custom retro 90s theme with pink-to-purple gradient background and teal accents
-- **Background**: Beautiful pink (#ff1493) to purple (#8a2be2) to blue (#4169e1) gradient
+- **Background**: Beautiful pink (#ff1493) to purple (#8a2be2) to blue (#4169e1) gradient with subtle 8px checkerboard texture overlay
 - **Typography**: Custom retro fonts with neon glow effects
 - **Layout**: Responsive design with mobile-first approach
 - **Components**: Reusable UI components from Shadcn/ui library
+- **App Name**: "TOTAL WINS" displayed in all caps throughout the application
 
 ## Key Components
 

@@ -33,7 +33,7 @@ export default function Layout({ children }: LayoutProps) {
         <div className="text-center">
           <div className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-8 rounded-3xl retro-border mb-8">
             <h1 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
-              WINS POOL '24
+              TOTAL WINS
             </h1>
             <p className="text-white text-xl font-bold">Please sign in to continue</p>
           </div>
@@ -66,7 +66,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center space-x-4">
             <Volleyball className="text-retro-yellow text-3xl neon-glow" />
             <h1 className="text-white text-2xl md:text-4xl font-bold tracking-wider retro-font">
-              WINS POOL '24
+              TOTAL WINS
             </h1>
           </div>
           

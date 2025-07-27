@@ -131,9 +131,9 @@ export default function Signup() {
             <div className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-8 rounded-3xl retro-border">
               <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
                 <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
-                  JOIN THE LEAGUE
+                  TOTAL WINS
                 </h2>
-                <p className="text-white text-xl md:text-2xl font-bold">CREATE YOUR CHAMPIONSHIP ACCOUNT</p>
+                <p className="text-white text-xl md:text-2xl font-bold">JOIN THE LEAGUE</p>
               </div>
             </div>
           </div>
