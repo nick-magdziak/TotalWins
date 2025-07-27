@@ -53,24 +53,24 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
         <table className="w-full">
           <thead className="bg-gradient-to-r from-retro-pink to-retro-teal text-white">
             <tr>
-              <th className="pl-2 pr-1 py-3 text-left font-bold text-xs retro-font">RANK</th>
-              <th className="pl-1 pr-2 py-3 text-left font-bold text-xs retro-font">PLAYER</th>
-              <th className="px-2 py-3 text-center font-bold text-xs retro-font">WINS</th>
+              <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font w-8">RANK</th>
+              <th className="pl-2 pr-2 py-3 text-left font-bold text-xs retro-font">PLAYER</th>
+              <th className="px-2 py-3 text-center font-bold text-xs retro-font w-12">WINS</th>
               <th className="px-2 py-3 text-left font-bold text-xs retro-font">TEAMS</th>
             </tr>
           </thead>
           <tbody>
             {standings.map((standing) => (
               <tr key={standing.userId} className={getRowClass(standing.rank)}>
-                <td className="pl-2 pr-1 py-3 text-sm font-bold text-retro-charcoal">
+                <td className="pl-2 pr-0 py-3 text-sm font-bold text-retro-charcoal w-8">
                   {standing.rank}
                 </td>
-                <td className="pl-1 pr-2 py-3">
+                <td className="pl-2 pr-2 py-3">
                   <div className="font-bold text-sm text-retro-charcoal retro-font">
                     {standing.displayName}
                   </div>
                 </td>
-                <td className="px-2 py-3 text-center">
+                <td className="px-2 py-3 text-center w-12">
                   <span className="text-lg font-bold text-retro-charcoal retro-font">
                     {standing.totalWins}
                   </span>
@@ -78,12 +78,14 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                 <td className="px-2 py-3">
                   <div className="flex flex-wrap gap-1">
                     {standing.teams.map((team) => (
-                      <Badge
-                        key={team.id}
-                        className="bg-retro-charcoal text-white px-2 py-1 rounded text-xs font-bold"
-                      >
-                        {team.abbreviation}
-                      </Badge>
+                      <div key={team.id} className="flex items-center gap-1">
+                        <Badge className="bg-retro-charcoal text-white px-2 py-1 rounded text-xs font-bold">
+                          {team.abbreviation}
+                        </Badge>
+                        <span className="text-xs font-bold text-retro-charcoal">
+                          {team.wins}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </td>
