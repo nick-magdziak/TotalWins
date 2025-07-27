@@ -7,6 +7,7 @@ This is a full-stack TypeScript application called "Total Wins" for managing NFL
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Font preference: RUSSO ONE font throughout entire application for bold, athletic aesthetic.
 
 ## System Architecture
 
@@ -40,13 +41,16 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication System
 - User registration and login with email/password
-- Session-based authentication (no JWT implementation visible)
+- Session-based authentication with localStorage persistence
 - Role-based access control (admin users)
-- In-memory user state management on frontend
+- User state management on frontend with localStorage sync
 
 ### League Management
 - Create and join leagues with configurable settings
 - Support for multiple players per league (up to 8)
+- **Multi-league support**: Users can be members of multiple leagues
+- **League selection system**: Dropdown menu from TOTAL WINS logo to switch between leagues
+- League-specific standings and data display
 - Draft position assignment and management
 - Season and draft status tracking
 

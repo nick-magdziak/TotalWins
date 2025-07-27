@@ -1,9 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Trophy, Users, User, Settings, LogOut, Volleyball } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Menu, Trophy, Users, User, Settings, LogOut, Volleyball, ChevronDown } from "lucide-react";
 import { getCurrentUser, isAdmin, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { type League } from "@shared/schema";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +16,7 @@ export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
+  const [currentLeagueId, setCurrentLeagueId] = useState<string>("demo-league-1");
   const isUserAdmin = isAdmin();
 
   // Listen for auth state changes
@@ -29,6 +33,23 @@ export default function Layout({ children }: LayoutProps) {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch user's leagues
+  const { data: userLeagues } = useQuery<League[]>({
+    queryKey: ["/api/users", currentUser?.id, "leagues"],
+    enabled: !!currentUser?.id,
+  });
+
+  // Get current league info
+  const currentLeague = userLeagues?.find(league => league.id === currentLeagueId) || 
+                       userLeagues?.[0]; // Fallback to first league
+
+  useEffect(() => {
+    // Set default league when leagues are loaded
+    if (userLeagues && userLeagues.length > 0 && !currentLeague) {
+      setCurrentLeagueId(userLeagues[0].id);
+    }
+  }, [userLeagues, currentLeague]);
 
   const navItems = [
     { path: "/standings", label: "STANDINGS", icon: Trophy },
@@ -80,9 +101,62 @@ export default function Layout({ children }: LayoutProps) {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Volleyball className="text-retro-yellow text-2xl sm:text-3xl neon-glow" />
-            <h1 className="text-white text-lg sm:text-2xl md:text-3xl font-bold tracking-wider retro-font">
-              TOTAL WINS
-            </h1>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-white hover:bg-white/10 p-2 rounded-lg">
+                  <div className="text-left">
+                    <h1 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-wider retro-font">
+                      TOTAL WINS
+                    </h1>
+                    {currentLeague && (
+                      <div className="text-xs sm:text-sm opacity-75 -mt-1">
+                        {currentLeague.name}
+                      </div>
+                    )}
+                  </div>
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64 bg-white border-2 border-retro-teal">
+                {userLeagues && userLeagues.length > 0 ? (
+                  userLeagues.map((league) => (
+                    <DropdownMenuItem
+                      key={league.id}
+                      onClick={() => {
+                        setCurrentLeagueId(league.id);
+                        // Update URL to reflect league change
+                        if (location.startsWith("/standings")) {
+                          window.location.href = `/standings?league=${league.id}`;
+                        }
+                      }}
+                      className={`p-3 cursor-pointer hover:bg-retro-cream ${
+                        league.id === currentLeagueId ? "bg-retro-lime/20" : ""
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold text-retro-charcoal retro-font">
+                          {league.name}
+                        </div>
+                        <div className="text-sm text-retro-charcoal/70">
+                          {league.sport} • {league.season}
+                        </div>
+                        {league.id === currentLeagueId && (
+                          <div className="text-xs text-retro-teal font-bold mt-1">
+                            Current League
+                          </div>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled className="p-3">
+                    <div className="text-sm text-gray-500">
+                      No leagues found
+                    </div>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
           {/* Desktop Navigation */}
@@ -119,6 +193,44 @@ export default function Layout({ children }: LayoutProps) {
             </SheetTrigger>
             <SheetContent side="right" className="bg-retro-charcoal text-white w-64">
               <div className="flex flex-col space-y-3 mt-6">
+                {/* League Selector for Mobile */}
+                {currentLeague && (
+                  <div className="mb-4 p-3 bg-retro-purple/30 rounded-lg">
+                    <h4 className="text-white text-sm font-bold mb-2 retro-font">CURRENT LEAGUE</h4>
+                    <div className="text-white text-sm">
+                      <div className="font-bold">{currentLeague.name}</div>
+                      <div className="opacity-75">{currentLeague.sport} • {currentLeague.season}</div>
+                    </div>
+                    
+                    {userLeagues && userLeagues.length > 1 && (
+                      <div className="mt-3">
+                        <h5 className="text-white text-xs font-bold mb-2 opacity-75">SWITCH TO:</h5>
+                        <div className="space-y-1">
+                          {userLeagues
+                            .filter(league => league.id !== currentLeagueId)
+                            .map((league) => (
+                            <Button
+                              key={league.id}
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                window.location.href = `/standings?league=${league.id}`;
+                                setMobileMenuOpen(false);
+                              }}
+                              className="w-full justify-start text-xs text-white hover:bg-white/10 h-auto py-2"
+                            >
+                              <div className="text-left">
+                                <div className="font-bold">{league.name}</div>
+                                <div className="opacity-75">{league.sport}</div>
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location === item.path;

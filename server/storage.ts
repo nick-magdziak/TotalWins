@@ -62,6 +62,7 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   constructor() {
     this.initializeNFLTeams();
+    this.initializeDemoLeagues();
   }
 
   private async initializeNFLTeams() {
@@ -125,6 +126,69 @@ export class DatabaseStorage implements IStorage {
       await db.insert(nflTeams).values(teams);
     } catch (error) {
       console.log("NFL teams may already be initialized:", error);
+    }
+  }
+
+  private async initializeDemoLeagues() {
+    try {
+      // Check if demo leagues already exist
+      const existingLeagues = await db.select().from(leagues).limit(1);
+      if (existingLeagues.length > 0) {
+        return; // Leagues already initialized
+      }
+
+      // Create demo leagues
+      const demoLeagues = [
+        {
+          id: "demo-league-1",
+          name: "Champions League",
+          season: "2024-25",
+          sport: "NFL",
+          teamsPerPlayer: 4,
+          maxPlayers: 8,
+          draftStatus: "completed",
+          seasonStatus: "active",
+          createdBy: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", // Demo user ID
+        },
+        {
+          id: "demo-league-2", 
+          name: "Sunday Squad",
+          season: "2024-25",
+          sport: "NFL",
+          teamsPerPlayer: 4,
+          maxPlayers: 6,
+          draftStatus: "completed",
+          seasonStatus: "active",
+          createdBy: "62f5c618-a04f-4b08-92e6-f7266c4ed7be",
+        },
+        {
+          id: "demo-league-3",
+          name: "Fantasy Friends",
+          season: "2024-25", 
+          sport: "NFL",
+          teamsPerPlayer: 3,
+          maxPlayers: 10,
+          draftStatus: "completed",
+          seasonStatus: "active",
+          createdBy: "62f5c618-a04f-4b08-92e6-f7266c4ed7be",
+        }
+      ];
+
+      await db.insert(leagues).values(demoLeagues);
+
+      // Add demo user to all leagues
+      const demoMemberships = demoLeagues.map((league, index) => ({
+        leagueId: league.id,
+        userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be",
+        draftPosition: 1,
+        totalWins: 0
+      }));
+
+      await db.insert(leagueMembers).values(demoMemberships);
+
+      console.log("Demo leagues initialized successfully");
+    } catch (error) {
+      console.error("Error initializing demo leagues:", error);
     }
   }
 

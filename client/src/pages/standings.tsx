@@ -3,17 +3,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, TrendingUp } from "lucide-react";
 import StandingsTable from "@/components/StandingsTable";
-import { type Game } from "@shared/schema";
+import { type Game, type League } from "@shared/schema";
 import { CURRENT_SEASON } from "@/lib/constants";
+import { getCurrentUser } from "@/lib/auth";
 
 export default function Standings() {
+  const currentUser = getCurrentUser();
+  
+  // Get league ID from URL params or default to first league
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLeagueId = urlParams.get('league');
+  
+  const { data: userLeagues } = useQuery<League[]>({
+    queryKey: ["/api/users", currentUser?.id, "leagues"],
+    enabled: !!currentUser?.id,
+  });
+
   const { data: recentGames } = useQuery<Game[]>({
     queryKey: ["/api/games/recent"],
   });
 
-  // For demo purposes, using a hardcoded league ID
-  // In a real app, this would come from user context or route params
-  const leagueId = "demo-league-1";
+  // Determine current league
+  const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
+  const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   return (
     <>
@@ -22,9 +34,11 @@ export default function Standings() {
         <div className="bg-gradient-to-r from-retro-purple to-retro-pink p-4 sm:p-6 rounded-2xl retro-border mb-6">
           <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
             <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
-              TOTAL WINS
+              {currentLeague?.name || "TOTAL WINS"}
             </h2>
-            <p className="text-white text-sm sm:text-base md:text-lg font-bold">WEEK 18 • FINAL STANDINGS</p>
+            <p className="text-white text-sm sm:text-base md:text-lg font-bold">
+              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2024-25"} • FINAL STANDINGS
+            </p>
             <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
               <Badge className="bg-retro-lime text-retro-charcoal px-3 py-1 rounded-full font-bold text-xs">
                 LIVE
