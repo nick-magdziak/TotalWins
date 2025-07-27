@@ -36,8 +36,8 @@ export default function Standings() {
             <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
               {currentLeague?.name || "TOTAL WINS"}
             </h2>
-            <p className="text-white text-sm sm:text-base md:text-lg font-bold">
-              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2024-25"} • FINAL STANDINGS
+            <p className="text-black text-sm sm:text-base md:text-lg font-bold">
+              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2024-25"} • STANDINGS
             </p>
             <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
               <Badge className="bg-retro-lime text-retro-charcoal px-3 py-1 rounded-full font-bold text-xs">
@@ -55,7 +55,7 @@ export default function Standings() {
       <section className="mb-8 px-4">
         <h3 className="text-retro-pink text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
           <Trophy className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
-          FINAL STANDINGS
+          STANDINGS
         </h3>
         
         <StandingsTable leagueId={leagueId} />
