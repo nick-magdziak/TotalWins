@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -61,10 +63,12 @@
 @layer base {
   * {
     @apply border-border;
+    font-family: 'Russo One', sans-serif;
   }
 
   body {
-    @apply font-sans antialiased text-foreground;
+    @apply antialiased text-foreground;
+    font-family: 'Russo One', sans-serif;
     background: 
       linear-gradient(90deg, rgba(255, 255, 255, 0.05) 50%, transparent 50%),
       linear-gradient(rgba(255, 255, 255, 0.05) 50%, transparent 50%),
@@ -146,8 +150,8 @@
   }
   
   .retro-font {
-    font-family: 'Impact', 'Arial Black', sans-serif;
-    font-weight: bold;
+    font-family: 'Russo One', sans-serif;
+    font-weight: normal;
     letter-spacing: 0.1em;
   }
   
