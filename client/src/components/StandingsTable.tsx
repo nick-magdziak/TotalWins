@@ -53,7 +53,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
         <table className="w-full">
           <thead className="bg-gradient-to-r from-retro-pink to-retro-teal text-white">
             <tr>
-              <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font w-6">RANK</th>
+              <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font w-2">RANK</th>
               <th className="pl-1 pr-2 py-3 text-left font-bold text-xs retro-font">PLAYER</th>
               <th className="px-2 py-3 text-center font-bold text-xs retro-font w-12">WINS</th>
               <th className="px-2 py-3 text-left font-bold text-xs retro-font">TEAMS</th>
@@ -62,7 +62,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
           <tbody>
             {standings.map((standing) => (
               <tr key={standing.userId} className={getRowClass(standing.rank)}>
-                <td className="pl-2 pr-0 py-3 text-sm font-bold text-retro-charcoal w-6">
+                <td className="pl-2 pr-0 py-3 text-sm font-bold text-retro-charcoal w-2">
                   {standing.rank}
                 </td>
                 <td className="pl-1 pr-2 py-3">
