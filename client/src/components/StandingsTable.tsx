@@ -50,11 +50,11 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
   return (
     <div className="bg-white rounded-2xl retro-border overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead className="bg-gradient-to-r from-retro-pink to-retro-teal text-white">
             <tr>
-              <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font w-2">RANK</th>
-              <th className="pl-1 pr-2 py-3 text-left font-bold text-xs retro-font">PLAYER</th>
+              <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font" style={{ width: '24px' }}>RANK</th>
+              <th className="pl-0 pr-2 py-3 text-left font-bold text-xs retro-font">PLAYER</th>
               <th className="px-2 py-3 text-center font-bold text-xs retro-font w-12">WINS</th>
               <th className="px-2 py-3 text-left font-bold text-xs retro-font">TEAMS</th>
             </tr>
@@ -62,10 +62,10 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
           <tbody>
             {standings.map((standing) => (
               <tr key={standing.userId} className={getRowClass(standing.rank)}>
-                <td className="pl-2 pr-0 py-3 text-sm font-bold text-retro-charcoal w-2">
+                <td className="pl-2 pr-0 py-3 text-sm font-bold text-retro-charcoal" style={{ width: '24px' }}>
                   {standing.rank}
                 </td>
-                <td className="pl-1 pr-2 py-3">
+                <td className="pl-0 pr-2 py-3">
                   <div className="font-bold text-sm text-retro-charcoal retro-font">
                     {standing.displayName}
                   </div>
