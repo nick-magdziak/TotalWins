@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Users, ListOrdered, Volleyball } from "lucide-react";
 import TeamCard from "@/components/TeamCard";
 import { type NFLTeam, type DraftPick, type DraftStatus } from "@shared/schema";
@@ -13,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { type League } from "@shared/schema";
 
 export default function Draft() {
+  const [selectedTeamForDraft, setSelectedTeamForDraft] = useState<NFLTeam | null>(null);
+  const [showDraftConfirmation, setShowDraftConfirmation] = useState(false);
 
   const currentUser = getCurrentUser();
   const { toast } = useToast();
@@ -77,8 +80,26 @@ export default function Draft() {
   });
 
   const handleTeamSelect = (teamId: string) => {
-    if (!currentUser) return;
-    draftPickMutation.mutate(teamId);
+    if (!drafted.has(teamId) && isCurrentUserTurn) {
+      const team = teams?.find(t => t.id === teamId);
+      if (team) {
+        setSelectedTeamForDraft(team);
+        setShowDraftConfirmation(true);
+      }
+    }
+  };
+
+  const confirmDraftPick = () => {
+    if (selectedTeamForDraft) {
+      draftPickMutation.mutate(selectedTeamForDraft.id);
+      setShowDraftConfirmation(false);
+      setSelectedTeamForDraft(null);
+    }
+  };
+
+  const cancelDraftPick = () => {
+    setShowDraftConfirmation(false);
+    setSelectedTeamForDraft(null);
   };
 
   const getDraftedTeams = () => {
@@ -333,6 +354,56 @@ export default function Draft() {
           </Card>
         </div>
       </div>
+
+      {/* Draft Confirmation Modal */}
+      <Dialog open={showDraftConfirmation} onOpenChange={setShowDraftConfirmation}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
+              Confirm Your Draft Pick
+            </DialogTitle>
+            <DialogDescription className="text-center text-retro-charcoal">
+              Are you sure you want to draft this team? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTeamForDraft && (
+            <div className="my-6">
+              <div 
+                className="p-4 rounded-lg border-2 border-retro-teal shadow-lg text-center"
+                style={{
+                  backgroundColor: NFL_TEAM_COLORS[selectedTeamForDraft.abbreviation as keyof typeof NFL_TEAM_COLORS]?.background || '#f3f4f6',
+                  color: NFL_TEAM_COLORS[selectedTeamForDraft.abbreviation as keyof typeof NFL_TEAM_COLORS]?.font || '#374151'
+                }}
+              >
+                <div className="text-2xl font-bold retro-font mb-2">
+                  {selectedTeamForDraft.city} {selectedTeamForDraft.name}
+                </div>
+                <div className="text-sm opacity-75">
+                  {selectedTeamForDraft.division} • {selectedTeamForDraft.wins}-{selectedTeamForDraft.losses}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex justify-center gap-4">
+            <Button
+              variant="outline"
+              onClick={cancelDraftPick}
+              className="px-6 py-2 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDraftPick}
+              disabled={draftPickMutation.isPending}
+              className="px-6 py-2 bg-retro-teal hover:bg-retro-purple text-white font-bold retro-font"
+            >
+              {draftPickMutation.isPending ? "Drafting..." : "Draft Team"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
