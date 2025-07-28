@@ -28,7 +28,7 @@ export const NFL_TEAM_COLORS = {
   "ARI": { background: "#97233F", font: "#000000" },
   "ATL": { background: "#000000", font: "#A71930" },
   "BAL": { background: "#241773", font: "#9E7C0C" },
-  "BUF": { background: "#FFFFFF", font: "#00338D" },
+  "BUF": { background: "#00338D", font: "#FFFFFF" },
   "CAR": { background: "#0085CA", font: "#101820" },
   "CHI": { background: "#0B162A", font: "#c83803" },
   "CIN": { background: "#FB4F14", font: "#000000" },
