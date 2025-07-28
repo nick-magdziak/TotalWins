@@ -191,7 +191,7 @@ export default function Draft() {
           {/* Recent Draft Picks */}
           <Card className="bg-gradient-to-br from-retro-orange to-retro-pink rounded-2xl text-white shadow-xl">
             <CardContent className="p-6">
-              <h3 className="text-xl font-bold mb-4 retro-font">
+              <h3 className="text-retro-purple text-xl font-bold mb-4 retro-font">
                 <Users className="inline mr-2" />
                 RECENT PICKS
               </h3>
