@@ -425,7 +425,7 @@ export default function Admin() {
                 QUICK ACTIONS
               </h3>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <Button
                   onClick={() => handleQuickAction("sync")}
                   disabled={syncScoresMutation.isPending}
@@ -450,14 +450,7 @@ export default function Admin() {
                   <Bell className="w-6 h-6 mb-2 mx-auto block" />
                   SEND UPDATES
                 </Button>
-                
-                <Button
-                  onClick={handleManualDraftPick}
-                  className="bg-gradient-to-br from-retro-yellow to-retro-orange text-retro-charcoal p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
-                >
-                  <Edit className="w-6 h-6 mb-2 mx-auto block" />
-                  MANUAL ENTRY
-                </Button>
+
               </div>
             </CardContent>
           </Card>
@@ -552,6 +545,14 @@ export default function Admin() {
                   <p className="text-xs text-retro-charcoal/70 text-center">
                     Last pick: Player 3 selected Detroit Lions (Round 2, Pick 16)
                   </p>
+
+                  <Button
+                    onClick={handleManualDraftPick}
+                    className="w-full bg-gradient-to-br from-retro-yellow to-retro-orange text-retro-charcoal font-bold py-2 rounded-lg retro-font hover:scale-105 transform transition-all duration-200"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    MANUAL ENTRY
+                  </Button>
 
                   <Button
                     onClick={() => resetDraftMutation.mutate()}
