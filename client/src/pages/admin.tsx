@@ -257,6 +257,36 @@ export default function Admin() {
   const handleDragStart = (e: React.DragEvent, index: number) => {
     e.dataTransfer.setData("text/plain", index.toString());
     e.dataTransfer.effectAllowed = "move";
+    
+    // Create a custom drag image that matches the container width
+    const dragElement = e.currentTarget as HTMLElement;
+    const rect = dragElement.getBoundingClientRect();
+    
+    // Clone the element and style it for dragging
+    const dragImage = dragElement.cloneNode(true) as HTMLElement;
+    dragImage.style.width = `${rect.width}px`;
+    dragImage.style.maxWidth = `${rect.width}px`;
+    dragImage.style.opacity = "0.8";
+    dragImage.style.transform = "rotate(2deg)";
+    dragImage.style.border = "2px solid #8B5CF6";
+    dragImage.style.backgroundColor = "#F3E8FF";
+    dragImage.style.position = "absolute";
+    dragImage.style.top = "-1000px";
+    dragImage.style.left = "-1000px";
+    dragImage.style.zIndex = "1000";
+    
+    // Add to body temporarily
+    document.body.appendChild(dragImage);
+    
+    // Set as drag image
+    e.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
+    
+    // Clean up after a short delay
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 0);
+    
+    // Make original element semi-transparent
     (e.target as HTMLElement).style.opacity = "0.5";
   };
 
