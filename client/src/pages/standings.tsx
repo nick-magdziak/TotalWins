@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, TrendingUp } from "lucide-react";
 import StandingsTable from "@/components/StandingsTable";
 import { type Game, type League } from "@shared/schema";
-import { CURRENT_SEASON } from "@/lib/constants";
+import { CURRENT_SEASON, NFL_TEAM_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
 
 export default function Standings() {
@@ -120,11 +120,21 @@ export default function Standings() {
                 <div className="mt-4 pt-3 border-t border-gray-200">
                   <div className="text-xs font-bold text-retro-purple mb-2">WEEK 9 BYES:</div>
                   <div className="grid grid-cols-2 gap-1">
-                    {['CIN', 'CLE', 'LV', 'NYG'].map((team) => (
-                      <div key={team} className="bg-gray-100 p-2 rounded text-xs text-center font-bold text-retro-charcoal">
-                        {team} - BYE
-                      </div>
-                    ))}
+                    {['CIN', 'CLE', 'LV', 'NYG'].map((team) => {
+                      const teamColors = NFL_TEAM_COLORS[team as keyof typeof NFL_TEAM_COLORS];
+                      return (
+                        <div 
+                          key={team} 
+                          className="p-2 rounded text-xs text-center font-bold"
+                          style={{
+                            backgroundColor: teamColors?.background || '#f3f4f6',
+                            color: teamColors?.font || '#374151'
+                          }}
+                        >
+                          {team} - BYE
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

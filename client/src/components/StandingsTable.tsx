@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { type PlayerStanding } from "@shared/schema";
+import { NFL_TEAM_COLORS } from "@/lib/constants";
 
 interface StandingsTableProps {
   leagueId: string;
@@ -77,16 +78,25 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                 </td>
                 <td className="px-2 py-3">
                   <div className="flex flex-col gap-1">
-                    {standing.teams.map((team) => (
-                      <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
-                        <Badge className="bg-retro-charcoal text-white px-2 py-1 rounded text-xs font-bold">
-                          {team.abbreviation}
-                        </Badge>
-                        <span className="text-xs font-bold text-retro-charcoal">
-                          {team.wins}
-                        </span>
-                      </div>
-                    ))}
+                    {standing.teams.map((team) => {
+                      const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
+                      return (
+                        <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
+                          <Badge 
+                            className="px-2 py-1 rounded text-xs font-bold border-0"
+                            style={{
+                              backgroundColor: teamColors?.background || '#374151',
+                              color: teamColors?.font || '#ffffff'
+                            }}
+                          >
+                            {team.abbreviation}
+                          </Badge>
+                          <span className="text-xs font-bold text-retro-charcoal">
+                            {team.wins}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </td>
               </tr>

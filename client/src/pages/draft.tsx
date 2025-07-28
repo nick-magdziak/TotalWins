@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, ListOrdered, Volleyball } from "lucide-react";
 import TeamCard from "@/components/TeamCard";
 import { type NFLTeam, type DraftPick, type DraftStatus } from "@shared/schema";
-import { NFL_DIVISIONS } from "@/lib/constants";
+import { NFL_DIVISIONS, NFL_TEAM_COLORS } from "@/lib/constants";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -207,20 +207,25 @@ export default function Draft() {
                       // Use embedded team data from the API response
                       const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
                       const user = (pick as any).user;
+                      const teamColors = team?.abbreviation ? NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS] : null;
                       return (
-                        <div key={pick.id} className="bg-gradient-to-r from-white to-gray-100 bg-opacity-90 p-3 rounded-lg border-2 border-retro-teal shadow-lg">
+                        <div key={pick.id} className="p-3 rounded-lg border-2 border-retro-teal shadow-lg"
+                             style={{ 
+                               backgroundColor: teamColors?.background || '#f3f4f6',
+                               color: teamColors?.font || '#374151'
+                             }}>
                           <div className="flex justify-between items-center">
                             <div className="flex-1">
-                              <div className="font-bold retro-font text-lg text-retro-charcoal">
+                              <div className="font-bold retro-font text-lg">
                                 {team ? `${team.city} ${team.name}` : `Team ${pick.teamId}`}
                               </div>
-                              <div className="text-sm text-retro-purple font-semibold">
+                              <div className="text-sm font-semibold opacity-75">
                                 Pick #{pick.pickNumber} • Round {pick.round}
                               </div>
                             </div>
                             <div className="text-sm text-right">
-                              <div className="font-bold text-retro-charcoal">{user?.displayName || "Player"}</div>
-                              <div className="text-retro-purple">{team?.division || "Division"}</div>
+                              <div className="font-bold">{user?.displayName || "Player"}</div>
+                              <div className="opacity-75">{team?.division || "Division"}</div>
                             </div>
                           </div>
                         </div>
@@ -261,20 +266,25 @@ export default function Draft() {
                       <div key={division} className="mb-6">
                         <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("AFC ", "")}</h5>
                         <div className="space-y-2">
-                          {divisionTeams.map((team) => (
-                            <button
-                              key={team.id}
-                              onClick={() => handleTeamSelect(team.id)}
-                              disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
-                              className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 ${
-                                drafted.has(team.id)
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-retro-cream hover:bg-retro-pink hover:text-white cursor-pointer"
-                              }`}
-                            >
-                              <span className="retro-font">{team.city} {team.name}</span>
-                            </button>
-                          ))}
+                          {divisionTeams.map((team) => {
+                            const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
+                            return (
+                              <button
+                                key={team.id}
+                                onClick={() => handleTeamSelect(team.id)}
+                                disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
+                                  drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
+                                }`}
+                                style={{
+                                  backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
+                                  color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
+                                }}
+                              >
+                                <span className="retro-font">{team.city} {team.name}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -294,20 +304,25 @@ export default function Draft() {
                       <div key={division} className="mb-6">
                         <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("NFC ", "")}</h5>
                         <div className="space-y-2">
-                          {divisionTeams.map((team) => (
-                            <button
-                              key={team.id}
-                              onClick={() => handleTeamSelect(team.id)}
-                              disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
-                              className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 ${
-                                drafted.has(team.id)
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-retro-cream hover:bg-retro-pink hover:text-white cursor-pointer"
-                              }`}
-                            >
-                              <span className="retro-font">{team.city} {team.name}</span>
-                            </button>
-                          ))}
+                          {divisionTeams.map((team) => {
+                            const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
+                            return (
+                              <button
+                                key={team.id}
+                                onClick={() => handleTeamSelect(team.id)}
+                                disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
+                                  drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
+                                }`}
+                                style={{
+                                  backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
+                                  color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
+                                }}
+                              >
+                                <span className="retro-font">{team.city} {team.name}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     );
