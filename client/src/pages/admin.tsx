@@ -764,39 +764,39 @@ export default function Admin() {
           </Card>
 
           {/* League Analytics */}
-          <Card className="bg-gradient-to-br from-retro-charcoal to-gray-800 rounded-2xl text-white shadow-xl">
+          <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
-              <h3 className="text-xl font-bold mb-4 retro-font">
+              <h3 className="text-retro-purple text-xl font-bold mb-4 retro-font">
                 <BarChart3 className="inline mr-2" />
                 LEAGUE ANALYTICS
               </h3>
               
               <div className="space-y-4">
-                <div className="bg-white bg-opacity-10 p-4 rounded-lg">
+                <div className="bg-retro-cream p-4 rounded-lg retro-border">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm opacity-75 retro-font">Games Processed</span>
-                    <span className="font-bold retro-font">272/272</span>
+                    <span className="text-sm text-retro-charcoal retro-font">Games Processed</span>
+                    <span className="font-bold text-retro-purple retro-font">272/272</span>
                   </div>
-                  <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
+                  <div className="w-full bg-retro-pink bg-opacity-20 rounded-full h-2">
                     <div className="bg-retro-lime h-2 rounded-full w-full"></div>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
+                  <div className="text-center bg-retro-cream p-4 rounded-lg retro-border">
                     <div className="text-2xl font-bold text-retro-lime retro-font">8</div>
-                    <div className="text-sm opacity-75 retro-font">Active Players</div>
+                    <div className="text-sm text-retro-charcoal retro-font">Active Players</div>
                   </div>
-                  <div className="text-center">
+                  <div className="text-center bg-retro-cream p-4 rounded-lg retro-border">
                     <div className="text-2xl font-bold text-retro-pink retro-font">235</div>
-                    <div className="text-sm opacity-75 retro-font">Total Wins</div>
+                    <div className="text-sm text-retro-charcoal retro-font">Total Wins</div>
                   </div>
                 </div>
                 
-                <div className="border-t border-white border-opacity-20 pt-4">
-                  <div className="text-center">
+                <div className="border-t border-retro-purple pt-4">
+                  <div className="text-center bg-retro-cream p-4 rounded-lg retro-border">
                     <div className="text-lg font-bold text-retro-yellow retro-font">Season Complete!</div>
-                    <div className="text-sm opacity-75 retro-font">Championship decided: Winner with 40 points</div>
+                    <div className="text-sm text-retro-charcoal retro-font">Championship decided: Winner with 40 points</div>
                   </div>
                 </div>
               </div>
