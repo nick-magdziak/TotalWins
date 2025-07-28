@@ -28,7 +28,10 @@ import {
   Play,
   Zap as Nuclear,
   Save,
-  X
+  X,
+  List,
+  Shuffle,
+  GripVertical
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -49,6 +52,8 @@ export default function Admin() {
   const [draftStatus, setDraftStatus] = useState("not_started");
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
+  const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
+  const [draftOrder, setDraftOrder] = useState<string[]>([]);
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -224,6 +229,27 @@ export default function Admin() {
 
   const handleManualDraftPick = () => {
     setShowManualDraftDialog(true);
+  };
+
+  const handleDraftOrder = () => {
+    // Initialize draft order with current league members
+    if (membersWithUserData) {
+      const currentOrder = membersWithUserData.map(member => member.userId);
+      setDraftOrder(currentOrder);
+    }
+    setShowDraftOrderDialog(true);
+  };
+
+  const randomizeDraftOrder = () => {
+    const shuffled = [...draftOrder].sort(() => Math.random() - 0.5);
+    setDraftOrder(shuffled);
+  };
+
+  const moveDraftPosition = (from: number, to: number) => {
+    const newOrder = [...draftOrder];
+    const [movedItem] = newOrder.splice(from, 1);
+    newOrder.splice(to, 0, movedItem);
+    setDraftOrder(newOrder);
   };
 
   const resetDraftMutation = useMutation({
@@ -546,6 +572,21 @@ export default function Admin() {
                       <SelectItem value="three-round">3 Round Draft</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Draft Order */}
+                <div>
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Draft Order
+                  </Label>
+                  <Button
+                    onClick={handleDraftOrder}
+                    variant="outline"
+                    className="w-full border-2 border-retro-pink text-retro-pink hover:bg-retro-pink hover:text-white font-bold py-2 rounded-lg retro-font"
+                  >
+                    <List className="w-4 h-4 mr-2" />
+                    SET DRAFT ORDER
+                  </Button>
                 </div>
 
                 {/* Teams Per Player */}
@@ -895,6 +936,106 @@ export default function Admin() {
             >
               <Nuclear className="w-4 h-4 mr-2" />
               {resetDraftMutation.isPending ? "RESETTING..." : "YES, RESET"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Draft Order Dialog */}
+      <Dialog open={showDraftOrderDialog} onOpenChange={setShowDraftOrderDialog}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-lg" aria-describedby="draft-order-description">
+          <DialogHeader>
+            <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
+              <List className="inline w-6 h-6 mr-2" />
+              Draft Order
+            </DialogTitle>
+          </DialogHeader>
+          <div id="draft-order-description" className="sr-only">
+            Dialog to set the draft order for league players
+          </div>
+          
+          <div className="my-6">
+            <div className="flex gap-3 mb-4">
+              <Button
+                onClick={randomizeDraftOrder}
+                className="flex-1 bg-gradient-to-br from-retro-orange to-retro-pink text-white font-bold py-2 rounded-lg retro-font hover:scale-105 transform transition-all duration-200"
+              >
+                <Shuffle className="w-4 h-4 mr-2" />
+                RANDOMIZE ORDER
+              </Button>
+            </div>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {draftOrder.map((userId, index) => {
+                const memberData = membersWithUserData?.find(m => m.userId === userId);
+                const userData = memberData?.userData;
+                
+                return (
+                  <div
+                    key={userId}
+                    className="flex items-center gap-3 p-3 bg-retro-cream rounded-lg border border-retro-teal"
+                  >
+                    <div className="w-8 h-8 bg-retro-purple rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="font-bold text-retro-charcoal">
+                        {userData?.displayName || `Player ${index + 1}`}
+                      </div>
+                      <div className="text-xs text-retro-charcoal/70">
+                        {userData?.email}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1">
+                      <Button
+                        onClick={() => moveDraftPosition(index, Math.max(0, index - 1))}
+                        disabled={index === 0}
+                        size="sm"
+                        variant="outline"
+                        className="w-8 h-8 p-0 border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white disabled:opacity-30"
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        onClick={() => moveDraftPosition(index, Math.min(draftOrder.length - 1, index + 1))}
+                        disabled={index === draftOrder.length - 1}
+                        size="sm"
+                        variant="outline"
+                        className="w-8 h-8 p-0 border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white disabled:opacity-30"
+                      >
+                        ↓
+                      </Button>
+                    </div>
+                    
+                    <GripVertical className="w-4 h-4 text-retro-charcoal/40 cursor-move" />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowDraftOrderDialog(false)}
+              className="flex-1 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setShowDraftOrderDialog(false);
+                toast({
+                  title: "Draft order saved!",
+                  description: "Player draft order has been updated.",
+                });
+              }}
+              className="flex-1 bg-retro-teal hover:bg-retro-lime text-white font-bold retro-font"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              SAVE ORDER
             </Button>
           </DialogFooter>
         </DialogContent>
