@@ -196,39 +196,43 @@ export default function Draft() {
                 RECENT PICKS
               </h3>
               
-              <div className="max-h-64 overflow-y-auto space-y-2">
+              <div className="min-h-[200px] max-h-64 overflow-y-auto space-y-2 bg-black bg-opacity-20 rounded-lg p-2">
                 {picksLoading ? (
-                  <div className="text-center py-4">
-                    <p className="opacity-75 text-white">Loading picks...</p>
+                  <div className="text-center py-8">
+                    <p className="text-white text-lg font-bold">Loading picks...</p>
                   </div>
                 ) : draftPicks && draftPicks.length > 0 ? (
-                  // Show most recent picks first (reverse order), limit to recent picks
-                  [...draftPicks].reverse().map((pick, index) => {
-                    // Use embedded team data from the API response
-                    const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
-                    const user = (pick as any).user;
-                    return (
-                      <div key={pick.id} className="bg-white bg-opacity-30 p-4 rounded-lg border border-white border-opacity-50 mb-2">
-                        <div className="flex justify-between items-center">
-                          <div className="flex-1">
-                            <div className="font-bold retro-font text-lg text-white">
-                              {team ? `${team.city} ${team.name}` : `Unknown Team (${pick.teamId})`}
+                  <>
+                    <div className="text-white text-sm font-bold mb-2">
+                      Showing {draftPicks.length} picks (most recent first)
+                    </div>
+                    {[...draftPicks].reverse().map((pick, index) => {
+                      // Use embedded team data from the API response
+                      const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
+                      const user = (pick as any).user;
+                      return (
+                        <div key={pick.id} className="bg-gradient-to-r from-white to-gray-100 bg-opacity-90 p-3 rounded-lg border-2 border-retro-teal shadow-lg">
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <div className="font-bold retro-font text-lg text-retro-charcoal">
+                                {team ? `${team.city} ${team.name}` : `Team ${pick.teamId}`}
+                              </div>
+                              <div className="text-sm text-retro-purple font-semibold">
+                                Pick #{pick.pickNumber} • Round {pick.round}
+                              </div>
                             </div>
-                            <div className="text-sm text-white opacity-90">
-                              Pick #{pick.pickNumber} • Round {pick.round}
+                            <div className="text-sm text-right">
+                              <div className="font-bold text-retro-charcoal">{user?.displayName || "Player"}</div>
+                              <div className="text-retro-purple">{team?.division || "Division"}</div>
                             </div>
-                          </div>
-                          <div className="text-sm text-right text-white">
-                            <div className="font-bold">{user?.displayName || "Player"}</div>
-                            <div className="opacity-90">{team?.division || "N/A"}</div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </>
                 ) : (
-                  <div className="text-center py-4">
-                    <p className="opacity-75 text-white">No picks made yet</p>
+                  <div className="text-center py-8">
+                    <p className="text-white text-lg font-bold">No picks made yet</p>
                   </div>
                 )}
               </div>
