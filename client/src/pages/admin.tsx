@@ -975,9 +975,7 @@ export default function Admin() {
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {draftOrder.map((userId, index) => {
                 const memberData = membersWithUserData?.find(m => m.userId === userId);
-                const userData = memberData?.userData;
-                
-                console.log('Draft Order Debug:', { userId, memberData, userData });
+                const userData = memberData?.user; // Fixed: use .user instead of .userData
                 
                 return (
                   <div
