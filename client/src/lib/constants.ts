@@ -30,7 +30,7 @@ export const NFL_TEAM_COLORS = {
   "BAL": { background: "#241773", font: "#9E7C0C" },
   "BUF": { background: "#FFFFFF", font: "#00338D" },
   "CAR": { background: "#0085CA", font: "#101820" },
-  "CHI": { background: "#0B162A", font: "#FFFFFF" },
+  "CHI": { background: "#0B162A", font: "#c83803" },
   "CIN": { background: "#FB4F14", font: "#000000" },
   "CLE": { background: "#311D00", font: "#FF3C00" },
   "DAL": { background: "#869397", font: "#041E42" },
