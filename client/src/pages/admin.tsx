@@ -254,6 +254,29 @@ export default function Admin() {
     setDraftOrder(newOrder);
   };
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData("text/plain", index.toString());
+    e.dataTransfer.effectAllowed = "move";
+    (e.target as HTMLElement).style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    (e.target as HTMLElement).style.opacity = "1";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData("text/plain"));
+    if (dragIndex !== dropIndex) {
+      moveDraftPosition(dragIndex, dropIndex);
+    }
+  };
+
   const resetDraftMutation = useMutation({
     mutationFn: async () => {
       return apiRequest("POST", "/api/admin/reset-draft", { leagueId });
@@ -980,7 +1003,12 @@ export default function Admin() {
                 return (
                   <div
                     key={userId}
-                    className="flex items-center gap-3 p-3 bg-retro-cream rounded-lg border border-retro-teal"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className="flex items-center gap-3 p-3 bg-retro-cream rounded-lg border border-retro-teal cursor-move hover:bg-retro-cream/80 transition-colors"
                   >
                     <div className="w-8 h-8 bg-retro-purple rounded-full flex items-center justify-center text-white font-bold text-sm">
                       {index + 1}
@@ -1026,7 +1054,7 @@ export default function Admin() {
                       </Button>
                     </div>
                     
-                    <GripVertical className="w-4 h-4 text-retro-charcoal/40 cursor-move" />
+                    <GripVertical className="w-4 h-4 text-retro-charcoal/60 cursor-move hover:text-retro-charcoal" />
                   </div>
                 );
               })}
