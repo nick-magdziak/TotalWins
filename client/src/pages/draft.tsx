@@ -196,7 +196,7 @@ export default function Draft() {
                 RECENT PICKS
               </h3>
               
-              <div className="min-h-[200px] max-h-64 overflow-y-auto space-y-2 bg-black bg-opacity-20 rounded-lg p-2">
+              <div className="h-80 overflow-y-auto space-y-2 bg-black bg-opacity-20 rounded-lg p-2">
                 {picksLoading ? (
                   <div className="text-center py-8">
                     <p className="text-white text-lg font-bold">Loading picks...</p>
@@ -204,9 +204,9 @@ export default function Draft() {
                 ) : draftPicks && draftPicks.length > 0 ? (
                   <>
                     <div className="text-white text-sm font-bold mb-2">
-                      Showing most recent 4 picks
+                      Recent picks (scroll for more)
                     </div>
-                    {[...draftPicks].reverse().slice(0, 4).map((pick, index) => {
+                    {[...draftPicks].reverse().map((pick, index) => {
                       // Use embedded team data from the API response
                       const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
                       const user = (pick as any).user;
