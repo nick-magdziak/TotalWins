@@ -25,7 +25,8 @@ import {
   Undo2,
   CheckCircle,
   Pause,
-  Play
+  Play,
+  Zap as Nuclear
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -39,6 +40,7 @@ export default function Admin() {
   const [selectedMember, setSelectedMember] = useState<LeagueMember | null>(null);
   const [showPrivilegeDialog, setShowPrivilegeDialog] = useState(false);
   const [showManualDraftDialog, setShowManualDraftDialog] = useState(false);
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const [draftStyle, setDraftStyle] = useState("snake");
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
@@ -225,6 +227,8 @@ export default function Admin() {
       return apiRequest("POST", "/api/admin/reset-draft", { leagueId });
     },
     onSuccess: () => {
+      setDraftStatus("not_started");
+      setShowResetConfirmDialog(false);
       toast({
         title: "Draft reset!",
         description: "All draft picks have been cleared.",
@@ -498,6 +502,8 @@ export default function Admin() {
                       <SelectItem value="4">4 Teams</SelectItem>
                       <SelectItem value="5">5 Teams</SelectItem>
                       <SelectItem value="6">6 Teams</SelectItem>
+                      <SelectItem value="7">7 Teams</SelectItem>
+                      <SelectItem value="8">8 Teams</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -586,13 +592,12 @@ export default function Admin() {
                   </div>
 
                   <Button
-                    onClick={() => resetDraftMutation.mutate()}
-                    disabled={resetDraftMutation.isPending}
+                    onClick={() => setShowResetConfirmDialog(true)}
                     variant="destructive"
                     className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg retro-font"
                   >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    {resetDraftMutation.isPending ? "RESETTING..." : "RESET DRAFT"}
+                    <Nuclear className="w-4 h-4 mr-2" />
+                    RESET DRAFT
                   </Button>
                 </div>
               </div>
@@ -778,6 +783,57 @@ export default function Admin() {
               className="px-6 py-2 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
             >
               Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Draft Confirmation Dialog */}
+      <Dialog open={showResetConfirmDialog} onOpenChange={setShowResetConfirmDialog}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md" aria-describedby="reset-draft-description">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 text-xl font-bold retro-font text-center flex items-center justify-center">
+              <Nuclear className="w-6 h-6 mr-2" />
+              Reset Entire Draft
+            </DialogTitle>
+          </DialogHeader>
+          <div id="reset-draft-description" className="sr-only">
+            Confirmation dialog to reset the entire draft
+          </div>
+          
+          <div className="my-6 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Nuclear className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-retro-charcoal text-lg font-bold retro-font mb-2">
+              Are you sure you want to reset the entire draft?
+            </h3>
+            <p className="text-retro-charcoal/70 text-sm mb-4">
+              This will permanently delete all draft picks and cannot be undone.
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-red-700 text-sm font-semibold">
+                ⚠️ This action is irreversible
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowResetConfirmDialog(false)}
+              className="flex-1 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => resetDraftMutation.mutate()}
+              disabled={resetDraftMutation.isPending}
+              variant="destructive"
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold retro-font"
+            >
+              <Nuclear className="w-4 h-4 mr-2" />
+              {resetDraftMutation.isPending ? "RESETTING..." : "YES, RESET"}
             </Button>
           </DialogFooter>
         </DialogContent>
