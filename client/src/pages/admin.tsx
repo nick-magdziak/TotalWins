@@ -520,17 +520,15 @@ export default function Admin() {
                   <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
                     Draft Status
                   </Label>
-                  <Select value={draftStatus} onValueChange={setDraftStatus}>
-                    <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not_started">Not Started</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="paused">Paused</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={draftStatus === "not_started" ? "Not Started" : 
+                           draftStatus === "active" ? "Active" : 
+                           draftStatus === "paused" ? "Paused" : 
+                           draftStatus === "completed" ? "Completed" : draftStatus}
+                    className="w-full border-2 border-retro-pink focus:border-retro-purple bg-gray-50"
+                    disabled
+                    readOnly
+                  />
                 </div>
 
                 {/* Draft Actions */}
