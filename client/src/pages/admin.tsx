@@ -138,6 +138,7 @@ export default function Admin() {
         description: "Player privileges have been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members-with-users"] });
       setShowPrivilegeDialog(false);
       setSelectedMember(null);
     },
@@ -145,6 +146,32 @@ export default function Admin() {
       toast({
         title: "Update failed",
         description: "Failed to update privileges. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removePlayerMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("POST", "/api/admin/remove-player", { 
+        leagueId,
+        userId 
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Player removed!",
+        description: "Player has been removed from the league.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members-with-users"] });
+      setShowPrivilegeDialog(false);
+      setSelectedMember(null);
+    },
+    onError: () => {
+      toast({
+        title: "Removal failed",
+        description: "Failed to remove player. Please try again.",
         variant: "destructive",
       });
     },
@@ -168,6 +195,12 @@ export default function Admin() {
         userId: selectedMember.userId, 
         isAdmin 
       });
+    }
+  };
+
+  const handleRemovePlayer = () => {
+    if (selectedMember?.userId) {
+      removePlayerMutation.mutate(selectedMember.userId);
     }
   };
 
@@ -423,12 +456,15 @@ export default function Admin() {
 
       {/* Privilege Management Dialog */}
       <Dialog open={showPrivilegeDialog} onOpenChange={setShowPrivilegeDialog}>
-        <DialogContent className="bg-white rounded-2xl retro-border max-w-md">
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md" aria-describedby="player-management-description">
           <DialogHeader>
             <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
-              Manage Player Privileges
+              Manage Player
             </DialogTitle>
           </DialogHeader>
+          <div id="player-management-description" className="sr-only">
+            Dialog to manage player privileges and league membership
+          </div>
           
           {selectedMember && (
             <div className="my-6">
@@ -448,7 +484,7 @@ export default function Admin() {
               <div className="space-y-3">
                 <Button
                   onClick={() => handlePrivilegeUpdate(true)}
-                  disabled={updatePrivilegesMutation.isPending}
+                  disabled={updatePrivilegesMutation.isPending || removePlayerMutation.isPending}
                   className="w-full bg-retro-purple hover:bg-retro-pink text-white font-bold py-3 rounded-lg retro-font"
                 >
                   <Settings className="w-4 h-4 mr-2" />
@@ -457,13 +493,25 @@ export default function Admin() {
                 
                 <Button
                   onClick={() => handlePrivilegeUpdate(false)}
-                  disabled={updatePrivilegesMutation.isPending}
+                  disabled={updatePrivilegesMutation.isPending || removePlayerMutation.isPending}
                   variant="outline"
                   className="w-full border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white font-bold py-3 rounded-lg retro-font"
                 >
                   <User className="w-4 h-4 mr-2" />
                   SET AS PLAYER
                 </Button>
+
+                <div className="border-t border-retro-teal pt-3 mt-4">
+                  <Button
+                    onClick={handleRemovePlayer}
+                    disabled={updatePrivilegesMutation.isPending || removePlayerMutation.isPending}
+                    variant="destructive"
+                    className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg retro-font"
+                  >
+                    <UserMinus className="w-4 h-4 mr-2" />
+                    {removePlayerMutation.isPending ? "REMOVING..." : "REMOVE FROM LEAGUE"}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

@@ -301,6 +301,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/remove-player", async (req, res) => {
+    try {
+      const { leagueId, userId } = req.body;
+      
+      if (!leagueId || !userId) {
+        return res.status(400).json({ error: "Invalid request data" });
+      }
+      
+      const success = await storage.removeLeagueMember(leagueId, userId);
+      
+      if (success) {
+        res.json({ success: true, message: "Player removed successfully" });
+      } else {
+        res.status(404).json({ error: "Player not found in league" });
+      }
+    } catch (error) {
+      console.error("Error removing player:", error);
+      res.status(500).json({ error: "Failed to remove player" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // Set up periodic score updates (every 30 minutes during season)
