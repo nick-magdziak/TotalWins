@@ -131,7 +131,8 @@ export default function Admin() {
     }
   };
 
-  if (!currentUser?.isAdmin) {
+  // For now, allow access for NickPapageorgio - in production this would check proper admin status
+  if (!currentUser || (currentUser.displayName !== "NickPapageorgio" && !currentUser.isAdmin)) {
     return (
       <div className="text-center py-12">
         <div className="bg-retro-cream p-8 rounded-2xl retro-border inline-block">

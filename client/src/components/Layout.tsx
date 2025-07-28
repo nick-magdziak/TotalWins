@@ -55,7 +55,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/standings", label: "STANDINGS", icon: Trophy },
     { path: "/draft", label: "DRAFT", icon: Users },
     { path: "/profile", label: "PROFILE", icon: User },
-    ...(isUserAdmin ? [{ path: "/admin", label: "ADMIN", icon: Settings }] : []),
+    ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: "/admin", label: "ADMIN", icon: Settings }] : []),
   ];
 
   const handleLogout = () => {
