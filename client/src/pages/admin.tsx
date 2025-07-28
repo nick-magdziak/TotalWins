@@ -274,6 +274,8 @@ export default function Admin() {
     dragImage.style.top = "-1000px";
     dragImage.style.left = "-1000px";
     dragImage.style.zIndex = "1000";
+    dragImage.style.fontFamily = "'RUSSO ONE', 'Arial Black', sans-serif";
+    dragImage.style.fontWeight = "bold";
     
     // Add to body temporarily
     document.body.appendChild(dragImage);
