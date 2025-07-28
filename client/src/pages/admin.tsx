@@ -215,9 +215,9 @@ export default function Admin() {
           </Card>
 
           {/* Player Management */}
-          <Card className="bg-gradient-to-br from-retro-pink to-retro-purple rounded-2xl text-white shadow-xl">
+          <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
-              <h3 className="text-xl font-bold mb-4 retro-font">
+              <h3 className="text-retro-purple text-xl font-bold mb-4 retro-font">
                 <Users className="inline mr-2" />
                 PLAYER MANAGEMENT
               </h3>
@@ -225,12 +225,12 @@ export default function Admin() {
               <div className="space-y-3 mb-4">
                 {leagueMembers && leagueMembers.length > 0 ? (
                   leagueMembers.slice(0, 3).map((member, index) => (
-                    <div key={member.id} className="bg-white bg-opacity-20 p-3 rounded-lg flex justify-between items-center">
+                    <div key={member.id} className="bg-retro-cream p-3 rounded-lg flex justify-between items-center border border-retro-teal">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-retro-yellow rounded-full flex items-center justify-center text-retro-charcoal font-bold text-sm">
                           {index + 1}
                         </div>
-                        <span className="font-bold">
+                        <span className="font-bold text-retro-charcoal">
                           Player {index + 1} {index === 0 && "(Admin)"}
                         </span>
                       </div>
@@ -239,24 +239,24 @@ export default function Admin() {
                   ))
                 ) : (
                   <div className="text-center py-4 opacity-75">
-                    <p>No league members found.</p>
+                    <p className="text-retro-charcoal">No league members found.</p>
                   </div>
                 )}
               </div>
               
-              <div className="border-t border-white border-opacity-30 pt-4">
+              <div className="border-t border-retro-teal pt-4">
                 <form onSubmit={handleInvitePlayer} className="space-y-3">
                   <Input
                     type="email"
                     placeholder="Enter email to invite player..."
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full p-3 rounded-lg text-retro-charcoal"
+                    className="w-full p-3 rounded-lg border-2 border-retro-pink focus:border-retro-purple text-retro-charcoal"
                   />
                   <Button
                     type="submit"
                     disabled={invitePlayerMutation.isPending || !inviteEmail.trim()}
-                    className="w-full bg-retro-yellow text-retro-charcoal px-4 py-3 rounded-lg font-bold hover:scale-105 transform transition-all duration-200 retro-font"
+                    className="w-full bg-retro-yellow text-retro-charcoal px-4 py-3 rounded-lg font-bold hover:scale-105 transform transition-all duration-200 retro-font hover:bg-retro-lime"
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
                     {invitePlayerMutation.isPending ? "SENDING..." : "INVITE PLAYER"}
