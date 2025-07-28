@@ -322,6 +322,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/reset-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      
+      if (!leagueId) {
+        return res.status(400).json({ error: "Invalid request data" });
+      }
+      
+      await storage.resetDraft(leagueId);
+      
+      res.json({ success: true, message: "Draft reset successfully" });
+    } catch (error) {
+      console.error("Error resetting draft:", error);
+      res.status(500).json({ error: "Failed to reset draft" });
+    }
+  });
+
+  app.post("/api/admin/undo-last-pick", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      
+      if (!leagueId) {
+        return res.status(400).json({ error: "Invalid request data" });
+      }
+      
+      const success = await storage.undoLastDraftPick(leagueId);
+      
+      if (success) {
+        res.json({ success: true, message: "Last pick undone successfully" });
+      } else {
+        res.status(404).json({ error: "No picks to undo" });
+      }
+    } catch (error) {
+      console.error("Error undoing last pick:", error);
+      res.status(500).json({ error: "Failed to undo last pick" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // Set up periodic score updates (every 30 minutes during season)

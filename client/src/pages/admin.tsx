@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Settings, 
   Users, 
@@ -18,7 +19,11 @@ import {
   UserPlus,
   UserMinus,
   RotateCcw,
-  User
+  User,
+  Calendar,
+  Target,
+  Undo2,
+  CheckCircle
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -31,6 +36,11 @@ export default function Admin() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedMember, setSelectedMember] = useState<LeagueMember | null>(null);
   const [showPrivilegeDialog, setShowPrivilegeDialog] = useState(false);
+  const [showManualDraftDialog, setShowManualDraftDialog] = useState(false);
+  const [draftStyle, setDraftStyle] = useState("snake");
+  const [draftDateTime, setDraftDateTime] = useState("");
+  const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
+  const [draftStatus, setDraftStatus] = useState("pending");
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -204,6 +214,50 @@ export default function Admin() {
     }
   };
 
+  const handleManualDraftPick = () => {
+    setShowManualDraftDialog(true);
+  };
+
+  const resetDraftMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/reset-draft", { leagueId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Draft reset!",
+        description: "All draft picks have been cleared.",
+      });
+      queryClient.invalidateQueries();
+    },
+    onError: () => {
+      toast({
+        title: "Reset failed",
+        description: "Failed to reset draft. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const undoLastPickMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/undo-last-pick", { leagueId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Pick undone!",
+        description: "Last draft pick has been undone.",
+      });
+      queryClient.invalidateQueries();
+    },
+    onError: () => {
+      toast({
+        title: "Undo failed",
+        description: "Failed to undo last pick. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "sync":
@@ -279,25 +333,21 @@ export default function Admin() {
                 </div>
                 
                 <div>
-                  <Label className="block text-retro-charcoal font-bold mb-2">Teams Per Player</Label>
-                  <div className="flex space-x-2">
-                    <Badge variant="secondary">4 Teams (Current)</Badge>
-                  </div>
+                  <Label className="block text-retro-charcoal font-bold mb-2">Season</Label>
+                  <Input 
+                    value="2024-25"
+                    className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
+                    disabled
+                  />
                 </div>
                 
                 <div>
-                  <Label className="block text-retro-charcoal font-bold mb-2">Draft Status</Label>
-                  <div className="flex space-x-4">
-                    <Badge className="bg-retro-lime text-retro-charcoal">COMPLETED</Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-retro-orange text-retro-orange hover:bg-retro-orange hover:text-white"
-                    >
-                      <RotateCcw className="w-4 h-4 mr-1" />
-                      RESET DRAFT
-                    </Button>
-                  </div>
+                  <Label className="block text-retro-charcoal font-bold mb-2">Sport</Label>
+                  <Input 
+                    value="NFL"
+                    className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
+                    disabled
+                  />
                 </div>
               </div>
             </CardContent>
@@ -402,12 +452,117 @@ export default function Admin() {
                 </Button>
                 
                 <Button
-                  onClick={() => handleQuickAction("manual")}
+                  onClick={handleManualDraftPick}
                   className="bg-gradient-to-br from-retro-yellow to-retro-orange text-retro-charcoal p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
                 >
                   <Edit className="w-6 h-6 mb-2 mx-auto block" />
                   MANUAL ENTRY
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Draft Settings */}
+          <Card className="bg-white rounded-2xl retro-border shadow-xl">
+            <CardContent className="p-6">
+              <h3 className="text-retro-purple text-xl font-bold mb-4 retro-font">
+                <Target className="inline mr-2" />
+                DRAFT SETTINGS
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Draft Style */}
+                <div>
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Draft Style
+                  </Label>
+                  <Select value={draftStyle} onValueChange={setDraftStyle}>
+                    <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
+                      <SelectValue placeholder="Select draft style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="snake">Snake Draft</SelectItem>
+                      <SelectItem value="straight">Straight Draft</SelectItem>
+                      <SelectItem value="three-round">3 Round Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Teams Per Player */}
+                <div>
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Teams Per Player
+                  </Label>
+                  <Select value={teamsPerPlayer.toString()} onValueChange={(value) => setTeamsPerPlayer(Number(value))}>
+                    <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 Teams</SelectItem>
+                      <SelectItem value="3">3 Teams</SelectItem>
+                      <SelectItem value="4">4 Teams</SelectItem>
+                      <SelectItem value="5">5 Teams</SelectItem>
+                      <SelectItem value="6">6 Teams</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Draft Date/Time */}
+                <div>
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Draft Date/Time Start
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={draftDateTime}
+                    onChange={(e) => setDraftDateTime(e.target.value)}
+                    className="w-full border-2 border-retro-pink focus:border-retro-purple"
+                  />
+                </div>
+
+                {/* Draft Status */}
+                <div>
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Draft Status
+                  </Label>
+                  <Select value={draftStatus} onValueChange={setDraftStatus}>
+                    <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Draft Actions */}
+                <div className="border-t border-retro-teal pt-4 space-y-3">
+                  <Button
+                    onClick={() => undoLastPickMutation.mutate()}
+                    disabled={undoLastPickMutation.isPending}
+                    variant="outline"
+                    className="w-full border-retro-orange text-retro-orange hover:bg-retro-orange hover:text-white font-bold py-2 rounded-lg retro-font"
+                  >
+                    <Undo2 className="w-4 h-4 mr-2" />
+                    {undoLastPickMutation.isPending ? "UNDOING..." : "UNDO LAST PICK"}
+                  </Button>
+                  
+                  <p className="text-xs text-retro-charcoal/70 text-center">
+                    Last pick: Player 3 selected Detroit Lions (Round 2, Pick 16)
+                  </p>
+
+                  <Button
+                    onClick={() => resetDraftMutation.mutate()}
+                    disabled={resetDraftMutation.isPending}
+                    variant="destructive"
+                    className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg retro-font"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    {resetDraftMutation.isPending ? "RESETTING..." : "RESET DRAFT"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -520,6 +675,74 @@ export default function Admin() {
             <Button
               variant="outline"
               onClick={() => setShowPrivilegeDialog(false)}
+              className="px-6 py-2 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Draft Dialog */}
+      <Dialog open={showManualDraftDialog} onOpenChange={setShowManualDraftDialog}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md" aria-describedby="manual-draft-description">
+          <DialogHeader>
+            <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
+              Manual Draft Pick
+            </DialogTitle>
+          </DialogHeader>
+          <div id="manual-draft-description" className="sr-only">
+            Dialog to make a manual draft selection for a player
+          </div>
+          
+          <div className="my-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-retro-yellow rounded-full flex items-center justify-center text-retro-charcoal font-bold text-xl mx-auto mb-3">
+                3
+              </div>
+              <h3 className="text-retro-charcoal text-lg font-bold retro-font">
+                Player 3 (Sarah D) is selecting...
+              </h3>
+              <p className="text-retro-charcoal/70 text-sm">
+                Round 2, Pick 14
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                  Available Teams
+                </Label>
+                <Select>
+                  <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
+                    <SelectValue placeholder="Select team for player..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ATL">Atlanta Falcons</SelectItem>
+                    <SelectItem value="CAR">Carolina Panthers</SelectItem>
+                    <SelectItem value="CHI">Chicago Bears</SelectItem>
+                    <SelectItem value="JAX">Jacksonville Jaguars</SelectItem>
+                    <SelectItem value="LV">Las Vegas Raiders</SelectItem>
+                    <SelectItem value="NE">New England Patriots</SelectItem>
+                    <SelectItem value="NYG">New York Giants</SelectItem>
+                    <SelectItem value="TEN">Tennessee Titans</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                className="w-full bg-retro-teal hover:bg-retro-lime text-white font-bold py-3 rounded-lg retro-font"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                CONFIRM SELECTION
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter className="justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowManualDraftDialog(false)}
               className="px-6 py-2 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
             >
               Cancel

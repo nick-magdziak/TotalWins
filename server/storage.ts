@@ -52,6 +52,8 @@ export interface IStorage {
   addDraftPick(pick: InsertDraftPick): Promise<DraftPick>;
   getDraftStatus(leagueId: string): Promise<DraftStatus>;
   getUserDraftPicks(leagueId: string, userId: string): Promise<DraftPick[]>;
+  resetDraft(leagueId: string): Promise<void>;
+  undoLastDraftPick(leagueId: string): Promise<boolean>;
 
   // Games
   getGames(week?: number, season?: string): Promise<Game[]>;
@@ -482,6 +484,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(games.status, "completed"))
       .orderBy(desc(games.completedAt))
       .limit(limit);
+  }
+
+  async resetDraft(leagueId: string): Promise<void> {
+    await db.delete(draftPicks).where(eq(draftPicks.leagueId, leagueId));
+  }
+
+  async undoLastDraftPick(leagueId: string): Promise<boolean> {
+    const lastPick = await db
+      .select()
+      .from(draftPicks)
+      .where(eq(draftPicks.leagueId, leagueId))
+      .orderBy(desc(draftPicks.pickNumber))
+      .limit(1);
+
+    if (lastPick.length === 0) {
+      return false;
+    }
+
+    await db.delete(draftPicks).where(eq(draftPicks.id, lastPick[0].id));
+    return true;
   }
 
   async getRecentGamesWithOwners(leagueId: string, limit: number): Promise<any[]> {
