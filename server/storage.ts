@@ -28,6 +28,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  updateUserPrivileges(userId: string, isAdmin: boolean): Promise<void>;
 
   // Leagues
   getLeague(id: string): Promise<League | undefined>;
@@ -287,6 +288,13 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return user || undefined;
+  }
+
+  async updateUserPrivileges(userId: string, isAdmin: boolean): Promise<void> {
+    await db
+      .update(users)
+      .set({ isAdmin })
+      .where(eq(users.id, userId));
   }
 
   // League methods

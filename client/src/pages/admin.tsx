@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Settings, 
   Users, 
@@ -16,7 +17,8 @@ import {
   BarChart3,
   UserPlus,
   UserMinus,
-  RotateCcw
+  RotateCcw,
+  User
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -27,6 +29,8 @@ export default function Admin() {
   const currentUser = getCurrentUser();
   const { toast } = useToast();
   const [inviteEmail, setInviteEmail] = useState("");
+  const [selectedMember, setSelectedMember] = useState<LeagueMember | null>(null);
+  const [showPrivilegeDialog, setShowPrivilegeDialog] = useState(false);
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -43,6 +47,19 @@ export default function Admin() {
 
   const { data: leagueMembers } = useQuery<LeagueMember[]>({
     queryKey: ["/api/leagues", leagueId, "members"],
+  });
+
+  const { data: membersWithUserData } = useQuery({
+    queryKey: ["/api/leagues", leagueId, "members-with-users"],
+    queryFn: async () => {
+      const members = await fetch(`/api/leagues/${leagueId}/members`).then(r => r.json());
+      const usersPromises = members.map(async (member: LeagueMember) => {
+        const user = await fetch(`/api/users/${member.userId}`).then(r => r.json());
+        return { ...member, user };
+      });
+      return Promise.all(usersPromises);
+    },
+    enabled: !!leagueId
   });
 
   const syncScoresMutation = useMutation({
@@ -108,10 +125,49 @@ export default function Admin() {
     },
   });
 
+  const updatePrivilegesMutation = useMutation({
+    mutationFn: async ({ userId, isAdmin }: { userId: string; isAdmin: boolean }) => {
+      return apiRequest("POST", "/api/admin/update-privileges", { 
+        userId, 
+        isAdmin 
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Privileges updated!",
+        description: "Player privileges have been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      setShowPrivilegeDialog(false);
+      setSelectedMember(null);
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Failed to update privileges. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleInvitePlayer = (e: React.FormEvent) => {
     e.preventDefault();
     if (inviteEmail.trim()) {
       invitePlayerMutation.mutate(inviteEmail.trim());
+    }
+  };
+
+  const handlePlayerClick = (member: LeagueMember) => {
+    setSelectedMember(member);
+    setShowPrivilegeDialog(true);
+  };
+
+  const handlePrivilegeUpdate = (isAdmin: boolean) => {
+    if (selectedMember?.userId) {
+      updatePrivilegesMutation.mutate({ 
+        userId: selectedMember.userId, 
+        isAdmin 
+      });
     }
   };
 
@@ -223,18 +279,27 @@ export default function Admin() {
               </h3>
               
               <div className="space-y-3 mb-4">
-                {leagueMembers && leagueMembers.length > 0 ? (
-                  leagueMembers.slice(0, 3).map((member, index) => (
-                    <div key={member.id} className="bg-retro-cream p-3 rounded-lg flex justify-between items-center border border-retro-teal">
+                {membersWithUserData && membersWithUserData.length > 0 ? (
+                  membersWithUserData.slice(0, 8).map((memberData, index) => (
+                    <div 
+                      key={memberData.id} 
+                      onClick={() => handlePlayerClick(memberData)}
+                      className="bg-retro-cream p-3 rounded-lg flex justify-between items-center border border-retro-teal cursor-pointer hover:bg-retro-lime hover:scale-102 transform transition-all duration-200"
+                    >
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-retro-yellow rounded-full flex items-center justify-center text-retro-charcoal font-bold text-sm">
                           {index + 1}
                         </div>
                         <span className="font-bold text-retro-charcoal">
-                          Player {index + 1} {index === 0 && "(Admin)"}
+                          {memberData.user?.displayName || `Player ${index + 1}`}
                         </span>
                       </div>
-                      <Badge className="bg-retro-lime text-retro-charcoal">ACTIVE</Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={`${memberData.user?.isAdmin ? 'bg-retro-purple text-white' : 'bg-retro-lime text-retro-charcoal'}`}>
+                          {memberData.user?.isAdmin ? 'ADMIN' : 'PLAYER'}
+                        </Badge>
+                        <Badge className="bg-retro-teal text-white">ACTIVE</Badge>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -355,6 +420,65 @@ export default function Admin() {
           </Card>
         </div>
       </div>
+
+      {/* Privilege Management Dialog */}
+      <Dialog open={showPrivilegeDialog} onOpenChange={setShowPrivilegeDialog}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
+              Manage Player Privileges
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedMember && (
+            <div className="my-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-retro-yellow rounded-full flex items-center justify-center text-retro-charcoal font-bold text-xl mx-auto mb-3">
+                  P{membersWithUserData?.findIndex(m => m.id === selectedMember.id)! + 1}
+                </div>
+                <h3 className="text-retro-charcoal text-lg font-bold retro-font">
+                  {membersWithUserData?.find(m => m.id === selectedMember.id)?.user?.displayName || 
+                   `Player ${membersWithUserData?.findIndex(m => m.id === selectedMember.id)! + 1}`}
+                </h3>
+                <p className="text-retro-charcoal/70 text-sm">
+                  Set privileges for this player
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={() => handlePrivilegeUpdate(true)}
+                  disabled={updatePrivilegesMutation.isPending}
+                  className="w-full bg-retro-purple hover:bg-retro-pink text-white font-bold py-3 rounded-lg retro-font"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  SET AS ADMIN
+                </Button>
+                
+                <Button
+                  onClick={() => handlePrivilegeUpdate(false)}
+                  disabled={updatePrivilegesMutation.isPending}
+                  variant="outline"
+                  className="w-full border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white font-bold py-3 rounded-lg retro-font"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  SET AS PLAYER
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowPrivilegeDialog(false)}
+              className="px-6 py-2 border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

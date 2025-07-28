@@ -284,6 +284,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/update-privileges", async (req, res) => {
+    try {
+      const { userId, isAdmin } = req.body;
+      
+      if (!userId || typeof isAdmin !== 'boolean') {
+        return res.status(400).json({ error: "Invalid request data" });
+      }
+      
+      await storage.updateUserPrivileges(userId, isAdmin);
+      
+      res.json({ success: true, message: "Privileges updated successfully" });
+    } catch (error) {
+      console.error("Error updating privileges:", error);
+      res.status(500).json({ error: "Failed to update privileges" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // Set up periodic score updates (every 30 minutes during season)
