@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type League } from "@shared/schema";
 
 export default function Draft() {
-  const [selectedDivision, setSelectedDivision] = useState<string>("AFC East");
+
   const currentUser = getCurrentUser();
   const { toast } = useToast();
   
@@ -98,10 +98,7 @@ export default function Draft() {
 
   const { drafted, draftedBy } = getDraftedTeams();
 
-  const divisionTeams = teams?.filter(team => {
-    const divisionTeamIds = NFL_DIVISIONS[selectedDivision as keyof typeof NFL_DIVISIONS];
-    return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
-  }) || [];
+
 
   const isCurrentUserTurn = draftStatus?.currentPlayer === currentUser?.displayName;
 
@@ -249,36 +246,83 @@ export default function Draft() {
                 NFL TEAMS - 2024 SEASON
               </h3>
 
-              {/* Division Tabs */}
-              <div className="flex flex-wrap justify-center gap-2 mb-6">
-                {Object.keys(NFL_DIVISIONS).map((division) => (
-                  <Button
-                    key={division}
-                    variant={selectedDivision === division ? "default" : "outline"}
-                    className={`px-4 py-2 rounded-full font-bold text-sm transition-all duration-200 ${
-                      selectedDivision === division
-                        ? "bg-retro-pink text-white hover:bg-retro-purple"
-                        : "border-retro-pink text-retro-pink hover:bg-retro-pink hover:text-white"
-                    }`}
-                    onClick={() => setSelectedDivision(division)}
-                  >
-                    {division.toUpperCase()}
-                  </Button>
-                ))}
-              </div>
+              {/* Two Column Layout: AFC Left, NFC Right */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* AFC Column */}
+                <div>
+                  <h4 className="text-retro-purple text-lg font-bold mb-4 text-center retro-font">AFC</h4>
+                  {["AFC East", "AFC North", "AFC South", "AFC West"].map((division) => {
+                    const divisionTeams = teams?.filter(team => {
+                      const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
+                      return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                    }) || [];
+                    
+                    return (
+                      <div key={division} className="mb-6">
+                        <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("AFC ", "")}</h5>
+                        <div className="space-y-2">
+                          {divisionTeams.map((team) => (
+                            <button
+                              key={team.id}
+                              onClick={() => handleTeamSelect(team.id)}
+                              disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                              className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 ${
+                                drafted.has(team.id)
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-retro-cream hover:bg-retro-pink hover:text-white cursor-pointer"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="retro-font">{team.city} {team.name}</span>
+                                <span className="text-xs">
+                                  {drafted.has(team.id) ? "TAKEN" : `${team.wins}-${team.losses}`}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-              {/* Team Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {divisionTeams.map((team) => (
-                  <TeamCard
-                    key={team.id}
-                    team={team}
-                    isAvailable={!drafted.has(team.id)}
-                    takenBy={draftedBy[team.id]}
-                    onSelect={handleTeamSelect}
-                    disabled={!isCurrentUserTurn || draftPickMutation.isPending}
-                  />
-                ))}
+                {/* NFC Column */}
+                <div>
+                  <h4 className="text-retro-purple text-lg font-bold mb-4 text-center retro-font">NFC</h4>
+                  {["NFC East", "NFC North", "NFC South", "NFC West"].map((division) => {
+                    const divisionTeams = teams?.filter(team => {
+                      const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
+                      return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                    }) || [];
+                    
+                    return (
+                      <div key={division} className="mb-6">
+                        <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("NFC ", "")}</h5>
+                        <div className="space-y-2">
+                          {divisionTeams.map((team) => (
+                            <button
+                              key={team.id}
+                              onClick={() => handleTeamSelect(team.id)}
+                              disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                              className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 ${
+                                drafted.has(team.id)
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-retro-cream hover:bg-retro-pink hover:text-white cursor-pointer"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="retro-font">{team.city} {team.name}</span>
+                                <span className="text-xs">
+                                  {drafted.has(team.id) ? "TAKEN" : `${team.wins}-${team.losses}`}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>
