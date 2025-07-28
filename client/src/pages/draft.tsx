@@ -272,12 +272,7 @@ export default function Draft() {
                                   : "bg-retro-cream hover:bg-retro-pink hover:text-white cursor-pointer"
                               }`}
                             >
-                              <div className="flex justify-between items-center">
-                                <span className="retro-font">{team.city} {team.name}</span>
-                                <span className="text-xs">
-                                  {drafted.has(team.id) ? "TAKEN" : `${team.wins}-${team.losses}`}
-                                </span>
-                              </div>
+                              <span className="retro-font">{team.city} {team.name}</span>
                             </button>
                           ))}
                         </div>
@@ -310,12 +305,7 @@ export default function Draft() {
                                   : "bg-retro-cream hover:bg-retro-pink hover:text-white cursor-pointer"
                               }`}
                             >
-                              <div className="flex justify-between items-center">
-                                <span className="retro-font">{team.city} {team.name}</span>
-                                <span className="text-xs">
-                                  {drafted.has(team.id) ? "TAKEN" : `${team.wins}-${team.losses}`}
-                                </span>
-                              </div>
+                              <span className="retro-font">{team.city} {team.name}</span>
                             </button>
                           ))}
                         </div>
