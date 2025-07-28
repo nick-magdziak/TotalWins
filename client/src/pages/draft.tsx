@@ -362,9 +362,6 @@ export default function Draft() {
             <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
               Confirm Your Draft Pick
             </DialogTitle>
-            <DialogDescription className="text-center text-retro-charcoal">
-              Are you sure you want to draft this team? This action cannot be undone.
-            </DialogDescription>
           </DialogHeader>
           
           {selectedTeamForDraft && (
@@ -376,11 +373,8 @@ export default function Draft() {
                   color: NFL_TEAM_COLORS[selectedTeamForDraft.abbreviation as keyof typeof NFL_TEAM_COLORS]?.font || '#374151'
                 }}
               >
-                <div className="text-2xl font-bold retro-font mb-2">
+                <div className="text-2xl font-bold retro-font">
                   {selectedTeamForDraft.city} {selectedTeamForDraft.name}
-                </div>
-                <div className="text-sm opacity-75">
-                  {selectedTeamForDraft.division} • {selectedTeamForDraft.wins}-{selectedTeamForDraft.losses}
                 </div>
               </div>
             </div>
