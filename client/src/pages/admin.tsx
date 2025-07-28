@@ -232,9 +232,10 @@ export default function Admin() {
   };
 
   const handleDraftOrder = () => {
-    // Initialize draft order with current league members
+    // Initialize draft order with current league members sorted by draft position
     if (membersWithUserData) {
-      const currentOrder = membersWithUserData.map(member => member.userId);
+      const sortedMembers = [...membersWithUserData].sort((a, b) => a.draftPosition - b.draftPosition);
+      const currentOrder = sortedMembers.map(member => member.userId);
       setDraftOrder(currentOrder);
     }
     setShowDraftOrderDialog(true);
@@ -246,6 +247,7 @@ export default function Admin() {
   };
 
   const moveDraftPosition = (from: number, to: number) => {
+    if (from === to) return;
     const newOrder = [...draftOrder];
     const [movedItem] = newOrder.splice(from, 1);
     newOrder.splice(to, 0, movedItem);
@@ -957,8 +959,13 @@ export default function Admin() {
           <div className="my-6">
             <div className="flex gap-3 mb-4">
               <Button
-                onClick={randomizeDraftOrder}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  randomizeDraftOrder();
+                }}
                 className="flex-1 bg-gradient-to-br from-retro-orange to-retro-pink text-white font-bold py-2 rounded-lg retro-font hover:scale-105 transform transition-all duration-200"
+                type="button"
               >
                 <Shuffle className="w-4 h-4 mr-2" />
                 RANDOMIZE ORDER
@@ -981,7 +988,7 @@ export default function Admin() {
                     
                     <div className="flex-1">
                       <div className="font-bold text-retro-charcoal">
-                        {userData?.displayName || `Player ${index + 1}`}
+                        {userData?.displayName || userData?.firstName || `Player ${index + 1}`}
                       </div>
                       <div className="text-xs text-retro-charcoal/70">
                         {userData?.email}
@@ -990,20 +997,30 @@ export default function Admin() {
 
                     <div className="flex gap-1">
                       <Button
-                        onClick={() => moveDraftPosition(index, Math.max(0, index - 1))}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          moveDraftPosition(index, Math.max(0, index - 1));
+                        }}
                         disabled={index === 0}
                         size="sm"
                         variant="outline"
                         className="w-8 h-8 p-0 border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white disabled:opacity-30"
+                        type="button"
                       >
                         ↑
                       </Button>
                       <Button
-                        onClick={() => moveDraftPosition(index, Math.min(draftOrder.length - 1, index + 1))}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          moveDraftPosition(index, Math.min(draftOrder.length - 1, index + 1));
+                        }}
                         disabled={index === draftOrder.length - 1}
                         size="sm"
                         variant="outline"
                         className="w-8 h-8 p-0 border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white disabled:opacity-30"
+                        type="button"
                       >
                         ↓
                       </Button>
@@ -1025,7 +1042,9 @@ export default function Admin() {
               Cancel
             </Button>
             <Button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setShowDraftOrderDialog(false);
                 toast({
                   title: "Draft order saved!",
@@ -1033,6 +1052,7 @@ export default function Admin() {
                 });
               }}
               className="flex-1 bg-retro-teal hover:bg-retro-lime text-white font-bold retro-font"
+              type="button"
             >
               <Save className="w-4 h-4 mr-2" />
               SAVE ORDER
