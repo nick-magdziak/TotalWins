@@ -21,15 +21,25 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { type LeagueMember } from "@shared/schema";
+import { type LeagueMember, type League } from "@shared/schema";
 
 export default function Admin() {
   const currentUser = getCurrentUser();
   const { toast } = useToast();
   const [inviteEmail, setInviteEmail] = useState("");
   
-  // For demo purposes, using a hardcoded league ID
-  const leagueId = "demo-league-1";
+  // Get league ID from URL params or default to first league
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLeagueId = urlParams.get('league');
+  
+  const { data: userLeagues } = useQuery<League[]>({
+    queryKey: ["/api/users", currentUser?.id, "leagues"],
+    enabled: !!currentUser?.id,
+  });
+
+  // Determine current league
+  const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
+  const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   const { data: leagueMembers } = useQuery<LeagueMember[]>({
     queryKey: ["/api/leagues", leagueId, "members"],
@@ -147,12 +157,14 @@ export default function Admin() {
     <>
       {/* Hero Section */}
       <section className="text-center mb-12">
-        <div className="bg-gradient-to-r from-retro-orange to-retro-pink p-8 rounded-3xl retro-border">
-          <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
-            <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
-              LEAGUE ADMIN
+        <div className="bg-gradient-to-r from-retro-teal to-retro-purple p-8 rounded-3xl retro-border">
+          <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
+            <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
+              {currentLeague?.name || "TOTAL WINS"}
             </h2>
-            <p className="text-white text-xl md:text-2xl font-bold">MANAGE YOUR CHAMPIONSHIP LEAGUE</p>
+            <p className="text-white text-sm sm:text-base md:text-lg font-bold">
+              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2024-25"} • ADMIN
+            </p>
           </div>
         </div>
       </section>
