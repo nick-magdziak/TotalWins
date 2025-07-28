@@ -159,9 +159,9 @@ export class DatabaseStorage implements IStorage {
           season: "2024-25",
           sport: "NFL",
           teamsPerPlayer: 4,
-          maxPlayers: 6,
-          draftStatus: "completed",
-          seasonStatus: "active",
+          maxPlayers: 12,
+          draftStatus: "not_started",
+          seasonStatus: "draft",
           createdBy: "62f5c618-a04f-4b08-92e6-f7266c4ed7be",
         },
         {
@@ -197,7 +197,11 @@ export class DatabaseStorage implements IStorage {
         { id: "player-5", email: "lisa@demo.com", password: "demo", firstName: "Lisa", lastName: "Brown", displayName: "Lisa B" },
         { id: "player-6", email: "james@demo.com", password: "demo", firstName: "James", lastName: "Miller", displayName: "James M" },
         { id: "player-7", email: "amy@demo.com", password: "demo", firstName: "Amy", lastName: "Garcia", displayName: "Amy G" },
-        { id: "player-8", email: "steve@demo.com", password: "demo", firstName: "Steve", lastName: "Rodriguez", displayName: "Steve R" }
+        { id: "player-8", email: "steve@demo.com", password: "demo", firstName: "Steve", lastName: "Rodriguez", displayName: "Steve R" },
+        { id: "player-9", email: "rachel@demo.com", password: "demo", firstName: "Rachel", lastName: "Johnson", displayName: "Rachel J" },
+        { id: "player-10", email: "david@demo.com", password: "demo", firstName: "David", lastName: "Brown", displayName: "David B" },
+        { id: "player-11", email: "jessica@demo.com", password: "demo", firstName: "Jessica", lastName: "Taylor", displayName: "Jessica T" },
+        { id: "player-12", email: "kevin@demo.com", password: "demo", firstName: "Kevin", lastName: "Anderson", displayName: "Kevin A" }
       ];
 
       await db.insert(users).values(additionalPlayers);
@@ -211,6 +215,19 @@ export class DatabaseStorage implements IStorage {
       }));
 
       await db.insert(leagueMembers).values(additionalMemberships);
+
+      // Add all players to demo-league-2 for testing draft order
+      const allPlayersForLeague2 = [
+        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", draftPosition: 1, totalWins: 0 },
+        ...additionalPlayers.map((player, index) => ({
+          leagueId: "demo-league-2",
+          userId: player.id,
+          draftPosition: index + 2,
+          totalWins: 0
+        }))
+      ];
+
+      await db.insert(leagueMembers).values(allPlayersForLeague2);
 
       // Add realistic draft picks for each player (4 teams each)
       const demoDraftPicks = [
