@@ -32,10 +32,11 @@ Font preference: RUSSO ONE font throughout entire application for bold, athletic
 ### Styling & Theme
 - **Design System**: Custom retro 90s theme with pink-to-purple gradient background and teal accents
 - **Background**: Beautiful pink (#ff1493) to purple (#8a2be2) to blue (#4169e1) gradient with subtle 8px checkerboard texture overlay
-- **Typography**: Custom retro fonts with neon glow effects
+- **Typography**: Custom retro fonts with neon glow effects using RUSSO ONE font family
 - **Layout**: Responsive design with mobile-first approach
 - **Components**: Reusable UI components from Shadcn/ui library
 - **App Name**: "TOTAL WINS" displayed in all caps throughout the application
+- **Fixed Header**: Permanent pink-to-teal gradient header that stays fixed while content scrolls behind it
 
 ## Key Components
 
