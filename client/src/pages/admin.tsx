@@ -774,8 +774,8 @@ export default function Admin() {
               <div className="space-y-4">
                 <div className="bg-white bg-opacity-10 p-4 rounded-lg">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm opacity-75">Games Processed</span>
-                    <span className="font-bold">272/272</span>
+                    <span className="text-sm opacity-75 retro-font">Games Processed</span>
+                    <span className="font-bold retro-font">272/272</span>
                   </div>
                   <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
                     <div className="bg-retro-lime h-2 rounded-full w-full"></div>
@@ -785,18 +785,18 @@ export default function Admin() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-retro-lime retro-font">8</div>
-                    <div className="text-sm opacity-75">Active Players</div>
+                    <div className="text-sm opacity-75 retro-font">Active Players</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-retro-pink retro-font">235</div>
-                    <div className="text-sm opacity-75">Total Wins</div>
+                    <div className="text-sm opacity-75 retro-font">Total Wins</div>
                   </div>
                 </div>
                 
                 <div className="border-t border-white border-opacity-20 pt-4">
                   <div className="text-center">
                     <div className="text-lg font-bold text-retro-yellow retro-font">Season Complete!</div>
-                    <div className="text-sm opacity-75">Championship decided: Winner with 40 points</div>
+                    <div className="text-sm opacity-75 retro-font">Championship decided: Winner with 40 points</div>
                   </div>
                 </div>
               </div>
