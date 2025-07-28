@@ -96,8 +96,8 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-3 sticky top-0 z-50">
+      {/* Fixed Header */}
+      <header className="bg-gradient-to-r from-retro-pink via-retro-purple to-retro-teal p-3 fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Volleyball className="text-retro-yellow text-2xl sm:text-3xl neon-glow" />
@@ -229,7 +229,7 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-20">
         {children}
       </main>
 
