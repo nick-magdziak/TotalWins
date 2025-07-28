@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { UserCog, Volleyball, Save, ChevronDown } from "lucide-react";
+import { UserCog, Save, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -72,15 +72,7 @@ export default function Profile() {
     );
   }
 
-  // Mock data for user's teams and stats
-  const userTeams = [
-    { id: "BAL", name: "Ravens", city: "Baltimore", wins: 12 },
-    { id: "MIA", name: "Dolphins", city: "Miami", wins: 8 },
-    { id: "IND", name: "Colts", city: "Indianapolis", wins: 8 },
-    { id: "WAS", name: "Commanders", city: "Washington", wins: 12 },
-  ];
-  
-  const totalWins = userTeams.reduce((sum, team) => sum + team.wins, 0);
+
 
   return (
     <>
@@ -116,7 +108,7 @@ export default function Profile() {
                 </div>
                 <div className="bg-retro-cream p-3 rounded-lg">
                   <div className="text-sm text-retro-charcoal opacity-75">Total Wins</div>
-                  <div className="text-2xl font-bold text-retro-pink retro-font">{totalWins}</div>
+                  <div className="text-2xl font-bold text-retro-pink retro-font">40</div>
                 </div>
                 <div className="bg-retro-cream p-3 rounded-lg">
                   <div className="text-sm text-retro-charcoal opacity-75">Leagues Joined</div>
@@ -230,35 +222,7 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* My Teams */}
-          <Card className="bg-gradient-to-br from-retro-teal to-retro-lime rounded-2xl text-white shadow-xl">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-bold mb-4 retro-font">
-                <Volleyball className="inline mr-2" />
-                MY CHAMPIONSHIP ROSTER
-              </h3>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {userTeams.map((team) => (
-                  <div key={team.id} className="bg-white bg-opacity-20 p-4 rounded-xl text-center">
-                    <div className="text-2xl mb-2">🏈</div>
-                    <div className="font-bold retro-font">{team.city.toUpperCase()}</div>
-                    <div className="text-sm opacity-75">{team.name}</div>
-                    <div className="text-sm mt-2">
-                      <Badge className="bg-retro-charcoal text-white">
-                        {team.wins} wins
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 text-center">
-                <div className="text-3xl font-bold retro-font">TOTAL: {totalWins} WINS</div>
-                <div className="text-sm opacity-75">Championship Performance</div>
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
       </div>
     </>
