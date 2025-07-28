@@ -1,25 +1,38 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { UserCog, Volleyball, Save } from "lucide-react";
+import { UserCog, Volleyball, Save, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { type League } from "@shared/schema";
 
 export default function Profile() {
   const currentUser = getCurrentUser();
   const { toast } = useToast();
+  const [currentLeagueId, setCurrentLeagueId] = useState<string>("demo-league-1");
   
   const [formData, setFormData] = useState({
     displayName: currentUser?.displayName || "",
     email: currentUser?.email || "",
     notifications: currentUser?.notifications ?? true,
   });
+
+  // Fetch user's leagues
+  const { data: userLeagues } = useQuery<League[]>({
+    queryKey: ["/api/users", currentUser?.id, "leagues"],
+    enabled: !!currentUser?.id,
+  });
+
+  // Get current league info
+  const currentLeague = userLeagues?.find(league => league.id === currentLeagueId) || 
+                       userLeagues?.[0]; // Fallback to first league
 
   const updateProfileMutation = useMutation({
     mutationFn: async (updates: Partial<typeof formData>) => {
@@ -76,9 +89,9 @@ export default function Profile() {
         <div className="bg-gradient-to-r from-retro-lime to-retro-teal p-8 rounded-3xl retro-border">
           <div className="bg-retro-charcoal rounded-2xl p-6 bg-opacity-80">
             <h2 className="text-retro-yellow text-4xl md:text-6xl font-bold mb-4 neon-glow retro-font">
-              PLAYER PROFILE
+              {currentLeague?.name?.toUpperCase() || "SUNDAY SQUAD"}
             </h2>
-            <p className="text-white text-xl md:text-2xl font-bold">MANAGE YOUR LEAGUE EXPERIENCE</p>
+            <p className="text-white text-xl md:text-2xl font-bold">PROFILE SETTINGS</p>
           </div>
         </div>
       </section>
@@ -107,8 +120,43 @@ export default function Profile() {
                 </div>
                 <div className="bg-retro-cream p-3 rounded-lg">
                   <div className="text-sm text-retro-charcoal opacity-75">Leagues Joined</div>
-                  <div className="text-2xl font-bold text-retro-teal retro-font">1</div>
+                  <div className="text-2xl font-bold text-retro-teal retro-font">{userLeagues?.length || 0}</div>
                 </div>
+                
+                {/* League Selector */}
+                {userLeagues && userLeagues.length > 1 && (
+                  <div className="bg-retro-cream p-3 rounded-lg">
+                    <div className="text-sm text-retro-charcoal opacity-75 mb-2">Current League</div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full border-retro-purple text-retro-purple hover:bg-retro-purple hover:text-white font-bold py-2 rounded-lg retro-font">
+                          {currentLeague?.name || "Select League"}
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="w-full bg-white border-2 border-retro-purple">
+                        {userLeagues.map((league) => (
+                          <DropdownMenuItem
+                            key={league.id}
+                            onClick={() => setCurrentLeagueId(league.id)}
+                            className={`p-3 cursor-pointer hover:bg-retro-cream ${
+                              league.id === currentLeagueId ? "bg-retro-lime/20" : ""
+                            }`}
+                          >
+                            <div>
+                              <div className="font-bold text-retro-charcoal retro-font">
+                                {league.name}
+                              </div>
+                              <div className="text-sm text-retro-charcoal/70">
+                                {league.sport} • {league.season}
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
