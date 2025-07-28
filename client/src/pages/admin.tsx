@@ -977,6 +977,8 @@ export default function Admin() {
                 const memberData = membersWithUserData?.find(m => m.userId === userId);
                 const userData = memberData?.userData;
                 
+                console.log('Draft Order Debug:', { userId, memberData, userData });
+                
                 return (
                   <div
                     key={userId}
