@@ -196,7 +196,7 @@ export default function Draft() {
                 RECENT PICKS
               </h3>
               
-              <div className="h-125 overflow-y-auto space-y-2 bg-black bg-opacity-20 rounded-lg p-2">
+              <div className="h-96 overflow-y-auto space-y-2 bg-black bg-opacity-20 rounded-lg p-2">
                 {picksLoading ? (
                   <div className="text-center py-8">
                     <p className="text-white text-lg font-bold">Loading picks...</p>
