@@ -23,7 +23,9 @@ import {
   Calendar,
   Target,
   Undo2,
-  CheckCircle
+  CheckCircle,
+  Pause,
+  Play
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,7 +42,7 @@ export default function Admin() {
   const [draftStyle, setDraftStyle] = useState("snake");
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
-  const [draftStatus, setDraftStatus] = useState("pending");
+  const [draftStatus, setDraftStatus] = useState("not_started");
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -523,8 +525,9 @@ export default function Admin() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="not_started">Not Started</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="paused">Paused</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
@@ -546,13 +549,43 @@ export default function Admin() {
                     Last pick: Player 3 selected Detroit Lions (Round 2, Pick 16)
                   </p>
 
-                  <Button
-                    onClick={handleManualDraftPick}
-                    className="w-full bg-gradient-to-br from-retro-yellow to-retro-orange text-retro-charcoal font-bold py-2 rounded-lg retro-font hover:scale-105 transform transition-all duration-200"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    MANUAL ENTRY
-                  </Button>
+                  {/* Draft Control Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {draftStatus === "active" ? (
+                      <Button
+                        onClick={() => setDraftStatus("paused")}
+                        variant="outline"
+                        className="border-retro-orange text-retro-orange hover:bg-retro-orange hover:text-white font-bold py-2 rounded-lg retro-font"
+                      >
+                        <Pause className="w-4 h-4 mr-2" />
+                        PAUSE DRAFT
+                      </Button>
+                    ) : draftStatus === "paused" ? (
+                      <Button
+                        onClick={() => setDraftStatus("active")}
+                        className="bg-retro-teal hover:bg-retro-lime text-white font-bold py-2 rounded-lg retro-font"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        RESUME DRAFT
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => setDraftStatus("active")}
+                        className="bg-retro-teal hover:bg-retro-lime text-white font-bold py-2 rounded-lg retro-font"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        START DRAFT
+                      </Button>
+                    )}
+                    
+                    <Button
+                      onClick={handleManualDraftPick}
+                      className="bg-gradient-to-br from-retro-yellow to-retro-orange text-retro-charcoal font-bold py-2 rounded-lg retro-font hover:scale-105 transform transition-all duration-200"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      MANUAL ENTRY
+                    </Button>
+                  </div>
 
                   <Button
                     onClick={() => resetDraftMutation.mutate()}
