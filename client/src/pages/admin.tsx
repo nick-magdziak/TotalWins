@@ -26,7 +26,9 @@ import {
   CheckCircle,
   Pause,
   Play,
-  Zap as Nuclear
+  Zap as Nuclear,
+  Save,
+  X
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -45,6 +47,8 @@ export default function Admin() {
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
   const [draftStatus, setDraftStatus] = useState("not_started");
+  const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
+  const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -330,12 +334,69 @@ export default function Admin() {
               
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-retro-charcoal font-bold mb-2">League Name</Label>
+                  <Label className="block text-retro-charcoal font-bold mb-2">League ID</Label>
                   <Input 
-                    value="2024 NFL Wins Pool Championship"
-                    className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
+                    value={`#${String(Math.abs(leagueId.split('').reduce((a,b) => (((a << 5) - a) + b.charCodeAt(0))|0, 0))).padStart(7, '0')}`}
+                    className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none bg-gray-50 font-mono"
                     disabled
+                    readOnly
                   />
+                </div>
+
+                <div>
+                  <Label className="block text-retro-charcoal font-bold mb-2">League Name</Label>
+                  <div className="flex gap-2">
+                    {isEditingLeagueName ? (
+                      <>
+                        <Input 
+                          value={leagueName}
+                          onChange={(e) => setLeagueName(e.target.value)}
+                          className="flex-1 p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              setIsEditingLeagueName(false);
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <Button
+                          onClick={() => setIsEditingLeagueName(false)}
+                          size="sm"
+                          className="bg-retro-teal hover:bg-retro-lime text-white px-3"
+                        >
+                          <Save className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setLeagueName("2024 NFL Wins Pool Championship");
+                            setIsEditingLeagueName(false);
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="border-retro-charcoal text-retro-charcoal px-3"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Input 
+                          value={leagueName}
+                          className="flex-1 p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none bg-gray-50"
+                          disabled
+                          readOnly
+                        />
+                        <Button
+                          onClick={() => setIsEditingLeagueName(true)}
+                          size="sm"
+                          variant="outline"
+                          className="border-retro-pink text-retro-pink hover:bg-retro-pink hover:text-white px-3"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
