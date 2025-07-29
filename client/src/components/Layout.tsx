@@ -7,7 +7,7 @@ import { getCurrentUser, isAdmin, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
-import totalWinsLogo from "@assets/TotalWinsLogo - CleanOne_1753757133701.jpeg";
+import totalWinsLogo from "@assets/TotalWinsTransparent_1753758803872.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -107,12 +107,7 @@ export default function Layout({ children }: LayoutProps) {
             <img 
               src={totalWinsLogo} 
               alt="Total Wins Logo" 
-              className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-              style={{
-                mixBlendMode: 'screen',
-                filter: 'contrast(1.5) brightness(1.3) saturate(1.2) drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-                background: 'transparent'
-              }}
+              className="w-8 h-8 sm:w-10 sm:h-10 object-contain filter drop-shadow-lg"
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
