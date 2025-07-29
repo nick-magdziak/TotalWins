@@ -172,10 +172,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Draft
   app.get("/api/leagues/:leagueId/draft/picks", async (req, res) => {
     const picks = await storage.getDraftPicks(req.params.leagueId);
+    const league = await storage.getLeague(req.params.leagueId);
+    
     const picksWithDetails = await Promise.all(
       picks.map(async (pick) => {
         const user = await storage.getUser(pick.userId!);
-        const team = await storage.getNFLTeam(pick.teamId!);
+        let team;
+        
+        // Get team based on league sport
+        switch (league?.sport) {
+          case 'MLB':
+            team = await storage.getMLBTeam(pick.teamId!);
+            break;
+          case 'NBA':
+            team = await storage.getNBATeam(pick.teamId!);
+            break;
+          default:
+            team = await storage.getNFLTeam(pick.teamId!);
+            break;
+        }
+        
         return {
           ...pick,
           user: user ? { ...user, password: undefined } : null,
@@ -207,9 +223,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/leagues/:leagueId/users/:userId/picks", async (req, res) => {
     const picks = await storage.getUserDraftPicks(req.params.leagueId, req.params.userId);
+    const league = await storage.getLeague(req.params.leagueId);
+    
     const picksWithTeams = await Promise.all(
       picks.map(async (pick) => {
-        const team = await storage.getNFLTeam(pick.teamId!);
+        let team;
+        
+        // Get team based on league sport
+        switch (league?.sport) {
+          case 'MLB':
+            team = await storage.getMLBTeam(pick.teamId!);
+            break;
+          case 'NBA':
+            team = await storage.getNBATeam(pick.teamId!);
+            break;
+          default:
+            team = await storage.getNFLTeam(pick.teamId!);
+            break;
+        }
+        
         return { ...pick, team };
       })
     );

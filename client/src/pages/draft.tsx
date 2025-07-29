@@ -6,15 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Users, ListOrdered, Volleyball } from "lucide-react";
 import TeamCard from "@/components/TeamCard";
-import { type NFLTeam, type DraftPick, type DraftStatus } from "@shared/schema";
-import { NFL_DIVISIONS, NFL_TEAM_COLORS } from "@/lib/constants";
+import { type NFLTeam, type MLBTeam, type NBATeam, type DraftPick, type DraftStatus } from "@shared/schema";
+import { NFL_DIVISIONS, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { type League } from "@shared/schema";
 
 export default function Draft() {
-  const [selectedTeamForDraft, setSelectedTeamForDraft] = useState<NFLTeam | null>(null);
+  const [selectedTeamForDraft, setSelectedTeamForDraft] = useState<NFLTeam | MLBTeam | NBATeam | null>(null);
   const [showDraftConfirmation, setShowDraftConfirmation] = useState(false);
 
   const currentUser = getCurrentUser();
@@ -34,7 +34,7 @@ export default function Draft() {
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   // Get teams based on current league's sport
-  const { data: teams } = useQuery<NFLTeam[]>({
+  const { data: teams } = useQuery<(NFLTeam | MLBTeam | NBATeam)[]>({
     queryKey: [`/api/${currentLeague?.sport?.toLowerCase() || 'nfl'}/teams`],
     enabled: !!currentLeague?.sport,
   });
