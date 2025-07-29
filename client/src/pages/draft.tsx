@@ -231,7 +231,18 @@ export default function Draft() {
                       // Use embedded team data from the API response
                       const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
                       const user = (pick as any).user;
-                      const teamColors = team?.abbreviation ? NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS] : null;
+                      const getTeamColors = () => {
+                        switch (currentLeague?.sport) {
+                          case 'MLB':
+                            return MLB_TEAM_COLORS;
+                          case 'NBA':
+                            return NBA_TEAM_COLORS;
+                          default:
+                            return NFL_TEAM_COLORS;
+                        }
+                      };
+                      const teamColorsMap = getTeamColors();
+                      const teamColors = team?.abbreviation ? teamColorsMap[team.abbreviation as keyof typeof teamColorsMap] : null;
                       return (
                         <div key={pick.id} className="p-3 rounded-lg border-2 border-retro-teal shadow-lg"
                              style={{ 
@@ -272,87 +283,130 @@ export default function Draft() {
             <CardContent className="p-6">
               <h3 className="text-retro-purple text-2xl font-bold mb-6 text-center retro-font">
                 <Volleyball className="inline mr-2" />
-                NFL TEAMS - 2024 SEASON
+                {currentLeague?.sport || "NFL"} TEAMS - {currentLeague?.season || "2024"} SEASON
               </h3>
 
-              {/* Two Column Layout: AFC Left, NFC Right */}
-              <div className="grid grid-cols-2 gap-6">
-                {/* AFC Column */}
-                <div>
-                  <h4 className="text-retro-purple text-lg font-bold mb-4 text-center retro-font">AFC</h4>
-                  {["AFC East", "AFC North", "AFC South", "AFC West"].map((division) => {
-                    const divisionTeams = teams?.filter(team => {
-                      const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
-                      return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
-                    }) || [];
-                    
-                    return (
-                      <div key={division} className="mb-6">
-                        <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("AFC ", "")}</h5>
-                        <div className="space-y-2">
-                          {divisionTeams.map((team) => {
-                            const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
-                            return (
-                              <button
-                                key={team.id}
-                                onClick={() => handleTeamSelect(team.id)}
-                                disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
-                                className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
-                                  drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
-                                }`}
-                                style={{
-                                  backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
-                                  color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
-                                }}
-                              >
-                                <span className="retro-font">{team.city} {team.name}</span>
-                              </button>
-                            );
-                          })}
+              {currentLeague?.sport === 'NFL' ? (
+                // NFL Division Layout
+                <div className="grid grid-cols-2 gap-6">
+                  {/* AFC Column */}
+                  <div>
+                    <h4 className="text-retro-purple text-lg font-bold mb-4 text-center retro-font">AFC</h4>
+                    {["AFC East", "AFC North", "AFC South", "AFC West"].map((division) => {
+                      const divisionTeams = teams?.filter(team => {
+                        const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                      }) || [];
+                      
+                      return (
+                        <div key={division} className="mb-6">
+                          <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("AFC ", "")}</h5>
+                          <div className="space-y-2">
+                            {divisionTeams.map((team) => {
+                              const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
+                              return (
+                                <button
+                                  key={team.id}
+                                  onClick={() => handleTeamSelect(team.id)}
+                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
+                                    drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
+                                  }`}
+                                  style={{
+                                    backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
+                                    color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
+                                  }}
+                                >
+                                  <span className="retro-font">{team.city} {team.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
 
-                {/* NFC Column */}
-                <div>
-                  <h4 className="text-retro-purple text-lg font-bold mb-4 text-center retro-font">NFC</h4>
-                  {["NFC East", "NFC North", "NFC South", "NFC West"].map((division) => {
-                    const divisionTeams = teams?.filter(team => {
-                      const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
-                      return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
-                    }) || [];
+                  {/* NFC Column */}
+                  <div>
+                    <h4 className="text-retro-purple text-lg font-bold mb-4 text-center retro-font">NFC</h4>
+                    {["NFC East", "NFC North", "NFC South", "NFC West"].map((division) => {
+                      const divisionTeams = teams?.filter(team => {
+                        const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                      }) || [];
+                      
+                      return (
+                        <div key={division} className="mb-6">
+                          <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("NFC ", "")}</h5>
+                          <div className="space-y-2">
+                            {divisionTeams.map((team) => {
+                              const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
+                              return (
+                                <button
+                                  key={team.id}
+                                  onClick={() => handleTeamSelect(team.id)}
+                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
+                                    drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
+                                  }`}
+                                  style={{
+                                    backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
+                                    color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
+                                  }}
+                                >
+                                  <span className="retro-font">{team.city} {team.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                // MLB/NBA Simple Grid Layout
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {teams?.map((team) => {
+                    const getTeamColors = () => {
+                      switch (currentLeague?.sport) {
+                        case 'MLB':
+                          return MLB_TEAM_COLORS;
+                        case 'NBA':
+                          return NBA_TEAM_COLORS;
+                        default:
+                          return NFL_TEAM_COLORS;
+                      }
+                    };
+                    const teamColorsMap = getTeamColors();
+                    const teamColors = teamColorsMap[team.abbreviation as keyof typeof teamColorsMap];
                     
                     return (
-                      <div key={division} className="mb-6">
-                        <h5 className="text-retro-charcoal font-bold mb-2 text-sm">{division.replace("NFC ", "")}</h5>
-                        <div className="space-y-2">
-                          {divisionTeams.map((team) => {
-                            const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
-                            return (
-                              <button
-                                key={team.id}
-                                onClick={() => handleTeamSelect(team.id)}
-                                disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
-                                className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
-                                  drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
-                                }`}
-                                style={{
-                                  backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
-                                  color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
-                                }}
-                              >
-                                <span className="retro-font">{team.city} {team.name}</span>
-                              </button>
-                            );
-                          })}
+                      <button
+                        key={team.id}
+                        onClick={() => handleTeamSelect(team.id)}
+                        disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                        className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
+                          drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
+                        }`}
+                        style={{
+                          backgroundColor: drafted.has(team.id) ? '#d1d5db' : teamColors?.background || '#f3f4f6',
+                          color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
+                        }}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="retro-font">{team.city} {team.name}</span>
+                          <span className="text-xs opacity-75">{team.abbreviation}</span>
                         </div>
-                      </div>
+                        {team.division && (
+                          <div className="text-xs opacity-60 mt-1">{team.division}</div>
+                        )}
+                      </button>
                     );
                   })}
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -372,8 +426,34 @@ export default function Draft() {
               <div 
                 className="p-4 rounded-lg border-2 border-retro-teal shadow-lg text-center"
                 style={{
-                  backgroundColor: NFL_TEAM_COLORS[selectedTeamForDraft.abbreviation as keyof typeof NFL_TEAM_COLORS]?.background || '#f3f4f6',
-                  color: NFL_TEAM_COLORS[selectedTeamForDraft.abbreviation as keyof typeof NFL_TEAM_COLORS]?.font || '#374151'
+                  backgroundColor: (() => {
+                    const getTeamColors = () => {
+                      switch (currentLeague?.sport) {
+                        case 'MLB':
+                          return MLB_TEAM_COLORS;
+                        case 'NBA':
+                          return NBA_TEAM_COLORS;
+                        default:
+                          return NFL_TEAM_COLORS;
+                      }
+                    };
+                    const teamColorsMap = getTeamColors();
+                    return teamColorsMap[selectedTeamForDraft.abbreviation as keyof typeof teamColorsMap]?.background || '#f3f4f6';
+                  })(),
+                  color: (() => {
+                    const getTeamColors = () => {
+                      switch (currentLeague?.sport) {
+                        case 'MLB':
+                          return MLB_TEAM_COLORS;
+                        case 'NBA':
+                          return NBA_TEAM_COLORS;
+                        default:
+                          return NFL_TEAM_COLORS;
+                      }
+                    };
+                    const teamColorsMap = getTeamColors();
+                    return teamColorsMap[selectedTeamForDraft.abbreviation as keyof typeof teamColorsMap]?.font || '#374151';
+                  })()
                 }}
               >
                 <div className="text-2xl font-bold retro-font">
