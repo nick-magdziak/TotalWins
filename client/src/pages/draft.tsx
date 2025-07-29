@@ -109,11 +109,21 @@ export default function Draft() {
     const drafted = new Set<string>();
     const draftedBy: { [teamId: string]: string } = {};
     
-    if (draftPicks) {
+    if (draftPicks && teams) {
       draftPicks.forEach((pick) => {
-        drafted.add(pick.teamId!);
-        // You'd need to fetch user info to get display name
-        draftedBy[pick.teamId!] = "Player"; // Simplified for demo
+        // Find the team to get both ID and abbreviation
+        const team = teams.find(t => t.id === pick.teamId || t.abbreviation === pick.teamId);
+        if (team) {
+          // Add both team ID and abbreviation to the drafted set
+          drafted.add(team.id);
+          drafted.add(team.abbreviation);
+          draftedBy[team.id] = "Player"; // Simplified for demo
+          draftedBy[team.abbreviation] = "Player";
+        } else {
+          // Fallback to just the teamId if team not found
+          drafted.add(pick.teamId!);
+          draftedBy[pick.teamId!] = "Player";
+        }
       });
     }
     
