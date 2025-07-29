@@ -2,11 +2,12 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Trophy, Users, User, Settings, LogOut, Volleyball, ChevronDown } from "lucide-react";
+import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { getCurrentUser, isAdmin, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
+import totalWinsLogo from "@assets/TotalWinsLogo - TryTwo_1753756700339.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -103,7 +104,11 @@ export default function Layout({ children }: LayoutProps) {
       }}>
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <Volleyball className="text-retro-yellow text-2xl sm:text-3xl neon-glow" />
+            <img 
+              src={totalWinsLogo} 
+              alt="Total Wins Logo" 
+              className="w-8 h-8 sm:w-10 sm:h-10 object-contain filter drop-shadow-lg"
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-white hover:bg-white/10 p-2 rounded-lg">
