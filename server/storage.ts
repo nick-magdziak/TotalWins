@@ -166,28 +166,28 @@ export class DatabaseStorage implements IStorage {
         { id: "TEX", city: "Texas", name: "Rangers", abbreviation: "TEX", division: "AL West", league: "American League", wins: 78, losses: 84 },
 
         // National League East
-        { id: "ATL-MLB", city: "Atlanta", name: "Braves", abbreviation: "ATL", division: "NL East", conference: "National League", sport: "MLB", wins: 89, losses: 73, ties: 0 },
-        { id: "MIA-MLB", city: "Miami", name: "Marlins", abbreviation: "MIA", division: "NL East", conference: "National League", sport: "MLB", wins: 62, losses: 100, ties: 0 },
-        { id: "NYM", city: "New York", name: "Mets", abbreviation: "NYM", division: "NL East", conference: "National League", sport: "MLB", wins: 89, losses: 73, ties: 0 },
-        { id: "PHI-MLB", city: "Philadelphia", name: "Phillies", abbreviation: "PHI", division: "NL East", conference: "National League", sport: "MLB", wins: 95, losses: 67, ties: 0 },
-        { id: "WSH", city: "Washington", name: "Nationals", abbreviation: "WSH", division: "NL East", conference: "National League", sport: "MLB", wins: 71, losses: 91, ties: 0 },
+        { id: "ATL-MLB", city: "Atlanta", name: "Braves", abbreviation: "ATL", division: "NL East", league: "National League", wins: 89, losses: 73 },
+        { id: "MIA-MLB", city: "Miami", name: "Marlins", abbreviation: "MIA", division: "NL East", league: "National League", wins: 62, losses: 100 },
+        { id: "NYM", city: "New York", name: "Mets", abbreviation: "NYM", division: "NL East", league: "National League", wins: 89, losses: 73 },
+        { id: "PHI-MLB", city: "Philadelphia", name: "Phillies", abbreviation: "PHI", division: "NL East", league: "National League", wins: 95, losses: 67 },
+        { id: "WSH", city: "Washington", name: "Nationals", abbreviation: "WSH", division: "NL East", league: "National League", wins: 71, losses: 91 },
 
         // National League Central
-        { id: "CHC", city: "Chicago", name: "Cubs", abbreviation: "CHC", division: "NL Central", conference: "National League", sport: "MLB", wins: 83, losses: 79, ties: 0 },
-        { id: "CIN-MLB", city: "Cincinnati", name: "Reds", abbreviation: "CIN", division: "NL Central", conference: "National League", sport: "MLB", wins: 77, losses: 85, ties: 0 },
-        { id: "MIL", city: "Milwaukee", name: "Brewers", abbreviation: "MIL", division: "NL Central", conference: "National League", sport: "MLB", wins: 93, losses: 69, ties: 0 },
-        { id: "PIT-MLB", city: "Pittsburgh", name: "Pirates", abbreviation: "PIT", division: "NL Central", conference: "National League", sport: "MLB", wins: 76, losses: 86, ties: 0 },
-        { id: "STL", city: "St. Louis", name: "Cardinals", abbreviation: "STL", division: "NL Central", conference: "National League", sport: "MLB", wins: 83, losses: 79, ties: 0 },
+        { id: "CHC", city: "Chicago", name: "Cubs", abbreviation: "CHC", division: "NL Central", league: "National League", wins: 83, losses: 79 },
+        { id: "CIN-MLB", city: "Cincinnati", name: "Reds", abbreviation: "CIN", division: "NL Central", league: "National League", wins: 77, losses: 85 },
+        { id: "MIL", city: "Milwaukee", name: "Brewers", abbreviation: "MIL", division: "NL Central", league: "National League", wins: 93, losses: 69 },
+        { id: "PIT-MLB", city: "Pittsburgh", name: "Pirates", abbreviation: "PIT", division: "NL Central", league: "National League", wins: 76, losses: 86 },
+        { id: "STL", city: "St. Louis", name: "Cardinals", abbreviation: "STL", division: "NL Central", league: "National League", wins: 83, losses: 79 },
 
         // National League West
-        { id: "ARI-MLB", city: "Arizona", name: "Diamondbacks", abbreviation: "ARI", division: "NL West", conference: "National League", sport: "MLB", wins: 89, losses: 73, ties: 0 },
-        { id: "COL", city: "Colorado", name: "Rockies", abbreviation: "COL", division: "NL West", conference: "National League", sport: "MLB", wins: 61, losses: 101, ties: 0 },
-        { id: "LAD", city: "Los Angeles", name: "Dodgers", abbreviation: "LAD", division: "NL West", conference: "National League", sport: "MLB", wins: 98, losses: 64, ties: 0 },
-        { id: "SD", city: "San Diego", name: "Padres", abbreviation: "SD", division: "NL West", conference: "National League", sport: "MLB", wins: 93, losses: 69, ties: 0 },
-        { id: "SF-MLB", city: "San Francisco", name: "Giants", abbreviation: "SF", division: "NL West", conference: "National League", sport: "MLB", wins: 80, losses: 82, ties: 0 },
+        { id: "ARI-MLB", city: "Arizona", name: "Diamondbacks", abbreviation: "ARI", division: "NL West", league: "National League", wins: 89, losses: 73 },
+        { id: "COL", city: "Colorado", name: "Rockies", abbreviation: "COL", division: "NL West", league: "National League", wins: 61, losses: 101 },
+        { id: "LAD", city: "Los Angeles", name: "Dodgers", abbreviation: "LAD", division: "NL West", league: "National League", wins: 98, losses: 64 },
+        { id: "SD", city: "San Diego", name: "Padres", abbreviation: "SD", division: "NL West", league: "National League", wins: 93, losses: 69 },
+        { id: "SF-MLB", city: "San Francisco", name: "Giants", abbreviation: "SF", division: "NL West", league: "National League", wins: 80, losses: 82 },
       ];
 
-      await db.insert(nflTeams).values(mlbTeamsData);
+      await db.insert(mlbTeams).values(mlbTeamsData);
       console.log("MLB teams initialized");
     } catch (error) {
       console.error("Error initializing MLB teams:", error);
@@ -347,6 +347,19 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(leagueMembers).values(allPlayersForLeague2);
 
+      // Add all players to demo-league-3 (NBA)
+      const allPlayersForLeague3 = [
+        { leagueId: "demo-league-3", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", draftPosition: 1, totalWins: 0 },
+        ...additionalPlayers.slice(0, 7).map((player, index) => ({
+          leagueId: "demo-league-3",
+          userId: player.id,
+          draftPosition: index + 2,
+          totalWins: 0
+        }))
+      ];
+
+      await db.insert(leagueMembers).values(allPlayersForLeague3);
+
       // Add realistic draft picks for each player (4 teams each)
       const demoDraftPicks = [
         // Player 1 (main user) - High performing teams
@@ -395,7 +408,33 @@ export class DatabaseStorage implements IStorage {
         { leagueId: "demo-league-1", userId: "player-8", teamId: "DAL", sport: "NFL", pickNumber: 8, round: 1 },
         { leagueId: "demo-league-1", userId: "player-8", teamId: "NO", sport: "NFL", pickNumber: 9, round: 2 },
         { leagueId: "demo-league-1", userId: "player-8", teamId: "TEN", sport: "NFL", pickNumber: 24, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-8", teamId: "JAX", sport: "NFL", pickNumber: 25, round: 4 }
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "JAX", sport: "NFL", pickNumber: 25, round: 4 },
+
+        // MLB League (demo-league-2) - Sunday Squad draft picks
+        // Player 1 (main user) - Top MLB teams
+        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "LAD", sport: "MLB", pickNumber: 1, round: 1 },
+        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "PHI-MLB", sport: "MLB", pickNumber: 16, round: 2 },
+        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "NYY", sport: "MLB", pickNumber: 17, round: 3 },
+        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "ATL-MLB", sport: "MLB", pickNumber: 32, round: 4 },
+
+        // MLB Player 2 - Mike J
+        { leagueId: "demo-league-2", userId: "player-2", teamId: "MIL", sport: "MLB", pickNumber: 2, round: 1 },
+        { leagueId: "demo-league-2", userId: "player-2", teamId: "SD", sport: "MLB", pickNumber: 15, round: 2 },
+        { leagueId: "demo-league-2", userId: "player-2", teamId: "CLE-MLB", sport: "MLB", pickNumber: 18, round: 3 },
+        { leagueId: "demo-league-2", userId: "player-2", teamId: "HOU-MLB", sport: "MLB", pickNumber: 31, round: 4 },
+
+        // NBA League (demo-league-3) - Fantasy Friends draft picks  
+        // Player 1 (main user) - Top NBA teams
+        { leagueId: "demo-league-3", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "BOS-NBA", sport: "NBA", pickNumber: 1, round: 1 },
+        { leagueId: "demo-league-3", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "OKC", sport: "NBA", pickNumber: 16, round: 2 },
+        { leagueId: "demo-league-3", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "DEN-NBA", sport: "NBA", pickNumber: 17, round: 3 },
+        { leagueId: "demo-league-3", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "NYK", sport: "NBA", pickNumber: 32, round: 4 },
+
+        // NBA Player 2 - Mike J
+        { leagueId: "demo-league-3", userId: "player-2", teamId: "MIN-NBA", sport: "NBA", pickNumber: 2, round: 1 },
+        { leagueId: "demo-league-3", userId: "player-2", teamId: "LAC-NBA", sport: "NBA", pickNumber: 15, round: 2 },
+        { leagueId: "demo-league-3", userId: "player-2", teamId: "PHX", sport: "NBA", pickNumber: 18, round: 3 },
+        { leagueId: "demo-league-3", userId: "player-2", teamId: "NO", sport: "NBA", pickNumber: 31, round: 4 }
       ];
 
       await db.insert(draftPicks).values(demoDraftPicks);
@@ -487,14 +526,17 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(leagueMembers.userId, users.id))
       .where(eq(leagueMembers.leagueId, leagueId));
 
+    const league = await this.getLeague(leagueId);
+    if (!league) return [];
+
     const standings: PlayerStanding[] = [];
 
     for (const { member, user } of members) {
       const userPicks = await this.getUserDraftPicks(leagueId, user.id);
       const teams = await Promise.all(
-        userPicks.map(pick => this.getNFLTeam(pick.teamId!))
+        userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
       );
-      const validTeams = teams.filter(Boolean) as NFLTeam[];
+      const validTeams = teams.filter(Boolean) as (NFLTeam | MLBTeam | NBATeam)[];
       const totalWins = validTeams.reduce((sum, team) => sum + (team.wins || 0), 0);
 
       standings.push({
@@ -515,9 +557,17 @@ export class DatabaseStorage implements IStorage {
     return standings;
   }
 
-  // NFL team methods
+  // Multi-sport team methods
   async getAllNFLTeams(): Promise<NFLTeam[]> {
     return await db.select().from(nflTeams);
+  }
+
+  async getAllMLBTeams(): Promise<MLBTeam[]> {
+    return await db.select().from(mlbTeams);
+  }
+
+  async getAllNBATeams(): Promise<NBATeam[]> {
+    return await db.select().from(nbaTeams);
   }
 
   async getNFLTeam(id: string): Promise<NFLTeam | undefined> {
@@ -525,8 +575,39 @@ export class DatabaseStorage implements IStorage {
     return team || undefined;
   }
 
+  async getMLBTeam(id: string): Promise<MLBTeam | undefined> {
+    const [team] = await db.select().from(mlbTeams).where(eq(mlbTeams.id, id));
+    return team || undefined;
+  }
+
+  async getNBATeam(id: string): Promise<NBATeam | undefined> {
+    const [team] = await db.select().from(nbaTeams).where(eq(nbaTeams.id, id));
+    return team || undefined;
+  }
+
+  async getTeamBySport(id: string, sport: string): Promise<NFLTeam | MLBTeam | NBATeam | undefined> {
+    switch (sport) {
+      case 'NFL':
+        return await this.getNFLTeam(id);
+      case 'MLB':
+        return await this.getMLBTeam(id);
+      case 'NBA':
+        return await this.getNBATeam(id);
+      default:
+        return undefined;
+    }
+  }
+
   async updateTeamRecord(teamId: string, wins: number, losses: number, ties: number = 0): Promise<void> {
     await db.update(nflTeams).set({ wins, losses, ties }).where(eq(nflTeams.id, teamId));
+  }
+
+  async updateMLBTeamRecord(teamId: string, wins: number, losses: number): Promise<void> {
+    await db.update(mlbTeams).set({ wins, losses }).where(eq(mlbTeams.id, teamId));
+  }
+
+  async updateNBATeamRecord(teamId: string, wins: number, losses: number): Promise<void> {
+    await db.update(nbaTeams).set({ wins, losses }).where(eq(nbaTeams.id, teamId));
   }
 
   // Draft methods

@@ -39,6 +39,19 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Initialize ESPN API sports data service
+  try {
+    const { SportsDataService } = await import("./sportsDataService");
+    const { storage } = await import("./storage");
+    const sportsService = new SportsDataService(storage);
+    
+    // Start periodic updates for MLB data
+    sportsService.startPeriodicUpdates();
+    log("ESPN API sports data service initialized");
+  } catch (error) {
+    console.error("Failed to initialize sports data service:", error);
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";

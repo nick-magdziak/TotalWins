@@ -360,6 +360,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multi-sport team endpoints
+  app.get("/api/nfl/teams", async (req, res) => {
+    const teams = await storage.getAllNFLTeams();
+    res.json(teams);
+  });
+
+  app.get("/api/mlb/teams", async (req, res) => {
+    const teams = await storage.getAllMLBTeams();
+    res.json(teams);
+  });
+
+  app.get("/api/nba/teams", async (req, res) => {
+    const teams = await storage.getAllNBATeams();
+    res.json(teams);
+  });
+
+  // ESPN API integration endpoints
+  app.post("/api/admin/update-mlb-standings", async (req, res) => {
+    try {
+      const { SportsDataService } = await import("./sportsDataService");
+      const sportsService = new SportsDataService(storage);
+      const result = await sportsService.triggerMLBUpdate();
+      
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(500).json({ message: result.message });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update MLB standings" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // Set up periodic score updates (every 30 minutes during season)
