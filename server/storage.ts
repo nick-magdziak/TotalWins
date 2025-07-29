@@ -206,15 +206,15 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(users).values(additionalPlayers);
 
-      // Add only 7 additional players to Champions League (8 total including main user)
-      const championsLeagueMembers = additionalPlayers.slice(0, 7).map((player, index) => ({
+      // Add these players to the Champions League
+      const additionalMemberships = additionalPlayers.map((player, index) => ({
         leagueId: "demo-league-1",
         userId: player.id,
         draftPosition: index + 2,
         totalWins: 0
       }));
 
-      await db.insert(leagueMembers).values(championsLeagueMembers);
+      await db.insert(leagueMembers).values(additionalMemberships);
 
       // Add all players to demo-league-2 for testing draft order
       const allPlayersForLeague2 = [
@@ -229,7 +229,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(leagueMembers).values(allPlayersForLeague2);
 
-      // Add realistic draft picks for each player (4 teams each) - 8 players total
+      // Add realistic draft picks for each player (4 teams each)
       const demoDraftPicks = [
         // Player 1 (main user) - High performing teams
         { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "DET", pickNumber: 1, round: 1 },
