@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, TrendingUp } from "lucide-react";
 import StandingsTable from "@/components/StandingsTable";
 import { type Game, type League } from "@shared/schema";
-import { CURRENT_SEASON, NFL_TEAM_COLORS } from "@/lib/constants";
+import { CURRENT_SEASON, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
 
 export default function Standings() {
@@ -31,6 +31,64 @@ export default function Standings() {
   });
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
+  // Sport-specific content functions
+  const getGamePeriodLabel = () => {
+    switch(currentLeague?.sport) {
+      case 'NFL': return 'WEEK';
+      case 'MLB': return 'SERIES';
+      case 'NBA': return 'GAMES';
+      default: return 'WEEK';
+    }
+  };
+
+  const getTeamColors = () => {
+    switch(currentLeague?.sport) {
+      case 'MLB': return MLB_TEAM_COLORS;
+      case 'NBA': return NBA_TEAM_COLORS;
+      default: return NFL_TEAM_COLORS;
+    }
+  };
+
+  const getCurrentPeriodLabel = () => {
+    switch(currentLeague?.sport) {
+      case 'NFL': return 'WEEK 9 COMPLETE';
+      case 'MLB': return 'SEASON ACTIVE';
+      case 'NBA': return 'SEASON ACTIVE';
+      default: return 'WEEK 9 COMPLETE';
+    }
+  };
+
+  const getRecentResultsTitle = () => {
+    switch(currentLeague?.sport) {
+      case 'NFL': return 'WEEK 9 RESULTS';
+      case 'MLB': return 'RECENT GAMES';
+      case 'NBA': return 'RECENT GAMES';
+      default: return 'WEEK 9 RESULTS';
+    }
+  };
+
+  const getUpcomingTitle = () => {
+    switch(currentLeague?.sport) {
+      case 'NFL': return 'WEEK 10 PREVIEW';
+      case 'MLB': return 'UPCOMING GAMES';
+      case 'NBA': return 'UPCOMING GAMES';
+      default: return 'WEEK 10 PREVIEW';
+    }
+  };
+
+  const getByeWeekTeams = () => {
+    // Only NFL has bye weeks
+    if (currentLeague?.sport === 'NFL') {
+      return {
+        current: ['CIN', 'CLE', 'LV', 'NYG'],
+        next: ['CHI', 'DAL', 'DET', 'PHI'],
+        currentLabel: 'WEEK 9 BYES:',
+        nextLabel: 'WEEK 10 BYES:'
+      };
+    }
+    return null;
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -48,7 +106,7 @@ export default function Standings() {
                 LIVE
               </Badge>
               <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
-                WEEK 9 COMPLETE
+                {getCurrentPeriodLabel()}
               </Badge>
             </div>
           </div>
@@ -87,7 +145,7 @@ export default function Standings() {
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
               <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
-                WEEK 9 RESULTS
+                {getRecentResultsTitle()}
               </h4>
               <div className="space-y-2">
                 {recentGames && recentGames.length > 0 ? (
@@ -116,27 +174,29 @@ export default function Standings() {
                   </div>
                 )}
                 
-                {/* Bye Week Teams */}
-                <div className="mt-4 pt-3 border-t border-gray-200">
-                  <div className="text-xs font-bold text-retro-purple mb-2">WEEK 9 BYES:</div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {['CIN', 'CLE', 'LV', 'NYG'].map((team) => {
-                      const teamColors = NFL_TEAM_COLORS[team as keyof typeof NFL_TEAM_COLORS];
-                      return (
-                        <div 
-                          key={team} 
-                          className="p-2 rounded text-xs text-center font-bold"
-                          style={{
-                            backgroundColor: teamColors?.background || '#f3f4f6',
-                            color: teamColors?.font || '#374151'
-                          }}
-                        >
-                          {team} - BYE
-                        </div>
-                      );
-                    })}
+                {/* Bye Week Teams - NFL Only */}
+                {getByeWeekTeams() && (
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <div className="text-xs font-bold text-retro-purple mb-2">{getByeWeekTeams()!.currentLabel}</div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {getByeWeekTeams()!.current.map((team) => {
+                        const teamColors = getTeamColors()[team as keyof typeof NFL_TEAM_COLORS];
+                        return (
+                          <div 
+                            key={team} 
+                            className="p-2 rounded text-xs text-center font-bold"
+                            style={{
+                              backgroundColor: teamColors?.background || '#f3f4f6',
+                              color: teamColors?.font || '#374151'
+                            }}
+                          >
+                            {team} - BYE
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -145,7 +205,7 @@ export default function Standings() {
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
               <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
-                WEEK 10 PREVIEW
+                {getUpcomingTitle()}
               </h4>
               <div className="space-y-2">
                 {upcomingGames && upcomingGames.length > 0 ? (
@@ -180,17 +240,29 @@ export default function Standings() {
                   </div>
                 )}
                 
-                {/* Bye Week Teams */}
-                <div className="mt-4 pt-3 border-t border-gray-200">
-                  <div className="text-xs font-bold text-retro-purple mb-2">WEEK 10 BYES:</div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {['CHI', 'DAL', 'DET', 'PHI'].map((team) => (
-                      <div key={team} className="bg-gray-100 p-2 rounded text-xs text-center font-bold text-retro-charcoal">
-                        {team} - BYE
-                      </div>
-                    ))}
+                {/* Bye Week Teams - NFL Only */}
+                {getByeWeekTeams() && (
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <div className="text-xs font-bold text-retro-purple mb-2">{getByeWeekTeams()!.nextLabel}</div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {getByeWeekTeams()!.next.map((team) => {
+                        const teamColors = getTeamColors()[team as keyof typeof NFL_TEAM_COLORS];
+                        return (
+                          <div 
+                            key={team} 
+                            className="p-2 rounded text-xs text-center font-bold"
+                            style={{
+                              backgroundColor: teamColors?.background || '#f3f4f6',
+                              color: teamColors?.font || '#374151'
+                            }}
+                          >
+                            {team} - BYE
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
