@@ -41,6 +41,17 @@ export default function Layout({ children }: LayoutProps) {
     enabled: !!currentUser?.id,
   });
 
+  // Get league ID from URL params or use stored league
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLeagueId = urlParams.get('league');
+  
+  // Update currentLeagueId when URL changes
+  useEffect(() => {
+    if (urlLeagueId && urlLeagueId !== currentLeagueId) {
+      setCurrentLeagueId(urlLeagueId);
+    }
+  }, [urlLeagueId]);
+
   // Get current league info
   const currentLeague = userLeagues?.find(league => league.id === currentLeagueId) || 
                        userLeagues?.[0]; // Fallback to first league

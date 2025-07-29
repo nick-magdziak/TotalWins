@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { type PlayerStanding } from "@shared/schema";
-import { NFL_TEAM_COLORS } from "@/lib/constants";
+import { type PlayerStanding, type League } from "@shared/schema";
+import { NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
 
 interface StandingsTableProps {
   leagueId: string;
@@ -11,6 +11,22 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
   const { data: standings, isLoading } = useQuery<PlayerStanding[]>({
     queryKey: ["/api/leagues", leagueId, "standings"],
   });
+
+  const { data: league } = useQuery<League>({
+    queryKey: ["/api/leagues", leagueId],
+  });
+
+  // Get team colors based on sport
+  const getTeamColors = () => {
+    switch (league?.sport) {
+      case 'MLB':
+        return MLB_TEAM_COLORS;
+      case 'NBA':
+        return NBA_TEAM_COLORS;
+      default:
+        return NFL_TEAM_COLORS;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -79,7 +95,8 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                 <td className="px-2 py-3">
                   <div className="flex flex-col gap-1">
                     {standing.teams.map((team) => {
-                      const teamColors = NFL_TEAM_COLORS[team.abbreviation as keyof typeof NFL_TEAM_COLORS];
+                      const teamColorsMap = getTeamColors();
+                      const teamColors = teamColorsMap[team.abbreviation as keyof typeof teamColorsMap];
                       return (
                         <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
                           <Badge 
