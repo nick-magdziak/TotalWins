@@ -228,8 +228,10 @@ export default function Draft() {
                       Recent picks (scroll for more)
                     </div>
                     {[...draftPicks].reverse().map((pick, index) => {
-                      // Use embedded team data from the API response
-                      const team = (pick as any).team || teams?.find(t => t.id === pick.teamId);
+                      // Use embedded team data from the API response, or find by teamId or abbreviation
+                      const team = (pick as any).team || teams?.find(t => 
+                        t.id === pick.teamId || t.abbreviation === pick.teamId
+                      );
                       const user = (pick as any).user;
                       const getTeamColors = () => {
                         switch (currentLeague?.sport) {
