@@ -24,7 +24,7 @@ export const NBA_DIVISIONS = {
   "Southeast": ["ATL", "CHA", "MIA", "ORL", "WAS"],
   "Northwest": ["DEN", "MIN", "OKC", "POR", "UTA"],
   "Pacific": ["GSW", "LAC", "LAL", "PHX", "SAC"],
-  "Southwest": ["DAL", "HOU", "MEM", "NOP", "SAS"]
+  "Southwest": ["DAL", "HOU", "MEM", "NO", "SA"]
 } as const;
 
 export const TEAM_ICONS = {
@@ -131,7 +131,7 @@ export const NBA_TEAM_COLORS = {
   "MIA": { background: "#000000", font: "#98002E" },
   "MIL": { background: "#00471B", font: "#EEE1C6" },
   "MIN": { background: "#236192", font: "#9EA2A2" },
-  "NOP": { background: "#0C2340", font: "#85714D" },
+  "NO": { background: "#0C2340", font: "#85714D" },
   "NYK": { background: "#006BB6", font: "#F58426" },
   "OKC": { background: "#007AC1", font: "#EF3B24" },
   "ORL": { background: "#0077C0", font: "#000000" },
@@ -139,7 +139,7 @@ export const NBA_TEAM_COLORS = {
   "PHX": { background: "#1D1160", font: "#E56020" },
   "POR": { background: "#000000", font: "#E03A3E" },
   "SAC": { background: "#5A2D81", font: "#63727A" },
-  "SAS": { background: "#C4CED4", font: "#000000" },
+  "SA": { background: "#C4CED4", font: "#000000" },
   "TOR": { background: "#753BBD", font: "#CE1141" },
   "UTA": { background: "#00471B", font: "#F9A01B" },
   "WAS": { background: "#002B5C", font: "#E31837" }
