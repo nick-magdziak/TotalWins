@@ -49,11 +49,34 @@ export const nflTeams = pgTable("nfl_teams", {
   ties: integer("ties").default(0),
 });
 
+export const mlbTeams = pgTable("mlb_teams", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  city: text("city").notNull(),
+  abbreviation: text("abbreviation").notNull(),
+  division: text("division").notNull(),
+  league: text("league").notNull(), // AL or NL
+  wins: integer("wins").default(0),
+  losses: integer("losses").default(0),
+});
+
+export const nbaTeams = pgTable("nba_teams", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  city: text("city").notNull(),
+  abbreviation: text("abbreviation").notNull(),
+  division: text("division").notNull(),
+  conference: text("conference").notNull(),
+  wins: integer("wins").default(0),
+  losses: integer("losses").default(0),
+});
+
 export const draftPicks = pgTable("draft_picks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   leagueId: varchar("league_id").references(() => leagues.id),
   userId: varchar("user_id").references(() => users.id),
-  teamId: varchar("team_id").references(() => nflTeams.id),
+  teamId: varchar("team_id").notNull(), // Generic team reference based on sport
+  sport: text("sport").default("NFL"), // NFL, MLB, NBA
   pickNumber: integer("pick_number").notNull(),
   round: integer("round").notNull(),
   pickedAt: timestamp("picked_at").defaultNow(),
@@ -61,10 +84,11 @@ export const draftPicks = pgTable("draft_picks", {
 
 export const games = pgTable("games", {
   id: varchar("id").primaryKey(),
-  week: integer("week").notNull(),
+  sport: text("sport").default("NFL"), // NFL, MLB, NBA
+  week: integer("week"), // For NFL, null for MLB/NBA
   season: text("season").notNull(),
-  homeTeamId: varchar("home_team_id").references(() => nflTeams.id),
-  awayTeamId: varchar("away_team_id").references(() => nflTeams.id),
+  homeTeamId: varchar("home_team_id").notNull(),
+  awayTeamId: varchar("away_team_id").notNull(),
   homeScore: integer("home_score"),
   awayScore: integer("away_score"),
   status: text("status").notNull().default("scheduled"), // scheduled, in_progress, completed
@@ -105,6 +129,8 @@ export type InsertLeague = z.infer<typeof insertLeagueSchema>;
 export type LeagueMember = typeof leagueMembers.$inferSelect;
 export type InsertLeagueMember = z.infer<typeof insertLeagueMemberSchema>;
 export type NFLTeam = typeof nflTeams.$inferSelect;
+export type MLBTeam = typeof mlbTeams.$inferSelect;
+export type NBATeam = typeof nbaTeams.$inferSelect;
 export type DraftPick = typeof draftPicks.$inferSelect;
 export type InsertDraftPick = z.infer<typeof insertDraftPickSchema>;
 export type Game = typeof games.$inferSelect;

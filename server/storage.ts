@@ -8,6 +8,8 @@ import {
   type LeagueMember,
   type InsertLeagueMember,
   type NFLTeam,
+  type MLBTeam,
+  type NBATeam,
   type DraftPick,
   type InsertDraftPick,
   type Game,
@@ -18,6 +20,8 @@ import {
   leagues,
   leagueMembers,
   nflTeams,
+  mlbTeams,
+  nbaTeams,
   draftPicks,
   games,
 } from "@shared/schema";
@@ -65,6 +69,8 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   constructor() {
     this.initializeNFLTeams();
+    this.initializeMLBTeams();
+    this.initializeNBATeams();
     this.initializeDemoLeagues();
   }
 
@@ -132,6 +138,118 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  private async initializeMLBTeams() {
+    try {
+      const existingTeams = await db.select().from(mlbTeams).limit(1);
+      if (existingTeams.length > 0) return; // Teams already initialized
+
+      const mlbTeamsData = [
+        // American League East
+        { id: "BAL-MLB", city: "Baltimore", name: "Orioles", abbreviation: "BAL", division: "AL East", league: "American League", wins: 91, losses: 71 },
+        { id: "BOS", city: "Boston", name: "Red Sox", abbreviation: "BOS", division: "AL East", league: "American League", wins: 81, losses: 81 },
+        { id: "NYY", city: "New York", name: "Yankees", abbreviation: "NYY", division: "AL East", league: "American League", wins: 94, losses: 68 },
+        { id: "TB-MLB", city: "Tampa Bay", name: "Rays", abbreviation: "TB", division: "AL East", league: "American League", wins: 80, losses: 82 },
+        { id: "TOR", city: "Toronto", name: "Blue Jays", abbreviation: "TOR", division: "AL East", league: "American League", wins: 74, losses: 88 },
+
+        // American League Central
+        { id: "CWS", city: "Chicago", name: "White Sox", abbreviation: "CWS", division: "AL Central", league: "American League", wins: 41, losses: 121 },
+        { id: "CLE-MLB", city: "Cleveland", name: "Guardians", abbreviation: "CLE", division: "AL Central", league: "American League", wins: 92, losses: 69 },
+        { id: "DET-MLB", city: "Detroit", name: "Tigers", abbreviation: "DET", division: "AL Central", league: "American League", wins: 86, losses: 76 },
+        { id: "KC-MLB", city: "Kansas City", name: "Royals", abbreviation: "KC", division: "AL Central", league: "American League", wins: 86, losses: 76 },
+        { id: "MIN-MLB", city: "Minnesota", name: "Twins", abbreviation: "MIN", division: "AL Central", league: "American League", wins: 82, losses: 80 },
+
+        // American League West
+        { id: "HOU-MLB", city: "Houston", name: "Astros", abbreviation: "HOU", division: "AL West", league: "American League", wins: 88, losses: 73 },
+        { id: "LAA", city: "Los Angeles", name: "Angels", abbreviation: "LAA", division: "AL West", league: "American League", wins: 63, losses: 99 },
+        { id: "OAK", city: "Oakland", name: "Athletics", abbreviation: "OAK", division: "AL West", league: "American League", wins: 69, losses: 93 },
+        { id: "SEA-MLB", city: "Seattle", name: "Mariners", abbreviation: "SEA", division: "AL West", league: "American League", wins: 85, losses: 77 },
+        { id: "TEX", city: "Texas", name: "Rangers", abbreviation: "TEX", division: "AL West", league: "American League", wins: 78, losses: 84 },
+
+        // National League East
+        { id: "ATL-MLB", city: "Atlanta", name: "Braves", abbreviation: "ATL", division: "NL East", conference: "National League", sport: "MLB", wins: 89, losses: 73, ties: 0 },
+        { id: "MIA-MLB", city: "Miami", name: "Marlins", abbreviation: "MIA", division: "NL East", conference: "National League", sport: "MLB", wins: 62, losses: 100, ties: 0 },
+        { id: "NYM", city: "New York", name: "Mets", abbreviation: "NYM", division: "NL East", conference: "National League", sport: "MLB", wins: 89, losses: 73, ties: 0 },
+        { id: "PHI-MLB", city: "Philadelphia", name: "Phillies", abbreviation: "PHI", division: "NL East", conference: "National League", sport: "MLB", wins: 95, losses: 67, ties: 0 },
+        { id: "WSH", city: "Washington", name: "Nationals", abbreviation: "WSH", division: "NL East", conference: "National League", sport: "MLB", wins: 71, losses: 91, ties: 0 },
+
+        // National League Central
+        { id: "CHC", city: "Chicago", name: "Cubs", abbreviation: "CHC", division: "NL Central", conference: "National League", sport: "MLB", wins: 83, losses: 79, ties: 0 },
+        { id: "CIN-MLB", city: "Cincinnati", name: "Reds", abbreviation: "CIN", division: "NL Central", conference: "National League", sport: "MLB", wins: 77, losses: 85, ties: 0 },
+        { id: "MIL", city: "Milwaukee", name: "Brewers", abbreviation: "MIL", division: "NL Central", conference: "National League", sport: "MLB", wins: 93, losses: 69, ties: 0 },
+        { id: "PIT-MLB", city: "Pittsburgh", name: "Pirates", abbreviation: "PIT", division: "NL Central", conference: "National League", sport: "MLB", wins: 76, losses: 86, ties: 0 },
+        { id: "STL", city: "St. Louis", name: "Cardinals", abbreviation: "STL", division: "NL Central", conference: "National League", sport: "MLB", wins: 83, losses: 79, ties: 0 },
+
+        // National League West
+        { id: "ARI-MLB", city: "Arizona", name: "Diamondbacks", abbreviation: "ARI", division: "NL West", conference: "National League", sport: "MLB", wins: 89, losses: 73, ties: 0 },
+        { id: "COL", city: "Colorado", name: "Rockies", abbreviation: "COL", division: "NL West", conference: "National League", sport: "MLB", wins: 61, losses: 101, ties: 0 },
+        { id: "LAD", city: "Los Angeles", name: "Dodgers", abbreviation: "LAD", division: "NL West", conference: "National League", sport: "MLB", wins: 98, losses: 64, ties: 0 },
+        { id: "SD", city: "San Diego", name: "Padres", abbreviation: "SD", division: "NL West", conference: "National League", sport: "MLB", wins: 93, losses: 69, ties: 0 },
+        { id: "SF-MLB", city: "San Francisco", name: "Giants", abbreviation: "SF", division: "NL West", conference: "National League", sport: "MLB", wins: 80, losses: 82, ties: 0 },
+      ];
+
+      await db.insert(nflTeams).values(mlbTeamsData);
+      console.log("MLB teams initialized");
+    } catch (error) {
+      console.error("Error initializing MLB teams:", error);
+    }
+  }
+
+  private async initializeNBATeams() {
+    try {
+      const existingTeams = await db.select().from(nbaTeams).limit(1);
+      if (existingTeams.length > 0) return; // Teams already initialized
+
+      const nbaTeamsData = [
+        // Eastern Conference - Atlantic Division
+        { id: "BOS-NBA", city: "Boston", name: "Celtics", abbreviation: "BOS", division: "Atlantic", conference: "Eastern", wins: 64, losses: 18 },
+        { id: "BKN", city: "Brooklyn", name: "Nets", abbreviation: "BKN", division: "Atlantic", conference: "Eastern", wins: 32, losses: 50 },
+        { id: "NYK", city: "New York", name: "Knicks", abbreviation: "NYK", division: "Atlantic", conference: "Eastern", wins: 50, losses: 32 },
+        { id: "PHI-NBA", city: "Philadelphia", name: "76ers", abbreviation: "PHI", division: "Atlantic", conference: "Eastern", wins: 47, losses: 35 },
+        { id: "TOR-NBA", city: "Toronto", name: "Raptors", abbreviation: "TOR", division: "Atlantic", conference: "Eastern", wins: 25, losses: 57 },
+
+        // Eastern Conference - Central Division
+        { id: "CHI-NBA", city: "Chicago", name: "Bulls", abbreviation: "CHI", division: "Central", conference: "Eastern", wins: 39, losses: 43 },
+        { id: "CLE-NBA", city: "Cleveland", name: "Cavaliers", abbreviation: "CLE", division: "Central", conference: "Eastern", wins: 48, losses: 34 },
+        { id: "DET-NBA", city: "Detroit", name: "Pistons", abbreviation: "DET", division: "Central", conference: "Eastern", wins: 14, losses: 68 },
+        { id: "IND-NBA", city: "Indiana", name: "Pacers", abbreviation: "IND", division: "Central", conference: "Eastern", wins: 47, losses: 35 },
+        { id: "MIL-NBA", city: "Milwaukee", name: "Bucks", abbreviation: "MIL", division: "Central", conference: "Eastern", wins: 49, losses: 33 },
+
+        // Eastern Conference - Southeast Division
+        { id: "ATL-NBA", city: "Atlanta", name: "Hawks", abbreviation: "ATL", division: "Southeast", conference: "Eastern", wins: 36, losses: 46 },
+        { id: "CHA", city: "Charlotte", name: "Hornets", abbreviation: "CHA", division: "Southeast", conference: "Eastern", wins: 21, losses: 61 },
+        { id: "MIA-NBA", city: "Miami", name: "Heat", abbreviation: "MIA", division: "Southeast", conference: "Eastern", wins: 46, losses: 36 },
+        { id: "ORL", city: "Orlando", name: "Magic", abbreviation: "ORL", division: "Southeast", conference: "Eastern", wins: 47, losses: 35 },
+        { id: "WAS-NBA", city: "Washington", name: "Wizards", abbreviation: "WAS", division: "Southeast", conference: "Eastern", wins: 15, losses: 67 },
+
+        // Western Conference - Northwest Division
+        { id: "DEN-NBA", city: "Denver", name: "Nuggets", abbreviation: "DEN", division: "Northwest", conference: "Western", sport: "NBA", wins: 57, losses: 25, ties: 0 },
+        { id: "MIN-NBA", city: "Minnesota", name: "Timberwolves", abbreviation: "MIN", division: "Northwest", conference: "Western", sport: "NBA", wins: 56, losses: 26, ties: 0 },
+        { id: "OKC", city: "Oklahoma City", name: "Thunder", abbreviation: "OKC", division: "Northwest", conference: "Western", sport: "NBA", wins: 57, losses: 25, ties: 0 },
+        { id: "POR", city: "Portland", name: "Trail Blazers", abbreviation: "POR", division: "Northwest", conference: "Western", sport: "NBA", wins: 21, losses: 61, ties: 0 },
+        { id: "UTA", city: "Utah", name: "Jazz", abbreviation: "UTA", division: "Northwest", conference: "Western", sport: "NBA", wins: 31, losses: 51, ties: 0 },
+
+        // Western Conference - Pacific Division
+        { id: "GSW", city: "Golden State", name: "Warriors", abbreviation: "GSW", division: "Pacific", conference: "Western", sport: "NBA", wins: 46, losses: 36, ties: 0 },
+        { id: "LAC-NBA", city: "Los Angeles", name: "Clippers", abbreviation: "LAC", division: "Pacific", conference: "Western", sport: "NBA", wins: 51, losses: 31, ties: 0 },
+        { id: "LAL", city: "Los Angeles", name: "Lakers", abbreviation: "LAL", division: "Pacific", conference: "Western", sport: "NBA", wins: 47, losses: 35, ties: 0 },
+        { id: "PHX", city: "Phoenix", name: "Suns", abbreviation: "PHX", division: "Pacific", conference: "Western", sport: "NBA", wins: 49, losses: 33, ties: 0 },
+        { id: "SAC", city: "Sacramento", name: "Kings", abbreviation: "SAC", division: "Pacific", conference: "Western", sport: "NBA", wins: 46, losses: 36, ties: 0 },
+
+        // Western Conference - Southwest Division
+        { id: "DAL-NBA", city: "Dallas", name: "Mavericks", abbreviation: "DAL", division: "Southwest", conference: "Western", sport: "NBA", wins: 50, losses: 32, ties: 0 },
+        { id: "HOU-NBA", city: "Houston", name: "Rockets", abbreviation: "HOU", division: "Southwest", conference: "Western", sport: "NBA", wins: 41, losses: 41, ties: 0 },
+        { id: "MEM", city: "Memphis", name: "Grizzlies", abbreviation: "MEM", division: "Southwest", conference: "Western", sport: "NBA", wins: 27, losses: 55, ties: 0 },
+        { id: "NO", city: "New Orleans", name: "Pelicans", abbreviation: "NO", division: "Southwest", conference: "Western", sport: "NBA", wins: 49, losses: 33, ties: 0 },
+        { id: "SA", city: "San Antonio", name: "Spurs", abbreviation: "SA", division: "Southwest", conference: "Western", sport: "NBA", wins: 22, losses: 60, ties: 0 },
+      ];
+
+      await db.insert(nbaTeams).values(nbaTeamsData);
+      console.log("NBA teams initialized");
+    } catch (error) {
+      console.error("Error initializing NBA teams:", error);
+    }
+  }
+
   private async initializeDemoLeagues() {
     try {
       // Check if demo leagues already exist
@@ -156,21 +274,21 @@ export class DatabaseStorage implements IStorage {
         {
           id: "demo-league-2", 
           name: "Sunday Squad",
-          season: "2024-25",
-          sport: "NFL",
+          season: "2024",
+          sport: "MLB",
           teamsPerPlayer: 4,
-          maxPlayers: 12,
-          draftStatus: "not_started",
-          seasonStatus: "draft",
+          maxPlayers: 8,
+          draftStatus: "completed",
+          seasonStatus: "active",
           createdBy: "62f5c618-a04f-4b08-92e6-f7266c4ed7be",
         },
         {
           id: "demo-league-3",
           name: "Fantasy Friends",
           season: "2024-25", 
-          sport: "NFL",
-          teamsPerPlayer: 3,
-          maxPlayers: 10,
+          sport: "NBA",
+          teamsPerPlayer: 4,
+          maxPlayers: 8,
           draftStatus: "completed",
           seasonStatus: "active",
           createdBy: "62f5c618-a04f-4b08-92e6-f7266c4ed7be",
@@ -232,52 +350,52 @@ export class DatabaseStorage implements IStorage {
       // Add realistic draft picks for each player (4 teams each)
       const demoDraftPicks = [
         // Player 1 (main user) - High performing teams
-        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "DET", pickNumber: 1, round: 1 },
-        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "MIN", pickNumber: 16, round: 2 },
-        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "BUF", pickNumber: 17, round: 3 },
-        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "WAS", pickNumber: 32, round: 4 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "DET", sport: "NFL", pickNumber: 1, round: 1 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "MIN", sport: "NFL", pickNumber: 16, round: 2 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "BUF", sport: "NFL", pickNumber: 17, round: 3 },
+        { leagueId: "demo-league-1", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "WAS", sport: "NFL", pickNumber: 32, round: 4 },
 
         // Player 2 - Mike J
-        { leagueId: "demo-league-1", userId: "player-2", teamId: "KC", pickNumber: 2, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-2", teamId: "PHI", pickNumber: 15, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-2", teamId: "HOU", pickNumber: 18, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-2", teamId: "GB", pickNumber: 31, round: 4 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "KC", sport: "NFL", pickNumber: 2, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "PHI", sport: "NFL", pickNumber: 15, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "HOU", sport: "NFL", pickNumber: 18, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-2", teamId: "GB", sport: "NFL", pickNumber: 31, round: 4 },
 
         // Player 3 - Sarah D
-        { leagueId: "demo-league-1", userId: "player-3", teamId: "PIT", pickNumber: 3, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-3", teamId: "BAL", pickNumber: 14, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-3", teamId: "TB", pickNumber: 19, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-3", teamId: "LAR", pickNumber: 30, round: 4 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "PIT", sport: "NFL", pickNumber: 3, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "BAL", sport: "NFL", pickNumber: 14, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "TB", sport: "NFL", pickNumber: 19, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-3", teamId: "LAR", sport: "NFL", pickNumber: 30, round: 4 },
 
         // Player 4 - Tom W
-        { leagueId: "demo-league-1", userId: "player-4", teamId: "LAC", pickNumber: 4, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-4", teamId: "SEA", pickNumber: 13, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-4", teamId: "DEN", pickNumber: 20, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-4", teamId: "ATL", pickNumber: 29, round: 4 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "LAC", sport: "NFL", pickNumber: 4, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "SEA", sport: "NFL", pickNumber: 13, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "DEN", sport: "NFL", pickNumber: 20, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-4", teamId: "ATL", sport: "NFL", pickNumber: 29, round: 4 },
 
         // Player 5 - Lisa B
-        { leagueId: "demo-league-1", userId: "player-5", teamId: "CIN", pickNumber: 5, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-5", teamId: "ARI", pickNumber: 12, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-5", teamId: "MIA", pickNumber: 21, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-5", teamId: "IND", pickNumber: 28, round: 4 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "CIN", sport: "NFL", pickNumber: 5, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "ARI", sport: "NFL", pickNumber: 12, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "MIA", sport: "NFL", pickNumber: 21, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-5", teamId: "IND", sport: "NFL", pickNumber: 28, round: 4 },
 
         // Player 6 - James M
-        { leagueId: "demo-league-1", userId: "player-6", teamId: "NYJ", pickNumber: 6, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-6", teamId: "SF", pickNumber: 11, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-6", teamId: "LV", pickNumber: 22, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-6", teamId: "NE", pickNumber: 27, round: 4 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "NYJ", sport: "NFL", pickNumber: 6, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "SF", sport: "NFL", pickNumber: 11, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "LV", sport: "NFL", pickNumber: 22, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-6", teamId: "NE", sport: "NFL", pickNumber: 27, round: 4 },
 
         // Player 7 - Amy G
-        { leagueId: "demo-league-1", userId: "player-7", teamId: "CLE", pickNumber: 7, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-7", teamId: "CHI", pickNumber: 10, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-7", teamId: "CAR", pickNumber: 23, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-7", teamId: "NYG", pickNumber: 26, round: 4 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "CLE", sport: "NFL", pickNumber: 7, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "CHI", sport: "NFL", pickNumber: 10, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "CAR", sport: "NFL", pickNumber: 23, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-7", teamId: "NYG", sport: "NFL", pickNumber: 26, round: 4 },
 
         // Player 8 - Steve R
-        { leagueId: "demo-league-1", userId: "player-8", teamId: "DAL", pickNumber: 8, round: 1 },
-        { leagueId: "demo-league-1", userId: "player-8", teamId: "NO", pickNumber: 9, round: 2 },
-        { leagueId: "demo-league-1", userId: "player-8", teamId: "TEN", pickNumber: 24, round: 3 },
-        { leagueId: "demo-league-1", userId: "player-8", teamId: "JAX", pickNumber: 25, round: 4 }
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "DAL", sport: "NFL", pickNumber: 8, round: 1 },
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "NO", sport: "NFL", pickNumber: 9, round: 2 },
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "TEN", sport: "NFL", pickNumber: 24, round: 3 },
+        { leagueId: "demo-league-1", userId: "player-8", teamId: "JAX", sport: "NFL", pickNumber: 25, round: 4 }
       ];
 
       await db.insert(draftPicks).values(demoDraftPicks);
