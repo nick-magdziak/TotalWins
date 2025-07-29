@@ -33,8 +33,10 @@ export default function Draft() {
   const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
+  // Get teams based on current league's sport
   const { data: teams } = useQuery<NFLTeam[]>({
-    queryKey: ["/api/teams"],
+    queryKey: [`/api/${currentLeague?.sport?.toLowerCase() || 'nfl'}/teams`],
+    enabled: !!currentLeague?.sport,
   });
 
   const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
@@ -60,6 +62,7 @@ export default function Draft() {
         teamId,
         pickNumber,
         round,
+        sport: currentLeague?.sport || 'NFL',
       });
     },
     onSuccess: () => {

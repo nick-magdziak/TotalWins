@@ -132,10 +132,9 @@ export default function Layout({ children }: LayoutProps) {
                       key={league.id}
                       onClick={() => {
                         setCurrentLeagueId(league.id);
-                        // Update URL to reflect league change
-                        if (location.startsWith("/standings")) {
-                          window.location.href = `/standings?league=${league.id}`;
-                        }
+                        // Update URL to reflect league change for all pages
+                        const currentPath = location.split('?')[0];
+                        window.location.href = `${currentPath}?league=${league.id}`;
                       }}
                       className={`p-3 cursor-pointer hover:bg-retro-cream ${
                         league.id === currentLeagueId ? "bg-retro-lime/20" : ""
