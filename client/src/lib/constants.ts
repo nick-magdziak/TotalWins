@@ -9,6 +9,24 @@ export const NFL_DIVISIONS = {
   "NFC West": ["ARI", "LAR", "SF", "SEA"]
 } as const;
 
+export const MLB_DIVISIONS = {
+  "AL East": ["BAL", "BOS", "NYY", "TB", "TOR"],
+  "AL Central": ["CWS", "CLE", "DET", "KC", "MIN"],
+  "AL West": ["HOU", "LAA", "OAK", "SEA", "TEX"],
+  "NL East": ["ATL", "MIA", "NYM", "PHI", "WSH"],
+  "NL Central": ["CHC", "CIN", "MIL", "PIT", "STL"],
+  "NL West": ["ARI", "COL", "LAD", "SD", "SF"]
+} as const;
+
+export const NBA_DIVISIONS = {
+  "Atlantic": ["BOS", "BKN", "NYK", "PHI", "TOR"],
+  "Central": ["CHI", "CLE", "DET", "IND", "MIL"],
+  "Southeast": ["ATL", "CHA", "MIA", "ORL", "WAS"],
+  "Northwest": ["DEN", "MIN", "OKC", "POR", "UTA"],
+  "Pacific": ["GSW", "LAC", "LAL", "PHX", "SAC"],
+  "Southwest": ["DAL", "HOU", "MEM", "NOP", "SAS"]
+} as const;
+
 export const TEAM_ICONS = {
   "BUF": "🦬", "MIA": "🐬", "NE": "🏴‍☠️", "NYJ": "✈️",
   "BAL": "🐦‍⬛", "CIN": "🐅", "CLE": "🐕", "PIT": "⚫",
