@@ -69,10 +69,10 @@ export default function Standings() {
 
   const getUpcomingTitle = () => {
     switch(currentLeague?.sport) {
-      case 'NFL': return 'NFL GAMES';
-      case 'MLB': return 'MLB GAMES';
-      case 'NBA': return 'NBA GAMES';
-      default: return 'NFL GAMES';
+      case 'NFL': return 'WEEK 10 PREVIEW';
+      case 'MLB': return "TOMORROW'S GAMES";
+      case 'NBA': return "TOMORROW'S GAMES";
+      default: return 'WEEK 10 PREVIEW';
     }
   };
 
@@ -155,7 +155,10 @@ export default function Standings() {
       <section className="mb-8 px-4">
         <h3 className="text-retro-pink text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
           <Clock className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
-          RECENT UPDATES
+          {currentLeague?.sport === 'NFL' && 'NFL GAMES'}
+          {currentLeague?.sport === 'MLB' && 'MLB GAMES'}
+          {currentLeague?.sport === 'NBA' && 'NBA GAMES'}
+          {!currentLeague?.sport && 'NFL GAMES'}
         </h3>
         
         <div className="grid md:grid-cols-2 gap-6">
