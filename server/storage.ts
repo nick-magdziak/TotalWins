@@ -71,6 +71,7 @@ export class DatabaseStorage implements IStorage {
     this.initializeNFLTeams();
     this.initializeMLBTeams();
     this.initializeNBATeams();
+    this.initializeSampleGameData();
     this.initializeDemoLeagues();
   }
 
@@ -247,6 +248,139 @@ export class DatabaseStorage implements IStorage {
       console.log("NBA teams initialized");
     } catch (error) {
       console.error("Error initializing NBA teams:", error);
+    }
+  }
+
+  private async initializeSampleGameData() {
+    try {
+      // Check if games already exist
+      const existingGames = await db.select().from(games).limit(1);
+      if (existingGames.length > 0) {
+        return; // Games already initialized
+      }
+
+      // Sample MLB Games
+      const mlbGames = [
+        {
+          id: "mlb-game-1",
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "LAD",
+          awayTeamId: "SF-MLB",
+          homeScore: 8,
+          awayScore: 5,
+          status: "completed",
+          gameDate: new Date("2024-07-25T19:00:00Z"),
+          completedAt: new Date("2024-07-25T22:15:00Z"),
+          week: null
+        },
+        {
+          id: "mlb-game-2", 
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "BOS-MLB",
+          awayTeamId: "NYY",
+          homeScore: 7,
+          awayScore: 3,
+          status: "completed",
+          gameDate: new Date("2024-07-26T19:00:00Z"),
+          completedAt: new Date("2024-07-26T22:30:00Z"),
+          week: null
+        },
+        {
+          id: "mlb-game-3",
+          sport: "MLB", 
+          season: "2024",
+          homeTeamId: "ATL-MLB",
+          awayTeamId: "PHI-MLB",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date("2024-07-30T19:30:00Z"),
+          completedAt: null,
+          week: null
+        },
+        {
+          id: "mlb-game-4",
+          sport: "MLB",
+          season: "2024", 
+          homeTeamId: "HOU-MLB",
+          awayTeamId: "TEX",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date("2024-07-31T20:00:00Z"),
+          completedAt: null,
+          week: null
+        }
+      ];
+
+      // Sample NBA Games  
+      const nbaGames = [
+        {
+          id: "nba-game-1",
+          sport: "NBA",
+          season: "2024-25",
+          homeTeamId: "LAL",
+          awayTeamId: "BOS-NBA",
+          homeScore: 112,
+          awayScore: 108,
+          status: "completed",
+          gameDate: new Date("2024-07-25T21:00:00Z"),
+          completedAt: new Date("2024-07-25T23:30:00Z"),
+          week: null
+        },
+        {
+          id: "nba-game-2",
+          sport: "NBA", 
+          season: "2024-25",
+          homeTeamId: "GSW",
+          awayTeamId: "LAC-NBA",
+          homeScore: 118,
+          awayScore: 115,
+          status: "completed",
+          gameDate: new Date("2024-07-26T22:00:00Z"),
+          completedAt: new Date("2024-07-27T00:45:00Z"),
+          week: null
+        },
+        {
+          id: "nba-game-3",
+          sport: "NBA",
+          season: "2024-25",
+          homeTeamId: "MIL-NBA",
+          awayTeamId: "PHX",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date("2024-07-30T20:00:00Z"),
+          completedAt: null,
+          week: null
+        },
+        {
+          id: "nba-game-4",
+          sport: "NBA",
+          season: "2024-25",
+          homeTeamId: "DAL-NBA", 
+          awayTeamId: "DEN-NBA",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date("2024-07-31T21:30:00Z"),
+          completedAt: null,
+          week: null
+        }
+      ];
+
+      // Insert MLB games
+      await db.insert(games).values(mlbGames);
+      console.log("MLB sample games initialized");
+
+      // Insert NBA games  
+      await db.insert(games).values(nbaGames);
+      console.log("NBA sample games initialized");
+
+    } catch (error) {
+      console.error("Error initializing sample game data:", error);
     }
   }
 
@@ -723,7 +857,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecentGamesWithOwners(leagueId: string, limit: number): Promise<any[]> {
-    const recentGames = await this.getRecentCompletedGames(limit);
+    // Get the league to determine sport
+    const league = await this.getLeague(leagueId);
+    if (!league) return [];
+    
+    // Get recent games filtered by sport
+    const recentGames = await db
+      .select()
+      .from(games)
+      .where(and(
+        eq(games.status, "completed"),
+        eq(games.sport, league.sport || "NFL")
+      ))
+      .orderBy(desc(games.completedAt))
+      .limit(limit);
     
     const gamesWithOwners = await Promise.all(
       recentGames.map(async (game) => {
@@ -760,10 +907,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingGamesWithOwners(leagueId: string, limit: number): Promise<any[]> {
+    // Get the league to determine sport
+    const league = await this.getLeague(leagueId);
+    if (!league) return [];
+    
+    // Get upcoming games filtered by sport
     const upcomingGames = await db
       .select()
       .from(games)
-      .where(eq(games.status, "scheduled"))
+      .where(and(
+        eq(games.status, "scheduled"),
+        eq(games.sport, league.sport || "NFL")
+      ))
       .orderBy(games.gameDate)
       .limit(limit);
     
