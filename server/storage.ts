@@ -73,6 +73,20 @@ export class DatabaseStorage implements IStorage {
     this.initializeNBATeams();
     this.initializeSampleGameData();
     this.initializeDemoLeagues();
+    // Sync real MLB games after initialization
+    this.syncRealTimeMLBGames();
+  }
+
+  private async syncRealTimeMLBGames() {
+    // Delay to allow other initializations to complete
+    setTimeout(async () => {
+      try {
+        const { sportsApi } = await import("../services/sportsApi");
+        await sportsApi.syncMLBGames();
+      } catch (error) {
+        console.error("Error syncing real-time MLB games:", error);
+      }
+    }, 2000);
   }
 
   private async initializeNFLTeams() {

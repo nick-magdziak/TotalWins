@@ -294,6 +294,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/sync-mlb-games", async (req, res) => {
+    try {
+      await sportsApi.syncMLBGames();
+      res.json({ message: "MLB games synced successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to sync MLB games" });
+    }
+  });
+
   app.post("/api/admin/invite-player", async (req, res) => {
     try {
       const { email, leagueId } = req.body;

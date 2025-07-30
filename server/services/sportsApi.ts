@@ -8,6 +8,119 @@ export class SportsApiService {
     this.apiKey = process.env.SPORTS_API_KEY || process.env.ESPN_API_KEY || "demo_key";
   }
 
+  async fetchMLBGames(): Promise<Game[]> {
+    try {
+      // Fetch current MLB games from ESPN API
+      const response = await fetch(
+        'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
+        {
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`ESPN API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return this.parseESPNMLBGames(data);
+    } catch (error) {
+      console.error('Error fetching MLB games:', error);
+      return [];
+    }
+  }
+
+  private parseESPNMLBGames(data: any): Game[] {
+    const games: Game[] = [];
+    
+    if (!data.events || !Array.isArray(data.events)) {
+      console.log('No MLB games found in ESPN API response');
+      return games;
+    }
+
+    for (const event of data.events) {
+      try {
+        const game: Game = {
+          id: event.id,
+          sport: "MLB",
+          season: event.season?.year?.toString() || "2024",
+          homeTeamId: this.mapESPNTeamToMLBId(event.competitions[0].competitors.find((c: any) => c.homeAway === 'home')?.team),
+          awayTeamId: this.mapESPNTeamToMLBId(event.competitions[0].competitors.find((c: any) => c.homeAway === 'away')?.team),
+          homeScore: event.competitions[0].competitors.find((c: any) => c.homeAway === 'home')?.score || null,
+          awayScore: event.competitions[0].competitors.find((c: any) => c.homeAway === 'away')?.score || null,
+          status: this.mapESPNStatus(event.status.type.name),
+          gameDate: new Date(event.date),
+          completedAt: event.status.type.name === 'STATUS_FINAL' ? new Date(event.date) : null,
+          week: null
+        };
+
+        games.push(game);
+      } catch (error) {
+        console.error('Error parsing MLB game:', error);
+      }
+    }
+
+    return games;
+  }
+
+  private mapESPNTeamToMLBId(team: any): string {
+    if (!team) return 'UNKNOWN';
+    
+    // Map ESPN team abbreviations to our MLB team IDs
+    const espnToMLBMap: { [key: string]: string } = {
+      'LAD': 'LAD',
+      'SF': 'SF-MLB', 
+      'BOS': 'BOS-MLB',
+      'NYY': 'NYY',
+      'ATL': 'ATL-MLB',
+      'PHI': 'PHI-MLB',
+      'HOU': 'HOU-MLB',
+      'TEX': 'TEX',
+      'BAL': 'BAL-MLB',
+      'TB': 'TB-MLB',
+      'TOR': 'TOR',
+      'CWS': 'CWS',
+      'CLE': 'CLE-MLB',
+      'DET': 'DET-MLB',
+      'KC': 'KC-MLB',
+      'MIN': 'MIN-MLB',
+      'CHC': 'CHC',
+      'CIN': 'CIN-MLB',
+      'MIL': 'MIL',
+      'PIT': 'PIT-MLB',
+      'STL': 'STL',
+      'ARI': 'ARI-MLB',
+      'COL': 'COL',
+      'SD': 'SD',
+      'LAA': 'LAA',
+      'OAK': 'OAK',
+      'SEA': 'SEA-MLB',
+      'MIA': 'MIA-MLB',
+      'NYM': 'NYM',
+      'WAS': 'WAS-MLB'
+    };
+
+    return espnToMLBMap[team.abbreviation] || team.abbreviation;
+  }
+
+  private mapESPNStatus(statusName: string): "scheduled" | "in_progress" | "completed" {
+    switch (statusName) {
+      case 'STATUS_SCHEDULED':
+      case 'STATUS_POSTPONED':
+        return 'scheduled';
+      case 'STATUS_IN_PROGRESS':
+      case 'STATUS_HALFTIME':
+        return 'in_progress';
+      case 'STATUS_FINAL':
+      case 'STATUS_FINAL_OT':
+        return 'completed';
+      default:
+        return 'scheduled';
+    }
+  }
+
   async fetchNFLGames(week: number, season: string): Promise<Game[]> {
     try {
       // In a real implementation, this would call ESPN API or similar
@@ -46,6 +159,7 @@ export class SportsApiService {
         
         const game: Game = {
           id: event.id,
+          sport: "NFL",
           week,
           season,
           homeTeamId: this.mapESPNTeamToId(homeTeam.team.abbreviation),
@@ -80,20 +194,7 @@ export class SportsApiService {
     return teamMap[espnAbbr] || espnAbbr;
   }
 
-  private mapESPNStatus(espnStatus: string): string {
-    switch (espnStatus.toLowerCase()) {
-      case 'status_scheduled':
-      case 'status_postponed':
-        return 'scheduled';
-      case 'status_in_progress':
-      case 'status_halftime':
-        return 'in_progress';
-      case 'status_final':
-        return 'completed';
-      default:
-        return 'scheduled';
-    }
-  }
+
 
   async updateTeamRecords(): Promise<void> {
     try {
@@ -156,6 +257,28 @@ export class SportsApiService {
       await this.updateTeamRecords();
     } catch (error) {
       console.error('Error syncing games:', error);
+    }
+  }
+
+  async syncMLBGames(): Promise<void> {
+    try {
+      console.log('Syncing MLB games from ESPN API...');
+      const games = await this.fetchMLBGames();
+      
+      for (const game of games) {
+        const existingGame = await storage.getGames(undefined, game.season)
+          .then(games => games.find(g => g.id === game.id));
+        
+        if (existingGame) {
+          await storage.updateGame(game.id, game);
+        } else {
+          await storage.addGame(game);
+        }
+      }
+      
+      console.log(`Synced ${games.length} MLB games`);
+    } catch (error) {
+      console.error('Error syncing MLB games:', error);
     }
   }
 }
