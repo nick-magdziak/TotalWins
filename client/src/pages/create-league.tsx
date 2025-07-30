@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
-import { Trophy, Users, Calendar, Zap } from "lucide-react";
+import { Trophy, Users, Calendar, Zap, Shuffle } from "lucide-react";
 
 const createLeagueSchema = z.object({
   name: z.string().min(3, "League name must be at least 3 characters").max(50, "League name must be less than 50 characters"),
@@ -21,6 +21,7 @@ const createLeagueSchema = z.object({
   season: z.string().min(4, "Season is required"),
   teamsPerPlayer: z.coerce.number().min(2, "Minimum 2 teams per player").max(8, "Maximum 8 teams per player"),
   maxPlayers: z.coerce.number().min(2, "Minimum 2 players").max(12, "Maximum 12 players"),
+  draftType: z.enum(["snake", "linear"], { required_error: "Please select a draft type" }),
   description: z.string().optional(),
 });
 
@@ -40,6 +41,7 @@ export default function CreateLeague() {
       season: new Date().getFullYear().toString(),
       teamsPerPlayer: 4,
       maxPlayers: 8,
+      draftType: "snake" as const,
       description: "",
     },
   });
@@ -50,12 +52,23 @@ export default function CreateLeague() {
         ...data,
         createdBy: currentUser?.id,
         draftStatus: "pending",
-        seasonStatus: "preseason",
+        seasonStatus: "pre_season",
       };
-      return await apiRequest("/api/leagues", {
+      
+      const response = await fetch("/api/leagues", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(leagueData),
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create league");
+      }
+      
+      return await response.json();
     },
     onSuccess: (newLeague) => {
       toast({
@@ -85,6 +98,7 @@ export default function CreateLeague() {
           season: "2024-25",
           teamsPerPlayer: 4,
           maxPlayers: 8,
+          draftType: "snake",
           description: "Draft your favorite NFL teams and compete for the most wins this season!"
         };
       case "MLB":
@@ -92,6 +106,7 @@ export default function CreateLeague() {
           season: "2024",
           teamsPerPlayer: 4,
           maxPlayers: 8,
+          draftType: "snake",
           description: "Pick your MLB teams and track wins throughout the baseball season!"
         };
       case "NBA":
@@ -99,6 +114,7 @@ export default function CreateLeague() {
           season: "2024-25",
           teamsPerPlayer: 4,
           maxPlayers: 8,
+          draftType: "snake",
           description: "Choose your NBA teams and compete for the championship!"
         };
       default:
@@ -112,6 +128,7 @@ export default function CreateLeague() {
     if (defaults.season) form.setValue("season", defaults.season);
     if (defaults.teamsPerPlayer) form.setValue("teamsPerPlayer", defaults.teamsPerPlayer);
     if (defaults.maxPlayers) form.setValue("maxPlayers", defaults.maxPlayers);
+    if (defaults.draftType) form.setValue("draftType", defaults.draftType as "snake" | "linear");
     if (defaults.description && !form.getValues("description")) {
       form.setValue("description", defaults.description);
     }
@@ -316,6 +333,45 @@ export default function CreateLeague() {
                   )}
                 />
               </div>
+
+              {/* Draft Type */}
+              <FormField
+                control={form.control}
+                name="draftType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-retro-purple font-bold retro-font flex items-center gap-2">
+                      <Shuffle className="w-4 h-4" />
+                      Draft Type *
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="retro-border">
+                          <SelectValue placeholder="Select draft type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="snake">
+                          <div className="flex flex-col">
+                            <span className="font-medium">Snake Draft</span>
+                            <span className="text-sm text-gray-600">Round 1: 1→8, Round 2: 8→1, etc.</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="linear">
+                          <div className="flex flex-col">
+                            <span className="font-medium">Linear Draft</span>
+                            <span className="text-sm text-gray-600">Same order every round: 1→8</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Choose how the draft order will work
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Description */}
               <FormField
