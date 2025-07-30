@@ -61,8 +61,8 @@ export default function Standings() {
   const getRecentResultsTitle = () => {
     switch(currentLeague?.sport) {
       case 'NFL': return 'WEEK 9 RESULTS';
-      case 'MLB': return 'RECENT GAMES';
-      case 'NBA': return 'RECENT GAMES';
+      case 'MLB': return "TODAY'S GAMES";
+      case 'NBA': return "TODAY'S GAMES";
       default: return 'WEEK 9 RESULTS';
     }
   };
@@ -70,8 +70,8 @@ export default function Standings() {
   const getUpcomingTitle = () => {
     switch(currentLeague?.sport) {
       case 'NFL': return 'WEEK 10 PREVIEW';
-      case 'MLB': return 'UPCOMING GAMES';
-      case 'NBA': return 'UPCOMING GAMES';
+      case 'MLB': return "TOMORROW'S GAMES";
+      case 'NBA': return "TOMORROW'S GAMES";
       default: return 'WEEK 10 PREVIEW';
     }
   };
