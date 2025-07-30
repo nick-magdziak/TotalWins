@@ -263,13 +263,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/leagues/:leagueId/games/recent", async (req, res) => {
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
     const games = await storage.getRecentGamesWithOwners(req.params.leagueId, limit);
     res.json(games);
   });
 
   app.get("/api/leagues/:leagueId/games/upcoming", async (req, res) => {
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
     const games = await storage.getUpcomingGamesWithOwners(req.params.leagueId, limit);
     res.json(games);
   });

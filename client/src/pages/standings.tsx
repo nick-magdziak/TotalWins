@@ -76,6 +76,24 @@ export default function Standings() {
     }
   };
 
+  // Function to get display abbreviation from team ID
+  const getTeamDisplayName = (teamId: string) => {
+    if (!teamId) return 'N/A';
+    
+    // Handle MLB team IDs that end with -MLB
+    if (teamId.endsWith('-MLB')) {
+      return teamId.replace('-MLB', '');
+    }
+    
+    // Handle NBA team IDs that end with -NBA  
+    if (teamId.endsWith('-NBA')) {
+      return teamId.replace('-NBA', '');
+    }
+    
+    // For NFL and other teams, return as-is (they're already 3 characters)
+    return teamId;
+  };
+
   const getByeWeekTeams = () => {
     // Only NFL has bye weeks
     if (currentLeague?.sport === 'NFL') {
@@ -156,7 +174,7 @@ export default function Standings() {
                     >
                       <div className="flex-1">
                         <div className="font-bold text-retro-charcoal retro-font text-xs">
-                          {game.awayTeamId} @ {game.homeTeamId}
+                          {getTeamDisplayName(game.awayTeamId)} @ {getTeamDisplayName(game.homeTeamId)}
                         </div>
                         <div className="text-xs text-retro-charcoal font-bold">
                           {game.awayScore} - {game.homeScore}
@@ -216,7 +234,7 @@ export default function Standings() {
                     >
                       <div className="flex-1">
                         <div className="font-bold text-retro-charcoal retro-font text-xs">
-                          {game.awayTeamId} @ {game.homeTeamId}
+                          {getTeamDisplayName(game.awayTeamId)} @ {getTeamDisplayName(game.homeTeamId)}
                         </div>
                         <div className="text-xs text-retro-charcoal">
                           {new Date(game.gameDate).toLocaleDateString('en-US', { 
