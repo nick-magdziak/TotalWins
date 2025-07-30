@@ -321,7 +321,7 @@ export default function Draft() {
                     {["AFC East", "AFC North", "AFC South", "AFC West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
                       }) || [];
                       
                       return (
@@ -359,7 +359,7 @@ export default function Draft() {
                     {["NFC East", "NFC North", "NFC South", "NFC West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
                       }) || [];
                       
                       return (
@@ -400,7 +400,7 @@ export default function Draft() {
                     {["AL East", "AL Central", "AL West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
                       }) || [];
                       
                       return (
@@ -438,7 +438,7 @@ export default function Draft() {
                     {["NL East", "NL Central", "NL West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
                       }) || [];
                       
                       return (
@@ -479,7 +479,7 @@ export default function Draft() {
                     {["Atlantic", "Central", "Southeast"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
                       }) || [];
                       
                       return (
@@ -517,7 +517,7 @@ export default function Draft() {
                     {["Northwest", "Pacific", "Southwest"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation);
+                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
                       }) || [];
                       
                       return (

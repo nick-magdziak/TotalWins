@@ -635,54 +635,11 @@ export class DatabaseStorage implements IStorage {
         { leagueId: "demo-league-1", userId: "player-8", teamId: "TEN", sport: "NFL", pickNumber: 24, round: 3 },
         { leagueId: "demo-league-1", userId: "player-8", teamId: "JAX", sport: "NFL", pickNumber: 25, round: 4 },
 
-        // MLB League (demo-league-2) - Sunday Squad draft picks
-        // Player 1 (main user) - Top MLB teams
-        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "LAD", sport: "MLB", pickNumber: 1, round: 1 },
-        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "SD", sport: "MLB", pickNumber: 16, round: 2 },
-        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "NYY", sport: "MLB", pickNumber: 17, round: 3 },
-        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", teamId: "MIL", sport: "MLB", pickNumber: 32, round: 4 },
+        // MLB League (demo-league-2) - Sunday Squad: NO DRAFT PICKS (for real draft testing)
+        // This league will be used for real draft functionality testing
 
-        // MLB Player 2 - Mike J
-        { leagueId: "demo-league-2", userId: "player-2", teamId: "PHI-MLB", sport: "MLB", pickNumber: 2, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-2", teamId: "HOU-MLB", sport: "MLB", pickNumber: 15, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-2", teamId: "CLE-MLB", sport: "MLB", pickNumber: 18, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-2", teamId: "TEX", sport: "MLB", pickNumber: 31, round: 4 },
-
-        // MLB Player 3 - Sarah D
-        { leagueId: "demo-league-2", userId: "player-3", teamId: "ATL-MLB", sport: "MLB", pickNumber: 3, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-3", teamId: "BAL-MLB", sport: "MLB", pickNumber: 14, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-3", teamId: "TB-MLB", sport: "MLB", pickNumber: 19, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-3", teamId: "ARI-MLB", sport: "MLB", pickNumber: 30, round: 4 },
-
-        // MLB Player 4 - Tom W
-        { leagueId: "demo-league-2", userId: "player-4", teamId: "BOS", sport: "MLB", pickNumber: 4, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-4", teamId: "SEA", sport: "MLB", pickNumber: 13, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-4", teamId: "MIN-MLB", sport: "MLB", pickNumber: 20, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-4", teamId: "TOR", sport: "MLB", pickNumber: 29, round: 4 },
-
-        // MLB Player 5 - Lisa B
-        { leagueId: "demo-league-2", userId: "player-5", teamId: "NYM", sport: "MLB", pickNumber: 5, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-5", teamId: "KC-MLB", sport: "MLB", pickNumber: 12, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-5", teamId: "DET-MLB", sport: "MLB", pickNumber: 21, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-5", teamId: "CWS", sport: "MLB", pickNumber: 28, round: 4 },
-
-        // MLB Player 6 - James M
-        { leagueId: "demo-league-2", userId: "player-6", teamId: "CHC", sport: "MLB", pickNumber: 6, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-6", teamId: "SF-MLB", sport: "MLB", pickNumber: 11, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-6", teamId: "STL", sport: "MLB", pickNumber: 22, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-6", teamId: "COL", sport: "MLB", pickNumber: 27, round: 4 },
-
-        // MLB Player 7 - Amy G
-        { leagueId: "demo-league-2", userId: "player-7", teamId: "CIN", sport: "MLB", pickNumber: 7, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-7", teamId: "PIT-MLB", sport: "MLB", pickNumber: 10, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-7", teamId: "WSH", sport: "MLB", pickNumber: 23, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-7", teamId: "OAK", sport: "MLB", pickNumber: 26, round: 4 },
-
-        // MLB Player 8 - Steve R
-        { leagueId: "demo-league-2", userId: "player-8", teamId: "MIA-MLB", sport: "MLB", pickNumber: 8, round: 1 },
-        { leagueId: "demo-league-2", userId: "player-8", teamId: "LAA", sport: "MLB", pickNumber: 9, round: 2 },
-        { leagueId: "demo-league-2", userId: "player-8", teamId: "PIT-MLB", sport: "MLB", pickNumber: 24, round: 3 },
-        { leagueId: "demo-league-2", userId: "player-8", teamId: "WSH", sport: "MLB", pickNumber: 25, round: 4 },
+        // NO MLB DRAFT PICKS FOR DEMO-LEAGUE-2 (Sunday Squad)
+        // This league is set up for real draft functionality testing
 
         // NBA League (demo-league-3) - Fantasy Friends draft picks  
         // Player 1 (main user) - Top NBA teams
@@ -833,7 +790,7 @@ export class DatabaseStorage implements IStorage {
       const teams = await Promise.all(
         userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
       );
-      const validTeams = teams.filter((team): team is NonNullable<typeof team> => Boolean(team));
+      const validTeams = teams.filter((team): team is NFLTeam | MLBTeam | NBATeam => Boolean(team));
       const totalWins = validTeams.reduce((sum, team) => sum + (team?.wins || 0), 0);
 
       standings.push({

@@ -383,6 +383,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/start-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      
+      if (!leagueId) {
+        return res.status(400).json({ error: "League ID required" });
+      }
+      
+      await storage.updateLeague(leagueId, { draftStatus: "active" });
+      
+      res.json({ success: true, message: "Draft started successfully" });
+    } catch (error) {
+      console.error("Error starting draft:", error);
+      res.status(500).json({ error: "Failed to start draft" });
+    }
+  });
+
+  app.post("/api/admin/stop-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      
+      if (!leagueId) {
+        return res.status(400).json({ error: "League ID required" });
+      }
+      
+      await storage.updateLeague(leagueId, { draftStatus: "pending" });
+      
+      res.json({ success: true, message: "Draft stopped successfully" });
+    } catch (error) {
+      console.error("Error stopping draft:", error);
+      res.status(500).json({ error: "Failed to stop draft" });
+    }
+  });
+
   app.post("/api/admin/undo-last-pick", async (req, res) => {
     try {
       const { leagueId } = req.body;
