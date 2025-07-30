@@ -293,9 +293,23 @@ export default function Draft() {
         <div className="lg:col-span-2">
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
-              <h3 className="text-retro-purple text-2xl font-bold mb-6 text-center retro-font">
-                <Volleyball className="inline mr-2" />
-                {currentLeague?.sport || "NFL"} TEAMS - {currentLeague?.season || "2024"} SEASON
+              <h3 className="text-retro-purple text-2xl font-bold mb-6 text-center retro-font flex items-center justify-center gap-2">
+                {currentLeague?.sport === 'MLB' && (
+                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-retro-purple">
+                    ⚾
+                  </div>
+                )}
+                {currentLeague?.sport === 'NBA' && (
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                    🏀
+                  </div>
+                )}
+                {currentLeague?.sport === 'NFL' && (
+                  <div className="w-8 h-8 bg-brown-600 rounded-full flex items-center justify-center">
+                    🏈
+                  </div>
+                )}
+                {currentLeague?.sport || "NFL"} TEAMS
               </h3>
 
               {currentLeague?.sport === 'NFL' ? (

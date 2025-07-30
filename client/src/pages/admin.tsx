@@ -50,7 +50,7 @@ export default function Admin() {
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
   const [draftStatus, setDraftStatus] = useState("not_started");
-  const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
+  const [leagueName, setLeagueName] = useState(currentLeague?.name || "2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
   const [draftOrder, setDraftOrder] = useState<string[]>([]);
@@ -351,6 +351,46 @@ export default function Admin() {
     },
   });
 
+  // League update mutation
+  const updateLeagueMutation = useMutation({
+    mutationFn: async (updates: { name?: string }) => {
+      const response = await fetch(`/api/leagues/${leagueId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update league');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "League updated!",
+        description: "League name has been updated successfully.",
+      });
+      // Invalidate relevant queries to refresh all screens
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Failed to update league. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update local state when currentLeague changes
+  useState(() => {
+    if (currentLeague?.name && currentLeague.name !== leagueName) {
+      setLeagueName(currentLeague.name);
+    }
+  });
+
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "sync":
@@ -437,21 +477,26 @@ export default function Admin() {
                           className="flex-1 p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
+                              updateLeagueMutation.mutate({ name: leagueName });
                               setIsEditingLeagueName(false);
                             }
                           }}
                           autoFocus
                         />
                         <Button
-                          onClick={() => setIsEditingLeagueName(false)}
+                          onClick={() => {
+                            updateLeagueMutation.mutate({ name: leagueName });
+                            setIsEditingLeagueName(false);
+                          }}
                           size="sm"
                           className="bg-retro-teal hover:bg-retro-lime text-white px-3"
+                          disabled={updateLeagueMutation.isPending}
                         >
                           <Save className="w-4 h-4" />
                         </Button>
                         <Button
                           onClick={() => {
-                            setLeagueName("2024 NFL Wins Pool Championship");
+                            setLeagueName(currentLeague?.name || "2024 NFL Wins Pool Championship");
                             setIsEditingLeagueName(false);
                           }}
                           size="sm"
