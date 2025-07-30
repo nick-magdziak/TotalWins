@@ -60,18 +60,18 @@ export default function Standings() {
 
   const getRecentResultsTitle = () => {
     switch(currentLeague?.sport) {
-      case 'NFL': return 'NFL GAMES';
-      case 'MLB': return 'MLB GAMES';
-      case 'NBA': return 'NBA GAMES';
-      default: return 'NFL GAMES';
+      case 'NFL': return 'WEEK 9 RESULTS';
+      case 'MLB': return "TODAY'S GAMES";
+      case 'NBA': return "TODAY'S GAMES";
+      default: return 'WEEK 9 RESULTS';
     }
   };
 
   const getUpcomingTitle = () => {
     switch(currentLeague?.sport) {
       case 'NFL': return 'NFL GAMES';
-      case 'MLB': return 'MLB GAMES';
-      case 'NBA': return 'NBA GAMES';
+      case 'MLB': return "TOMORROW'S GAMES";
+      case 'NBA': return "TOMORROW'S GAMES";
       default: return 'NFL GAMES';
     }
   };
