@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus } from "lucide-react";
 import { getCurrentUser, isAdmin, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -66,6 +66,7 @@ export default function Layout({ children }: LayoutProps) {
   const navItems = [
     { path: "/standings", label: "STANDINGS", icon: Trophy },
     { path: "/draft", label: "DRAFT", icon: Users },
+    { path: "/create-league", label: "CREATE LEAGUE", icon: Plus },
     { path: "/profile", label: "PROFILE", icon: User },
     ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: "/admin", label: "ADMIN", icon: Settings }] : []),
   ];

@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { sportsApi } from "./services/sportsApi";
-import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema } from "@shared/schema";
+import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues } from "@shared/schema";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -93,6 +94,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     res.json(league);
   });
+
+
 
   app.patch("/api/leagues/:id", async (req, res) => {
     try {

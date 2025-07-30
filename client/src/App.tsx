@@ -10,6 +10,7 @@ import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import Signup from "@/pages/signup";
 import Login from "@/pages/login";
+import CreateLeague from "@/pages/create-league";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/" component={Standings} />
       <Route path="/standings" component={Standings} />
       <Route path="/draft" component={Draft} />
+      <Route path="/create-league" component={CreateLeague} />
       <Route path="/profile" component={Profile} />
       <Route path="/admin" component={Admin} />
       <Route path="/signup" component={Signup} />
