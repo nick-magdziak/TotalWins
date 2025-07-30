@@ -70,8 +70,8 @@ export default function Standings() {
   const getUpcomingTitle = () => {
     switch(currentLeague?.sport) {
       case 'NFL': return 'NFL GAMES';
-      case 'MLB': return "TOMORROW'S GAMES";
-      case 'NBA': return "TOMORROW'S GAMES";
+      case 'MLB': return 'MLB GAMES';
+      case 'NBA': return 'NBA GAMES';
       default: return 'NFL GAMES';
     }
   };
