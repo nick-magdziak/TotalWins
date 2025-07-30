@@ -21,8 +21,17 @@ const createLeagueSchema = z.object({
   season: z.string().min(4, "Season is required"),
   teamsPerPlayer: z.coerce.number().min(2, "Minimum 2 teams per player").max(8, "Maximum 8 teams per player"),
   maxPlayers: z.coerce.number().min(2, "Minimum 2 players").max(12, "Maximum 12 players"),
-  draftType: z.enum(["snake", "linear"], { required_error: "Please select a draft type" }),
+  draftType: z.enum(["snake", "linear", "custom_10_30"], { required_error: "Please select a draft type" }),
   description: z.string().optional(),
+}).refine((data) => {
+  // Custom validation for the 3 Rds, 10 Pcks draft type
+  if (data.draftType === "custom_10_30") {
+    return data.maxPlayers === 10 && data.teamsPerPlayer === 3;
+  }
+  return true;
+}, {
+  message: "3 Rds, 10 Pcks draft requires exactly 10 players and 3 teams per player",
+  path: ["draftType"]
 });
 
 type CreateLeagueForm = z.infer<typeof createLeagueSchema>;
@@ -96,9 +105,9 @@ export default function CreateLeague() {
       case "NFL":
         return {
           season: "2024-25",
-          teamsPerPlayer: 4,
-          maxPlayers: 8,
-          draftType: "snake",
+          teamsPerPlayer: 3,
+          maxPlayers: 10,
+          draftType: "custom_10_30",
           description: "Draft your favorite NFL teams and compete for the most wins this season!"
         };
       case "MLB":
@@ -128,9 +137,19 @@ export default function CreateLeague() {
     if (defaults.season) form.setValue("season", defaults.season);
     if (defaults.teamsPerPlayer) form.setValue("teamsPerPlayer", defaults.teamsPerPlayer);
     if (defaults.maxPlayers) form.setValue("maxPlayers", defaults.maxPlayers);
-    if (defaults.draftType) form.setValue("draftType", defaults.draftType as "snake" | "linear");
+    if (defaults.draftType) form.setValue("draftType", defaults.draftType as "snake" | "linear" | "custom_10_30");
     if (defaults.description && !form.getValues("description")) {
       form.setValue("description", defaults.description);
+    }
+  };
+
+  const handleDraftTypeChange = (draftType: string) => {
+    form.setValue("draftType", draftType as "snake" | "linear" | "custom_10_30");
+    
+    // Auto-adjust settings for custom 10-30 draft
+    if (draftType === "custom_10_30") {
+      form.setValue("maxPlayers", 10);
+      form.setValue("teamsPerPlayer", 3);
     }
   };
 
@@ -344,7 +363,7 @@ export default function CreateLeague() {
                       <Shuffle className="w-4 h-4" />
                       Draft Type *
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={handleDraftTypeChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="retro-border">
                           <SelectValue placeholder="Select draft type" />
@@ -361,6 +380,12 @@ export default function CreateLeague() {
                           <div className="flex flex-col">
                             <span className="font-medium">Linear Draft</span>
                             <span className="text-sm text-gray-600">Same order every round: 1→8</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="custom_10_30">
+                          <div className="flex flex-col">
+                            <span className="font-medium">3 Rds, 10 Pcks</span>
+                            <span className="text-sm text-gray-600">Special Order for 10 Player, 30 Pick Draft</span>
                           </div>
                         </SelectItem>
                       </SelectContent>

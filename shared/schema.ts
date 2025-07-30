@@ -22,7 +22,7 @@ export const leagues = pgTable("leagues", {
   sport: text("sport").notNull().default("NFL"),
   teamsPerPlayer: integer("teams_per_player").notNull().default(4),
   maxPlayers: integer("max_players").notNull().default(8),
-  draftType: text("draft_type").notNull().default("snake"), // snake, linear
+  draftType: text("draft_type").notNull().default("snake"), // snake, linear, custom_10_30
   draftStatus: text("draft_status").notNull().default("pending"), // pending, active, completed
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
   createdBy: varchar("created_by").references(() => users.id),
