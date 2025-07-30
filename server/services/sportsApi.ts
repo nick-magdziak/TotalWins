@@ -82,6 +82,7 @@ export class SportsApiService {
       'TB': 'TB-MLB',
       'TOR': 'TOR',
       'CWS': 'CWS',
+      'CHW': 'CWS', // Chicago White Sox alternate
       'CLE': 'CLE-MLB',
       'DET': 'DET-MLB',
       'KC': 'KC-MLB',
@@ -99,7 +100,9 @@ export class SportsApiService {
       'SEA': 'SEA-MLB',
       'MIA': 'MIA-MLB',
       'NYM': 'NYM',
-      'WAS': 'WAS-MLB'
+      'WAS': 'WAS-MLB',
+      'WSH': 'WAS-MLB', // Washington alternate
+      'ATH': 'OAK' // Athletics (Oakland)
     };
 
     return espnToMLBMap[team.abbreviation] || team.abbreviation;

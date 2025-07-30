@@ -81,7 +81,7 @@ export class DatabaseStorage implements IStorage {
     // Delay to allow other initializations to complete
     setTimeout(async () => {
       try {
-        const { sportsApi } = await import("../services/sportsApi");
+        const { sportsApi } = await import("./services/sportsApi");
         await sportsApi.syncMLBGames();
       } catch (error) {
         console.error("Error syncing real-time MLB games:", error);
