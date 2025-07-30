@@ -326,6 +326,72 @@ export class DatabaseStorage implements IStorage {
           gameDate: new Date("2024-07-31T20:00:00Z"),
           completedAt: null,
           week: null
+        },
+        // Additional upcoming MLB games for demo
+        {
+          id: "mlb-upcoming-4",
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "LAD",
+          awayTeamId: "SF-MLB",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date(Date.now() + 24*60*60*1000), // Tomorrow
+          completedAt: null,
+          week: null
+        },
+        {
+          id: "mlb-upcoming-5",
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "NYY",
+          awayTeamId: "BOS-MLB",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date(Date.now() + 24*60*60*1000), // Tomorrow
+          completedAt: null,
+          week: null
+        },
+        {
+          id: "mlb-upcoming-6",
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "ATL-MLB",
+          awayTeamId: "PHI-MLB",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date(Date.now() + 24*60*60*1000), // Tomorrow
+          completedAt: null,
+          week: null
+        },
+        {
+          id: "mlb-upcoming-7",
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "HOU-MLB",
+          awayTeamId: "TEX",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date(Date.now() + 36*60*60*1000), // Day after tomorrow
+          completedAt: null,
+          week: null
+        },
+        {
+          id: "mlb-upcoming-8",
+          sport: "MLB",
+          season: "2024",
+          homeTeamId: "CHC",
+          awayTeamId: "STL",
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+          gameDate: new Date(Date.now() + 36*60*60*1000), // Day after tomorrow
+          completedAt: null,
+          week: null
         }
       ];
 
@@ -684,8 +750,8 @@ export class DatabaseStorage implements IStorage {
       const teams = await Promise.all(
         userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
       );
-      const validTeams = teams.filter(Boolean) as (NFLTeam | MLBTeam | NBATeam)[];
-      const totalWins = validTeams.reduce((sum, team) => sum + (team.wins || 0), 0);
+      const validTeams = teams.filter(Boolean);
+      const totalWins = validTeams.reduce((sum, team) => sum + (team?.wins || 0), 0);
 
       standings.push({
         userId: user.id,

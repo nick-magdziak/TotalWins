@@ -10,8 +10,10 @@ export class SportsApiService {
 
   async fetchMLBGames(): Promise<Game[]> {
     try {
-      // Fetch current MLB games from ESPN API
-      const response = await fetch(
+      const allGames: Game[] = [];
+      
+      // Fetch current day games
+      const todayResponse = await fetch(
         'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
         {
           headers: {
@@ -20,12 +22,50 @@ export class SportsApiService {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`ESPN API error: ${response.status}`);
+      if (todayResponse.ok) {
+        const todayData = await todayResponse.json();
+        allGames.push(...this.parseESPNMLBGames(todayData));
       }
 
-      const data = await response.json();
-      return this.parseESPNMLBGames(data);
+      // Fetch tomorrow's games for upcoming games
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0].replace(/-/g, '');
+      
+      const tomorrowResponse = await fetch(
+        `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${tomorrowStr}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+
+      if (tomorrowResponse.ok) {
+        const tomorrowData = await tomorrowResponse.json();
+        allGames.push(...this.parseESPNMLBGames(tomorrowData));
+      }
+
+      // Fetch day after tomorrow's games
+      const dayAfter = new Date();
+      dayAfter.setDate(dayAfter.getDate() + 2);
+      const dayAfterStr = dayAfter.toISOString().split('T')[0].replace(/-/g, '');
+      
+      const dayAfterResponse = await fetch(
+        `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${dayAfterStr}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+
+      if (dayAfterResponse.ok) {
+        const dayAfterData = await dayAfterResponse.json();
+        allGames.push(...this.parseESPNMLBGames(dayAfterData));
+      }
+
+      return allGames;
     } catch (error) {
       console.error('Error fetching MLB games:', error);
       return [];
