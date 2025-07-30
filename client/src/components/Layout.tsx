@@ -63,12 +63,17 @@ export default function Layout({ children }: LayoutProps) {
     }
   }, [userLeagues, currentLeague]);
 
-  const navItems = [
+  // League-specific navigation items
+  const leagueNavItems = [
     { path: "/standings", label: "STANDINGS", icon: Trophy },
     { path: "/draft", label: "DRAFT", icon: Users },
+    ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: "/admin", label: "ADMIN", icon: Settings }] : []),
+  ];
+
+  // General navigation items (not league-specific)
+  const generalNavItems = [
     { path: "/create-league", label: "CREATE LEAGUE", icon: Plus },
     { path: "/profile", label: "PROFILE", icon: User },
-    ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: "/admin", label: "ADMIN", icon: Settings }] : []),
   ];
 
   const handleLogout = () => {
@@ -180,7 +185,7 @@ export default function Layout({ children }: LayoutProps) {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-6">
-            {navItems.map((item) => {
+            {[...leagueNavItems, ...generalNavItems].map((item) => {
               const isActive = location === item.path;
               return (
                 <Link key={item.path} href={item.path}>
@@ -211,36 +216,71 @@ export default function Layout({ children }: LayoutProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="bg-retro-charcoal text-white w-64">
-              <div className="flex flex-col space-y-3 mt-6">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location === item.path;
-                  return (
-                    <Link key={item.path} href={item.path}>
-                      <Button
-                        variant="ghost"
-                        className={`w-full justify-start ${
-                          isActive ? "bg-retro-yellow text-retro-charcoal" : "text-white hover:bg-retro-purple"
-                        }`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Icon className="w-4 h-4 mr-3" />
-                        {item.label}
-                      </Button>
-                    </Link>
-                  );
-                })}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full justify-start text-retro-orange hover:bg-retro-orange hover:text-white"
-                >
-                  <LogOut className="w-4 h-4 mr-3" />
-                  LOGOUT
-                </Button>
+              <div className="flex flex-col h-full">
+                <div className="flex items-center gap-2 p-4 border-b border-retro-teal/30">
+                  <img src={totalWinsLogo} alt="Total Wins" className="w-8 h-8" />
+                  <span className="text-retro-yellow font-bold text-lg retro-font">TOTAL WINS</span>
+                </div>
+                
+                <nav className="flex-1 p-4">
+                  {/* League-specific items */}
+                  <div className="space-y-2 mb-4">
+                    {leagueNavItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location === item.path;
+                      return (
+                        <Link key={item.path} href={`${item.path}${currentLeague ? `?league=${currentLeague.id}` : ''}`}>
+                          <div
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                              isActive 
+                                ? 'bg-gradient-to-r from-retro-teal to-retro-lime text-white' 
+                                : 'text-retro-cream hover:bg-retro-teal/20 hover:text-retro-yellow'
+                            }`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Icon className="w-5 h-5" />
+                            <span className="font-medium retro-font">{item.label}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* White divider line */}
+                  <div className="border-t-2 border-white mb-4"></div>
+
+                  {/* General items */}
+                  <div className="space-y-2">
+                    {generalNavItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location === item.path;
+                      return (
+                        <Link key={item.path} href={item.path}>
+                          <div
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                              isActive 
+                                ? 'bg-gradient-to-r from-retro-teal to-retro-lime text-white' 
+                                : 'text-retro-cream hover:bg-retro-teal/20 hover:text-retro-yellow'
+                            }`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Icon className="w-5 h-5" />
+                            <span className="font-medium retro-font">{item.label}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                    
+                    {/* Logout button */}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer w-full text-left text-retro-cream hover:bg-retro-teal/20 hover:text-retro-yellow"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span className="font-medium retro-font">LOGOUT</span>
+                    </button>
+                  </div>
+                </nav>
               </div>
             </SheetContent>
           </Sheet>
