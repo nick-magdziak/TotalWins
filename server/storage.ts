@@ -466,11 +466,16 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeDemoLeagues() {
     try {
-      // Check if demo leagues already exist
-      const existingLeagues = await db.select().from(leagues).limit(1);
-      if (existingLeagues.length > 0) {
-        return; // Leagues already initialized
-      }
+      // Force fresh demo leagues - delete existing ones first
+      await db.delete(draftPicks).where(
+        sql`league_id IN ('demo-league-1', 'demo-league-2', 'demo-league-3')`
+      );
+      await db.delete(leagueMembers).where(
+        sql`league_id IN ('demo-league-1', 'demo-league-2', 'demo-league-3')`
+      );
+      await db.delete(leagues).where(
+        sql`id IN ('demo-league-1', 'demo-league-2', 'demo-league-3')`
+      );
 
       // Create demo leagues
       const demoLeagues = [
@@ -536,7 +541,13 @@ export class DatabaseStorage implements IStorage {
         { id: "player-12", email: "kevin@demo.com", password: "demo", firstName: "Kevin", lastName: "Anderson", displayName: "Kevin A" }
       ];
 
-      await db.insert(users).values(additionalPlayers);
+      // Only insert users that don't already exist
+      for (const player of additionalPlayers) {
+        const existingUser = await db.select().from(users).where(eq(users.id, player.id)).limit(1);
+        if (existingUser.length === 0) {
+          await db.insert(users).values(player);
+        }
+      }
 
       // Add only 7 more players to Champions League (8 total)
       const championsMemberships = additionalPlayers.slice(0, 7).map((player, index) => ({
@@ -822,7 +833,7 @@ export class DatabaseStorage implements IStorage {
       const teams = await Promise.all(
         userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
       );
-      const validTeams = teams.filter(Boolean);
+      const validTeams = teams.filter((team): team is NonNullable<typeof team> => Boolean(team));
       const totalWins = validTeams.reduce((sum, team) => sum + (team?.wins || 0), 0);
 
       standings.push({

@@ -143,3 +143,26 @@ Font preference: RUSSO ONE font throughout entire application for bold, athletic
 - Development database seeding capabilities
 
 The application is designed to be easily deployable on platforms like Replit, with clear separation between development and production configurations. The modular architecture allows for easy feature additions and maintenance.
+
+## Recent Changes
+
+### Demo Leagues Implementation (January 30, 2025)
+- ✅ **Completed**: Three comprehensive demo leagues created:
+  - **Champions League** (NFL): 8 players, 32 complete draft picks
+  - **Sunday Squad** (MLB): 8 players, 32 complete draft picks  
+  - **Fantasy Friends** (NBA): 8 players, 32 complete draft picks
+- ✅ All leagues have realistic player names and team assignments
+- ✅ League switching functionality working via dropdown menu
+- ✅ Full standings and draft data populated for testing
+- ✅ Fixed database initialization to handle existing users properly
+
+### Next Priority Items
+1. ✅ **Demo Leagues** - COMPLETED
+2. **Real Draft Functionality** - NEXT
+3. **Live Scoring System** 
+4. **Email Invitations**
+5. **User Profile Management**
+6. **League Join by Code**
+7. **Push Notifications**
+8. **Advanced Admin Features**
+9. **Mobile App Feel**
