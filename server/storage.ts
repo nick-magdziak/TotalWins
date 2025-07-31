@@ -559,29 +559,23 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(leagueMembers).values(championsMemberships);
 
-      // Add 7 more players to Sunday Squad (8 total)
-      const sundaySquadMemberships = [
-        { leagueId: "demo-league-2", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", draftPosition: 1, totalWins: 0 },
-        ...additionalPlayers.slice(0, 7).map((player, index) => ({
-          leagueId: "demo-league-2",
-          userId: player.id,
-          draftPosition: index + 2,
-          totalWins: 0
-        }))
-      ];
+      // Add 7 more players to Sunday Squad (8 total) - Don't add main user again, already added above
+      const sundaySquadMemberships = additionalPlayers.slice(0, 7).map((player, index) => ({
+        leagueId: "demo-league-2",
+        userId: player.id,
+        draftPosition: index + 2,
+        totalWins: 0
+      }));
 
       await db.insert(leagueMembers).values(sundaySquadMemberships);
 
-      // Add all players to demo-league-3 (NBA)
-      const allPlayersForLeague3 = [
-        { leagueId: "demo-league-3", userId: "62f5c618-a04f-4b08-92e6-f7266c4ed7be", draftPosition: 1, totalWins: 0 },
-        ...additionalPlayers.slice(0, 7).map((player, index) => ({
-          leagueId: "demo-league-3",
-          userId: player.id,
-          draftPosition: index + 2,
-          totalWins: 0
-        }))
-      ];
+      // Add all players to demo-league-3 (NBA) - Don't add main user again, already added above
+      const allPlayersForLeague3 = additionalPlayers.slice(0, 7).map((player, index) => ({
+        leagueId: "demo-league-3",
+        userId: player.id,
+        draftPosition: index + 2,
+        totalWins: 0
+      }));
 
       await db.insert(leagueMembers).values(allPlayersForLeague3);
 
