@@ -52,6 +52,26 @@ export default function Draft() {
     enabled: !!currentUser?.id,
   });
 
+  const startDraftMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/leagues/${leagueId}/draft/start`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      toast({
+        title: "Draft Started!",
+        description: "The draft is now active. Let the drafting begin!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to start draft",
+        description: "Could not start the draft. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const draftPickMutation = useMutation({
     mutationFn: async (teamId: string) => {
       const pickNumber = (draftPicks?.length || 0) + 1;
@@ -201,19 +221,32 @@ export default function Draft() {
                     </div>
                   </div>
                   <div className="bg-retro-cream p-3 rounded-lg">
-                    <div className="text-sm text-retro-charcoal opacity-75">Previous Team Selected</div>
+                    <div className="text-sm text-retro-charcoal opacity-75">Past Pick</div>
                     <div className="text-lg font-bold text-retro-purple retro-font">
                       {draftPicks && draftPicks.length > 0 ? (
                         (() => {
                           const lastPick = draftPicks[draftPicks.length - 1];
                           const lastTeam = teams?.find(t => t.id === lastPick.teamId);
-                          return lastTeam ? `${lastTeam.city} ${lastTeam.name}` : "No picks yet";
+                          return lastTeam ? `${lastTeam.city} ${lastTeam.name}` : "none";
                         })()
                       ) : (
-                        "No picks yet"
+                        "none"
                       )}
                     </div>
                   </div>
+                  
+                  {/* Start Draft Button */}
+                  {draftStatus && !draftStatus.isActive && draftPicks?.length === 0 && (
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => startDraftMutation.mutate()}
+                        disabled={startDraftMutation.isPending}
+                        className="w-full bg-retro-teal hover:bg-retro-lime text-white font-bold py-3 rounded-lg retro-font"
+                      >
+                        {startDraftMutation.isPending ? "STARTING..." : "START DRAFT"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

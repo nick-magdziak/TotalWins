@@ -438,6 +438,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Draft start endpoint for draft page
+  app.post("/api/leagues/:leagueId/draft/start", async (req, res) => {
+    try {
+      const { leagueId } = req.params;
+      
+      if (!leagueId) {
+        return res.status(400).json({ error: "League ID required" });
+      }
+      
+      // Update league draft status to active
+      await storage.updateLeague(leagueId, { draftStatus: "active" });
+      
+      res.json({ success: true, message: "Draft started successfully" });
+    } catch (error) {
+      console.error("Error starting draft:", error);
+      res.status(500).json({ error: "Failed to start draft" });
+    }
+  });
+
   // Multi-sport team endpoints
   app.get("/api/nfl/teams", async (req, res) => {
     const teams = await storage.getAllNFLTeams();
