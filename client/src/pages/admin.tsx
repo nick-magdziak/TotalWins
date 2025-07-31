@@ -49,7 +49,7 @@ export default function Admin() {
   const [draftStyle, setDraftStyle] = useState("snake");
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
-  const [draftStatus, setDraftStatus] = useState("not_started");
+  const [localDraftStatus, setLocalDraftStatus] = useState("not_started");
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
@@ -82,6 +82,11 @@ export default function Admin() {
       });
       return Promise.all(usersPromises);
     },
+    enabled: !!leagueId
+  });
+
+  const { data: draftStatus } = useQuery({
+    queryKey: ["/api/leagues", leagueId, "draft", "status"],
     enabled: !!leagueId
   });
 
@@ -357,6 +362,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
       toast({
         title: "Draft Started!",
         description: "The draft is now active. Players can begin drafting!",
@@ -751,10 +757,11 @@ export default function Admin() {
                     Draft Status
                   </Label>
                   <Input
-                    value={draftStatus === "not_started" ? "Not Started" : 
-                           draftStatus === "active" ? "Active" : 
-                           draftStatus === "paused" ? "Paused" : 
-                           draftStatus === "completed" ? "Completed" : draftStatus}
+                    value={draftStatus?.isActive 
+                      ? "In Progress" 
+                      : currentLeague?.draftStatus === "completed" 
+                        ? "Completed" 
+                        : "Not Started"}
                     className="w-full border-2 border-retro-pink focus:border-retro-purple bg-gray-50"
                     disabled
                     readOnly
@@ -779,23 +786,20 @@ export default function Admin() {
 
                   {/* Draft Control Buttons */}
                   <div className="grid grid-cols-2 gap-3">
-                    {draftStatus === "active" ? (
+                    {draftStatus?.isActive ? (
                       <Button
-                        onClick={() => setDraftStatus("paused")}
+                        onClick={() => {
+                          // TODO: Add pause draft mutation
+                          toast({
+                            title: "Pause functionality",
+                            description: "Pause draft feature coming soon!",
+                          });
+                        }}
                         variant="outline"
                         className="border-retro-orange text-retro-orange hover:bg-retro-orange hover:text-white font-bold py-2 rounded-lg retro-font"
                       >
                         <Pause className="w-4 h-4 mr-2" />
                         PAUSE DRAFT
-                      </Button>
-                    ) : draftStatus === "paused" ? (
-                      <Button
-                        onClick={() => startDraftMutation.mutate()}
-                        disabled={startDraftMutation.isPending}
-                        className="bg-retro-teal hover:bg-retro-lime text-white font-bold py-2 rounded-lg retro-font"
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        {startDraftMutation.isPending ? "RESUMING..." : "RESUME DRAFT"}
                       </Button>
                     ) : (
                       <Button
