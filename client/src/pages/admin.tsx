@@ -36,7 +36,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { type LeagueMember, type League } from "@shared/schema";
+import { type LeagueMember, type League, type DraftStatus } from "@shared/schema";
 
 export default function Admin() {
   const currentUser = getCurrentUser();
@@ -49,7 +49,6 @@ export default function Admin() {
   const [draftStyle, setDraftStyle] = useState("snake");
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
-  const [localDraftStatus, setLocalDraftStatus] = useState("not_started");
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
@@ -85,7 +84,7 @@ export default function Admin() {
     enabled: !!leagueId
   });
 
-  const { data: draftStatus } = useQuery({
+  const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
     enabled: !!leagueId
   });
@@ -319,7 +318,6 @@ export default function Admin() {
       return apiRequest("POST", "/api/admin/reset-draft", { leagueId });
     },
     onSuccess: () => {
-      setDraftStatus("not_started");
       setShowResetConfirmDialog(false);
       toast({
         title: "Draft reset!",
