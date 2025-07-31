@@ -351,6 +351,26 @@ export default function Admin() {
     },
   });
 
+  const startDraftMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/leagues/${leagueId}/draft/start`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      toast({
+        title: "Draft Started!",
+        description: "The draft is now active. Players can begin drafting!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to start draft",
+        description: "Could not start the draft. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // League update mutation
   const updateLeagueMutation = useMutation({
     mutationFn: async (updates: { name?: string }) => {
@@ -770,19 +790,21 @@ export default function Admin() {
                       </Button>
                     ) : draftStatus === "paused" ? (
                       <Button
-                        onClick={() => setDraftStatus("active")}
+                        onClick={() => startDraftMutation.mutate()}
+                        disabled={startDraftMutation.isPending}
                         className="bg-retro-teal hover:bg-retro-lime text-white font-bold py-2 rounded-lg retro-font"
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        RESUME DRAFT
+                        {startDraftMutation.isPending ? "RESUMING..." : "RESUME DRAFT"}
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => setDraftStatus("active")}
+                        onClick={() => startDraftMutation.mutate()}
+                        disabled={startDraftMutation.isPending}
                         className="bg-retro-teal hover:bg-retro-lime text-white font-bold py-2 rounded-lg retro-font"
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        START DRAFT
+                        {startDraftMutation.isPending ? "STARTING..." : "START DRAFT"}
                       </Button>
                     )}
                     

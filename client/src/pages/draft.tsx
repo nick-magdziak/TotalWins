@@ -52,25 +52,7 @@ export default function Draft() {
     enabled: !!currentUser?.id,
   });
 
-  const startDraftMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", `/api/leagues/${leagueId}/draft/start`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
-      toast({
-        title: "Draft Started!",
-        description: "The draft is now active. Let the drafting begin!",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Failed to start draft",
-        description: "Could not start the draft. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   const draftPickMutation = useMutation({
     mutationFn: async (teamId: string) => {
@@ -234,19 +216,6 @@ export default function Draft() {
                       )}
                     </div>
                   </div>
-                  
-                  {/* Start Draft Button */}
-                  {draftStatus && !draftStatus.isActive && draftPicks?.length === 0 && (
-                    <div className="mt-4">
-                      <Button
-                        onClick={() => startDraftMutation.mutate()}
-                        disabled={startDraftMutation.isPending}
-                        className="w-full bg-retro-teal hover:bg-retro-lime text-white font-bold py-3 rounded-lg retro-font"
-                      >
-                        {startDraftMutation.isPending ? "STARTING..." : "START DRAFT"}
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>
