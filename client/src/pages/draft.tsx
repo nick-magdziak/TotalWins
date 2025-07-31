@@ -41,10 +41,12 @@ export default function Draft() {
 
   const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "draft", "picks"],
+    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
   });
 
   const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
+    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
   });
 
   const { data: userPicks } = useQuery<DraftPick[]>({

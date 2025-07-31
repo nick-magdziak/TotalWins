@@ -86,7 +86,42 @@ export default function Admin() {
 
   const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
-    enabled: !!leagueId
+    enabled: !!leagueId,
+    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
+  });
+
+  // Get last draft pick for display
+  const { data: lastPick } = useQuery({
+    queryKey: ["/api/leagues", leagueId, "draft", "last-pick"],
+    queryFn: async () => {
+      const picks = await fetch(`/api/leagues/${leagueId}/draft/picks`).then(r => r.json());
+      if (picks.length === 0) return null;
+      
+      const lastPick = picks[picks.length - 1];
+      const user = await fetch(`/api/users/${lastPick.userId}`).then(r => r.json());
+      
+      // Get team name based on sport
+      let team;
+      switch (currentLeague?.sport) {
+        case 'MLB':
+          team = await fetch(`/api/mlb/teams`).then(r => r.json()).then((teams: any[]) => teams.find((t: any) => t.id === lastPick.teamId));
+          break;
+        case 'NBA':
+          team = await fetch(`/api/nba/teams`).then(r => r.json()).then((teams: any[]) => teams.find((t: any) => t.id === lastPick.teamId));
+          break;
+        default:
+          team = await fetch(`/api/nfl/teams`).then(r => r.json()).then((teams: any[]) => teams.find((t: any) => t.id === lastPick.teamId));
+      }
+      
+      return {
+        playerName: user.displayName,
+        teamName: team ? `${team.city} ${team.name}` : 'Unknown Team',
+        round: lastPick.round,
+        pickNumber: lastPick.pickNumber
+      };
+    },
+    enabled: !!leagueId && !!currentLeague,
+    refetchInterval: 3000, // Poll every 3 seconds
   });
 
   const syncScoresMutation = useMutation({
@@ -779,7 +814,10 @@ export default function Admin() {
                   </Button>
                   
                   <p className="text-xs text-retro-charcoal/70 text-center">
-                    Last pick: Player 3 selected Detroit Lions (Round 2, Pick 16)
+                    {lastPick 
+                      ? `Last pick: ${lastPick.playerName} selected ${lastPick.teamName} (Round ${lastPick.round}, Pick ${lastPick.pickNumber})`
+                      : "Past Pick: none"
+                    }
                   </p>
 
                   {/* Draft Control Buttons */}
