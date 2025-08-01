@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lt } from "drizzle-orm";
 import { db } from "./db";
 import {
   type User,
@@ -979,16 +979,37 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return [];
     
-    // Get recent games filtered by sport
-    const recentGames = await db
-      .select()
-      .from(games)
-      .where(and(
-        eq(games.status, "completed"),
-        eq(games.sport, league.sport || "NFL")
-      ))
-      .orderBy(desc(games.completedAt))
-      .limit(limit);
+    // For MLB/NBA, get today's games only. For NFL, get recent completed games
+    let recentGames;
+    
+    if (league.sport === 'MLB' || league.sport === 'NBA') {
+      // Get today's date in UTC for accurate comparison
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      recentGames = await db
+        .select()
+        .from(games)
+        .where(and(
+          eq(games.sport, league.sport),
+          gte(games.gameDate, todayStart),
+          lt(games.gameDate, todayEnd)
+        ))
+        .orderBy(games.gameDate)
+        .limit(limit);
+    } else {
+      // For NFL, get recent completed games (Week-based approach)
+      recentGames = await db
+        .select()
+        .from(games)
+        .where(and(
+          eq(games.status, "completed"),
+          eq(games.sport, league.sport || "NFL")
+        ))
+        .orderBy(desc(games.completedAt))
+        .limit(limit);
+    }
     
     const gamesWithOwners = await Promise.all(
       recentGames.map(async (game) => {
@@ -1029,16 +1050,37 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return [];
     
-    // Get upcoming games filtered by sport
-    const upcomingGames = await db
-      .select()
-      .from(games)
-      .where(and(
-        eq(games.status, "scheduled"),
-        eq(games.sport, league.sport || "NFL")
-      ))
-      .orderBy(games.gameDate)
-      .limit(limit);
+    // For MLB/NBA, get tomorrow's games only. For NFL, get upcoming scheduled games
+    let upcomingGames;
+    
+    if (league.sport === 'MLB' || league.sport === 'NBA') {
+      // Get tomorrow's date for accurate comparison
+      const today = new Date();
+      const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      const dayAfter = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+      
+      upcomingGames = await db
+        .select()
+        .from(games)
+        .where(and(
+          eq(games.sport, league.sport),
+          gte(games.gameDate, tomorrow),
+          lt(games.gameDate, dayAfter)
+        ))
+        .orderBy(games.gameDate)
+        .limit(limit);
+    } else {
+      // For NFL, get upcoming scheduled games (Week-based approach)
+      upcomingGames = await db
+        .select()
+        .from(games)
+        .where(and(
+          eq(games.status, "scheduled"),
+          eq(games.sport, league.sport || "NFL")
+        ))
+        .orderBy(games.gameDate)
+        .limit(limit);
+    }
     
     const gamesWithOwners = await Promise.all(
       upcomingGames.map(async (game) => {
