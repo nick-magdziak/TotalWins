@@ -23,13 +23,6 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
       draftStyle: "snake"
     },
     {
-      key: "6_players_5_teams",
-      label: "6 Players, 5 Teams",
-      players: 6,
-      teams: 5,
-      draftStyle: "snake"
-    },
-    {
       key: "7_players_4_teams",
       label: "7 Players, 4 Teams",
       players: 7,
@@ -74,13 +67,6 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
       draftStyle: "snake"
     },
     {
-      key: "6_players_5_teams",
-      label: "6 Players, 5 Teams",
-      players: 6,
-      teams: 5,
-      draftStyle: "snake"
-    },
-    {
       key: "7_players_4_teams",
       label: "7 Players, 4 Teams",
       players: 7,
@@ -122,13 +108,6 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
       label: "5 Players, 6 Teams",
       players: 5,
       teams: 6,
-      draftStyle: "snake"
-    },
-    {
-      key: "6_players_5_teams",
-      label: "6 Players, 5 Teams",
-      players: 6,
-      teams: 5,
       draftStyle: "snake"
     },
     {
