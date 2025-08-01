@@ -490,6 +490,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Live scoring system endpoint
+  app.post("/api/admin/sync-live-scores", async (req, res) => {
+    try {
+      const { SportsDataService } = await import("./sportsDataService");
+      const sportsService = new SportsDataService(storage);
+      
+      // Update MLB standings with live 2025 season data
+      await sportsService.updateMLBStandings();
+      
+      res.json({ 
+        message: "Live scores synced successfully",
+        timestamp: new Date().toISOString(),
+        season: "2025"
+      });
+    } catch (error) {
+      console.error("Live scoring sync error:", error);
+      res.status(500).json({ message: "Failed to sync live scores" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // Set up periodic score updates (every 30 minutes during season)
