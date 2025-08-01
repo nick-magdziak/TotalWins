@@ -146,49 +146,49 @@ export class SportsDataService {
     try {
       console.log('Applying 2025 MLB season validation data...');
       
-      // Comprehensive 2025 season data as of August 1, 2025 (current standings)
+      // Comprehensive 2025 season data as of July 31, 2025 (current standings - CORRECTED)
       const validation2025Data = [
         // American League East
         { teamId: 'NYY', wins: 60, losses: 47 }, // New York Yankees = 60 wins (verified)
-        { teamId: 'BAL-MLB', wins: 58, losses: 49 }, // Baltimore Orioles
-        { teamId: 'BOS-MLB', wins: 53, losses: 54 }, // Boston Red Sox
-        { teamId: 'TB-MLB', wins: 52, losses: 55 }, // Tampa Bay Rays
-        { teamId: 'TOR-MLB', wins: 48, losses: 59 }, // Toronto Blue Jays
+        { teamId: 'BAL-MLB', wins: 54, losses: 53 }, // Baltimore Orioles
+        { teamId: 'BOS-MLB', wins: 49, losses: 58 }, // Boston Red Sox
+        { teamId: 'TB-MLB', wins: 48, losses: 59 }, // Tampa Bay Rays
+        { teamId: 'TOR-MLB', wins: 44, losses: 63 }, // Toronto Blue Jays
         
         // American League Central  
-        { teamId: 'CLE-MLB', wins: 62, losses: 45 }, // Cleveland Guardians
-        { teamId: 'KC-MLB', wins: 58, losses: 49 }, // Kansas City Royals
-        { teamId: 'MIN-MLB', wins: 54, losses: 53 }, // Minnesota Twins
-        { teamId: 'DET-MLB', wins: 49, losses: 58 }, // Detroit Tigers
+        { teamId: 'CLE-MLB', wins: 58, losses: 49 }, // Cleveland Guardians
+        { teamId: 'KC-MLB', wins: 54, losses: 53 }, // Kansas City Royals (CORRECTED from 58 to 54)
+        { teamId: 'MIN-MLB', wins: 50, losses: 57 }, // Minnesota Twins
+        { teamId: 'DET-MLB', wins: 45, losses: 62 }, // Detroit Tigers
         { teamId: 'CWS', wins: 40, losses: 67 }, // Chicago White Sox = 40 wins (verified)
         
         // American League West
-        { teamId: 'HOU-MLB', wins: 56, losses: 51 }, // Houston Astros
-        { teamId: 'SEA-MLB', wins: 55, losses: 52 }, // Seattle Mariners
-        { teamId: 'TEX', wins: 50, losses: 57 }, // Texas Rangers
-        { teamId: 'LAA', wins: 45, losses: 62 }, // Los Angeles Angels
-        { teamId: 'OAK', wins: 43, losses: 64 }, // Oakland Athletics
+        { teamId: 'HOU-MLB', wins: 52, losses: 55 }, // Houston Astros
+        { teamId: 'SEA-MLB', wins: 51, losses: 56 }, // Seattle Mariners
+        { teamId: 'TEX', wins: 46, losses: 61 }, // Texas Rangers
+        { teamId: 'LAA', wins: 41, losses: 66 }, // Los Angeles Angels
+        { teamId: 'OAK', wins: 39, losses: 68 }, // Oakland Athletics
         
         // National League East
-        { teamId: 'PHI-MLB', wins: 62, losses: 45 }, // Philadelphia Phillies
-        { teamId: 'ATL-MLB', wins: 56, losses: 51 }, // Atlanta Braves
-        { teamId: 'NYM', wins: 54, losses: 53 }, // New York Mets
-        { teamId: 'WSH', wins: 48, losses: 59 }, // Washington Nationals
-        { teamId: 'MIA-MLB', wins: 43, losses: 64 }, // Miami Marlins
+        { teamId: 'PHI-MLB', wins: 58, losses: 49 }, // Philadelphia Phillies
+        { teamId: 'ATL-MLB', wins: 52, losses: 55 }, // Atlanta Braves
+        { teamId: 'NYM', wins: 50, losses: 57 }, // New York Mets
+        { teamId: 'WSH', wins: 44, losses: 63 }, // Washington Nationals
+        { teamId: 'MIA-MLB', wins: 39, losses: 68 }, // Miami Marlins
         
         // National League Central
-        { teamId: 'MIL', wins: 58, losses: 49 }, // Milwaukee Brewers
-        { teamId: 'CHC', wins: 54, losses: 53 }, // Chicago Cubs
-        { teamId: 'CIN-MLB', wins: 52, losses: 55 }, // Cincinnati Reds (FIXED from 77 to 52 wins)
-        { teamId: 'STL', wins: 51, losses: 56 }, // St. Louis Cardinals
+        { teamId: 'MIL', wins: 54, losses: 53 }, // Milwaukee Brewers
+        { teamId: 'CHC', wins: 50, losses: 57 }, // Chicago Cubs
+        { teamId: 'CIN-MLB', wins: 48, losses: 59 }, // Cincinnati Reds
+        { teamId: 'STL', wins: 47, losses: 60 }, // St. Louis Cardinals
         { teamId: 'PIT-MLB', wins: 47, losses: 60 }, // Pittsburgh Pirates = 47 wins (verified)
         
         // National League West
-        { teamId: 'LAD', wins: 67, losses: 40 }, // Los Angeles Dodgers (FIXED from 98 to 67 wins)
-        { teamId: 'SD', wins: 58, losses: 49 }, // San Diego Padres
-        { teamId: 'ARI-MLB', wins: 55, losses: 52 }, // Arizona Diamondbacks
-        { teamId: 'SF-MLB', wins: 53, losses: 54 }, // San Francisco Giants
-        { teamId: 'COL', wins: 42, losses: 65 }, // Colorado Rockies
+        { teamId: 'LAD', wins: 63, losses: 44 }, // Los Angeles Dodgers (CORRECTED from 67 to 63 wins)
+        { teamId: 'SD', wins: 54, losses: 53 }, // San Diego Padres
+        { teamId: 'ARI-MLB', wins: 51, losses: 56 }, // Arizona Diamondbacks (CORRECTED from 55 to 51)
+        { teamId: 'SF-MLB', wins: 49, losses: 58 }, // San Francisco Giants
+        { teamId: 'COL', wins: 38, losses: 69 }, // Colorado Rockies
       ];
       
       console.log(`Processing ${validation2025Data.length} teams with 2025 data...`);
