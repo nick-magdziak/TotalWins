@@ -205,7 +205,9 @@ export class SportsDataService {
             wins: teamRecord.wins,
             losses: teamRecord.losses
           });
-          console.log(`📊 Live data: ${teamRecord.team.abbreviation} = ${teamRecord.wins}-${teamRecord.losses}`);
+          console.log(`📊 Live data: ${teamRecord.team.abbreviation} → ${teamId} = ${teamRecord.wins}-${teamRecord.losses}`);
+        } else {
+          console.warn(`⚠️ No mapping found for team abbreviation: ${teamRecord.team.abbreviation}`);
         }
       }
     }
@@ -238,7 +240,9 @@ export class SportsDataService {
               wins,
               losses
             });
-            console.log(`📊 Live ESPN data: ${entry.team.abbreviation} = ${wins}-${losses}`);
+            console.log(`📊 Live ESPN data: ${entry.team.abbreviation} → ${teamId} = ${wins}-${losses}`);
+          } else {
+            console.warn(`⚠️ No ESPN mapping found for team abbreviation: ${entry.team.abbreviation}`);
           }
         }
     }
@@ -293,17 +297,26 @@ export class SportsDataService {
    * Update teams in database with live data
    */
   private async updateTeamsInDatabase(teams: { teamId: string; wins: number; losses: number }[]): Promise<void> {
+    let successCount = 0;
+    let failCount = 0;
+
     const updatePromises = teams.map(async ({ teamId, wins, losses }) => {
       try {
         await this.storage.updateMLBTeamRecord(teamId, wins, losses);
         console.log(`✅ Updated ${teamId}: ${wins}-${losses}`);
+        successCount++;
       } catch (error) {
-        console.error(`❌ Failed to update ${teamId}:`, error);
+        console.error(`❌ Failed to update ${teamId}: ${error}`);
+        failCount++;
       }
     });
 
     await Promise.all(updatePromises);
-    console.log(`🏆 Database update complete: ${teams.length} teams processed`);
+    console.log(`🏆 Database update complete: ${successCount}/${teams.length} teams updated successfully (${failCount} failed)`);
+    
+    if (failCount > 0) {
+      console.warn(`⚠️ ${failCount} teams failed to update - check team ID mappings`);
+    }
   }
 
   /**
@@ -313,9 +326,9 @@ export class SportsDataService {
     const mapping: { [key: string]: string } = {
       'NYY': 'NYY',
       'BAL': 'BAL-MLB', 
-      'BOS': 'BOS-MLB',
+      'BOS': 'BOS',
       'TB': 'TB-MLB',
-      'TOR': 'TOR-MLB',
+      'TOR': 'TOR',
       'CLE': 'CLE-MLB',
       'KC': 'KC-MLB',
       'MIN': 'MIN-MLB',
@@ -361,9 +374,9 @@ export class SportsDataService {
     // AUTHENTIC MLB.COM DATA - July 31, 2025 Official Standings
     const mlb2025Data = [
       // AL East
-      { id: 'TOR-MLB', wins: 64, losses: 46 },  // Leading AL East!
+      { id: 'TOR', wins: 64, losses: 46 },  // Leading AL East!
       { id: 'NYY', wins: 60, losses: 49 },      // CORRECTED from 60-47
-      { id: 'BOS-MLB', wins: 59, losses: 51 },  // CORRECTED from 49-58
+      { id: 'BOS', wins: 59, losses: 51 },  // CORRECTED from 49-58
       { id: 'TB-MLB', wins: 54, losses: 56 },   // CORRECTED from 48-59
       { id: 'BAL-MLB', wins: 50, losses: 59 },  // CORRECTED from 54-53
       

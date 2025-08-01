@@ -51,6 +51,10 @@ export interface IStorage {
   getNFLTeam(id: string): Promise<NFLTeam | undefined>;
   updateTeamRecord(teamId: string, wins: number, losses: number, ties: number): Promise<void>;
 
+  // MLB Teams
+  getAllMLBTeams(): Promise<MLBTeam[]>;
+  updateMLBTeamRecord(teamId: string, wins: number, losses: number): Promise<void>;
+
   // Draft
   getDraftPicks(leagueId: string): Promise<DraftPick[]>;
   addDraftPick(pick: InsertDraftPick): Promise<DraftPick>;
