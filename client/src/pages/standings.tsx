@@ -217,14 +217,15 @@ export default function Standings() {
                     <div className="text-xs font-bold text-retro-purple mb-2">{getByeWeekTeams()!.currentLabel}</div>
                     <div className="grid grid-cols-2 gap-1">
                       {getByeWeekTeams()!.current.map((team) => {
-                        const teamColors = getTeamColors()[team as keyof typeof NFL_TEAM_COLORS];
+                        const teamColors = getTeamColors();
+                        const colors = (teamColors as any)[team] || { background: '#f3f4f6', font: '#374151' };
                         return (
                           <div 
                             key={team} 
                             className="p-2 rounded text-xs text-center font-bold"
                             style={{
-                              backgroundColor: teamColors?.background || '#f3f4f6',
-                              color: teamColors?.font || '#374151'
+                              backgroundColor: colors.background,
+                              color: colors.font
                             }}
                           >
                             {team} - BYE
@@ -283,14 +284,15 @@ export default function Standings() {
                     <div className="text-xs font-bold text-retro-purple mb-2">{getByeWeekTeams()!.nextLabel}</div>
                     <div className="grid grid-cols-2 gap-1">
                       {getByeWeekTeams()!.next.map((team) => {
-                        const teamColors = getTeamColors()[team as keyof typeof NFL_TEAM_COLORS];
+                        const teamColors = getTeamColors();
+                        const colors = (teamColors as any)[team] || { background: '#f3f4f6', font: '#374151' };
                         return (
                           <div 
                             key={team} 
                             className="p-2 rounded text-xs text-center font-bold"
                             style={{
-                              backgroundColor: teamColors?.background || '#f3f4f6',
-                              color: teamColors?.font || '#374151'
+                              backgroundColor: colors.background,
+                              color: colors.font
                             }}
                           >
                             {team} - BYE
