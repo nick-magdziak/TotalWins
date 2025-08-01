@@ -82,23 +82,21 @@ export function getSnakeDraftOrder(numPlayers: number, numRounds: number): Draft
 }
 
 /**
- * Generate linear draft order
+ * Generate custom 6-player, 30-pick draft order
  */
-export function getLinearDraftOrder(numPlayers: number, numRounds: number): DraftPickOrder[] {
-  const draftOrder: DraftPickOrder[] = [];
-  let pickNumber = 1;
+export function getCustom6Player30PickOrder(): DraftPickOrder[] {
+  // Placeholder for custom 6-player configuration
+  // Will be filled with specific pick order when provided
+  return getSnakeDraftOrder(6, 5); // Temporary fallback
+}
 
-  for (let round = 1; round <= numRounds; round++) {
-    for (let position = 1; position <= numPlayers; position++) {
-      draftOrder.push({
-        position,
-        round,
-        pick: pickNumber++
-      });
-    }
-  }
-
-  return draftOrder;
+/**
+ * Generate custom 8-player, 24-pick draft order
+ */
+export function getCustom8Player24PickOrder(): DraftPickOrder[] {
+  // Placeholder for custom 8-player configuration
+  // Will be filled with specific pick order when provided
+  return getSnakeDraftOrder(8, 3); // Temporary fallback
 }
 
 /**
@@ -112,10 +110,12 @@ export function getDraftOrder(
   switch (draftType) {
     case "custom_10_30":
       return getCustom10Player30PickOrder();
+    case "custom_6_30":
+      return getCustom6Player30PickOrder();
+    case "custom_8_24":
+      return getCustom8Player24PickOrder();
     case "snake":
       return getSnakeDraftOrder(numPlayers, numRounds);
-    case "linear":
-      return getLinearDraftOrder(numPlayers, numRounds);
     default:
       return getSnakeDraftOrder(numPlayers, numRounds);
   }

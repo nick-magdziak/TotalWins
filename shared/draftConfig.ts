@@ -45,10 +45,17 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
     },
     {
       key: "10_players_3_teams",
-      label: "10 Players, 3 Teams",
+      label: "10 Players, 3 Teams (custom config)",
       players: 10,
       teams: 3,
-      draftStyle: "snake"
+      draftStyle: "custom_10_30"
+    },
+    {
+      key: "6_players_5_teams_custom",
+      label: "6 Players, 5 Teams (custom config)",
+      players: 6,
+      teams: 5,
+      draftStyle: "custom_6_30"
     }
   ],
   MLB: [
@@ -85,14 +92,21 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
       label: "8 Players, 3 Teams",
       players: 8,
       teams: 3,
-      draftStyle: "snake"
+      draftStyle: "custom_8_24"
     },
     {
       key: "10_players_3_teams",
-      label: "10 Players, 3 Teams",
+      label: "10 Players, 3 Teams (custom config)",
       players: 10,
       teams: 3,
-      draftStyle: "snake"
+      draftStyle: "custom_10_30"
+    },
+    {
+      key: "6_players_5_teams_custom",
+      label: "6 Players, 5 Teams (custom config)",
+      players: 6,
+      teams: 5,
+      draftStyle: "custom_6_30"
     }
   ],
   NBA: [
@@ -129,14 +143,21 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
       label: "8 Players, 3 Teams",
       players: 8,
       teams: 3,
-      draftStyle: "snake"
+      draftStyle: "custom_8_24"
     },
     {
       key: "10_players_3_teams",
-      label: "10 Players, 3 Teams",
+      label: "10 Players, 3 Teams (custom config)",
       players: 10,
       teams: 3,
-      draftStyle: "snake"
+      draftStyle: "custom_10_30"
+    },
+    {
+      key: "6_players_5_teams_custom",
+      label: "6 Players, 5 Teams (custom config)",
+      players: 6,
+      teams: 5,
+      draftStyle: "custom_6_30"
     }
   ]
 };
