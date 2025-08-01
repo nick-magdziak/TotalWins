@@ -39,14 +39,14 @@ export default function Draft() {
     enabled: !!currentLeague?.sport,
   });
 
-  const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
-    queryKey: ["/api/leagues", leagueId, "draft", "picks"],
-    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
-  });
-
   const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
-    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
+    refetchInterval: 3000, // Always poll draft status for immediate admin feedback
+  });
+
+  const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
+    queryKey: ["/api/leagues", leagueId, "draft", "picks"],
+    refetchInterval: draftStatus?.isActive ? 3000 : 30000, // 3s when active, 30s when inactive
   });
 
   const { data: userPicks } = useQuery<DraftPick[]>({

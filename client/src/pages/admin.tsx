@@ -123,7 +123,7 @@ export default function Admin() {
       };
     },
     enabled: !!leagueId && !!currentLeague,
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: draftStatus?.isActive ? 3000 : 30000, // 3s when active, 30s when inactive
   });
 
   // Get current draft pick info for Manual Entry dialog
@@ -155,7 +155,7 @@ export default function Admin() {
       };
     },
     enabled: !!leagueId && !!draftStatus?.isActive && !!membersWithUserData,
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: draftStatus?.isActive ? 3000 : false, // Only poll when draft is active
   });
 
   // Get available teams for Manual Entry dialog
@@ -173,7 +173,7 @@ export default function Admin() {
       return teams.filter((team: any) => !draftedTeamIds.has(team.id));
     },
     enabled: !!leagueId && !!currentLeague?.sport,
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: draftStatus?.isActive ? 3000 : 30000, // 3s when active, 30s when inactive
   });
 
   // Manual draft pick mutation
