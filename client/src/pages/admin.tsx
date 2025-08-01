@@ -695,7 +695,7 @@ export default function Admin() {
                 <div>
                   <Label className="block text-retro-charcoal font-bold mb-2">Season</Label>
                   <Input 
-                    value="2024-25"
+                    value={currentLeague?.season || "2024-25"}
                     className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
                     disabled
                   />
@@ -704,7 +704,7 @@ export default function Admin() {
                 <div>
                   <Label className="block text-retro-charcoal font-bold mb-2">Sport</Label>
                   <Input 
-                    value="NFL"
+                    value={currentLeague?.sport || "NFL"}
                     className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
                     disabled
                   />
