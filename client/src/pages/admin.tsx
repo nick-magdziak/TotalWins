@@ -46,6 +46,7 @@ export default function Admin() {
   const [showPrivilegeDialog, setShowPrivilegeDialog] = useState(false);
   const [showManualDraftDialog, setShowManualDraftDialog] = useState(false);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [draftStyle, setDraftStyle] = useState("snake");
   const [draftDateTime, setDraftDateTime] = useState("");
   const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
@@ -172,6 +173,39 @@ export default function Admin() {
     },
     enabled: !!leagueId && !!currentLeague?.sport,
     refetchInterval: 3000, // Poll every 3 seconds
+  });
+
+  // Manual draft pick mutation
+  const manualDraftPickMutation = useMutation({
+    mutationFn: async ({ teamId, userId }: { teamId: string; userId: string }) => {
+      const picks = await fetch(`/api/leagues/${leagueId}/draft/picks`).then(r => r.json());
+      const pickNumber = picks.length + 1;
+      const round = Math.ceil(pickNumber / (membersWithUserData?.length || 8));
+      
+      return apiRequest("POST", `/api/leagues/${leagueId}/draft/picks`, {
+        userId,
+        teamId,
+        pickNumber,
+        round,
+        sport: currentLeague?.sport || 'NFL',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      setShowManualDraftDialog(false);
+      setSelectedTeamId("");
+      toast({
+        title: "Manual pick successful!",
+        description: "The draft pick has been recorded.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Manual pick failed",
+        description: error.message || "Failed to record draft pick. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const syncScoresMutation = useMutation({
@@ -317,6 +351,7 @@ export default function Admin() {
   };
 
   const handleManualDraftPick = () => {
+    setSelectedTeamId(""); // Clear previous selection
     setShowManualDraftDialog(true);
   };
 
@@ -1072,7 +1107,7 @@ export default function Admin() {
                 <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
                   Available Teams
                 </Label>
-                <Select>
+                <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
                   <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
                     <SelectValue placeholder="Select team for player..." />
                   </SelectTrigger>
@@ -1093,9 +1128,18 @@ export default function Admin() {
 
               <Button
                 className="w-full bg-retro-teal hover:bg-retro-lime text-white font-bold py-3 rounded-lg retro-font"
+                onClick={() => {
+                  if (selectedTeamId && currentPickInfo?.player?.userId) {
+                    manualDraftPickMutation.mutate({
+                      teamId: selectedTeamId,
+                      userId: currentPickInfo.player.userId
+                    });
+                  }
+                }}
+                disabled={!selectedTeamId || manualDraftPickMutation.isPending}
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                CONFIRM SELECTION
+                {manualDraftPickMutation.isPending ? "CONFIRMING..." : "CONFIRM SELECTION"}
               </Button>
             </div>
           </div>
