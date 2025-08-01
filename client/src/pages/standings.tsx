@@ -180,13 +180,29 @@ export default function Standings() {
                           {getTeamDisplayName(game.awayTeamId)} @ {getTeamDisplayName(game.homeTeamId)}
                         </div>
                         <div className="text-xs text-retro-charcoal font-bold">
-                          {game.awayScore} - {game.homeScore}
+                          {game.status === 'completed' ? (
+                            `${game.awayScore} - ${game.homeScore}`
+                          ) : (
+                            new Date(game.gameDate).toLocaleDateString('en-US', { 
+                              weekday: 'short', 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })
+                          )}
                         </div>
                         <div className="text-xs text-retro-charcoal opacity-75 border-t border-gray-200 pt-1">
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
-                      <Badge className="bg-retro-lime text-retro-charcoal text-xs">FINAL</Badge>
+                      <Badge className={
+                        game.status === 'completed' 
+                          ? "bg-retro-lime text-retro-charcoal text-xs" 
+                          : "bg-retro-orange text-white text-xs"
+                      }>
+                        {game.status === 'completed' ? 'FINAL' : 'SCHEDULED'}
+                      </Badge>
                     </div>
                   ))
                 ) : (
