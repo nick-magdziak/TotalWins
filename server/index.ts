@@ -45,8 +45,8 @@ app.use((req, res, next) => {
     const { storage } = await import("./storage");
     const sportsService = new SportsDataService(storage);
     
-    // Start periodic updates for MLB data
-    sportsService.startPeriodicUpdates();
+    // Initial data update on startup
+    await sportsService.updateMLBStandings();
     log("ESPN API sports data service initialized");
   } catch (error) {
     console.error("Failed to initialize sports data service:", error);
