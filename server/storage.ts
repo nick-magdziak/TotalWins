@@ -983,10 +983,10 @@ export class DatabaseStorage implements IStorage {
     let recentGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get today's date in UTC for accurate comparison
+      // Get today's games including late night games that extend into early morning
       const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 6, 0, 0); // Start at 6 AM to exclude late night games from previous day
+      const tomorrowEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 6, 0, 0); // End at 6 AM next day
       
       recentGames = await db
         .select()
@@ -994,7 +994,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(games.sport, league.sport),
           gte(games.gameDate, todayStart),
-          lt(games.gameDate, todayEnd)
+          lt(games.gameDate, tomorrowEnd)
         ))
         .orderBy(games.gameDate)
         .limit(limit);
