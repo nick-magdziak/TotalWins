@@ -154,10 +154,6 @@ export default function Profile() {
               
               <div className="space-y-3">
                 <div className="bg-retro-cream p-3 rounded-lg">
-                  <div className="text-sm text-retro-charcoal opacity-75">Current Rank</div>
-                  <div className="text-2xl font-bold text-retro-purple retro-font">1st Place</div>
-                </div>
-                <div className="bg-retro-cream p-3 rounded-lg">
                   <div className="text-sm text-retro-charcoal opacity-75">Total Wins</div>
                   <div className="text-2xl font-bold text-retro-pink retro-font">40</div>
                 </div>
@@ -165,41 +161,6 @@ export default function Profile() {
                   <div className="text-sm text-retro-charcoal opacity-75">Leagues Joined</div>
                   <div className="text-2xl font-bold text-retro-teal retro-font">{userLeagues?.length || 0}</div>
                 </div>
-                
-                {/* League Selector */}
-                {userLeagues && userLeagues.length > 1 && (
-                  <div className="bg-retro-cream p-3 rounded-lg">
-                    <div className="text-sm text-retro-charcoal opacity-75 mb-2">Current League</div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full border-retro-purple text-retro-purple hover:bg-retro-purple hover:text-white font-bold py-2 rounded-lg retro-font">
-                          {currentLeague?.name || "Select League"}
-                          <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-full bg-white border-2 border-retro-purple">
-                        {userLeagues.map((league) => (
-                          <DropdownMenuItem
-                            key={league.id}
-                            onClick={() => setCurrentLeagueId(league.id)}
-                            className={`p-3 cursor-pointer hover:bg-retro-cream ${
-                              league.id === currentLeagueId ? "bg-retro-lime/20" : ""
-                            }`}
-                          >
-                            <div>
-                              <div className="font-bold text-retro-charcoal retro-font">
-                                {league.name}
-                              </div>
-                              <div className="text-sm text-retro-charcoal/70">
-                                {league.sport} • {league.season}
-                              </div>
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
