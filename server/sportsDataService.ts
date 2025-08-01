@@ -159,13 +159,13 @@ export class SportsDataService {
         { teamId: 'CLE-MLB', wins: 58, losses: 49 }, // Cleveland Guardians
         { teamId: 'KC-MLB', wins: 54, losses: 53 }, // Kansas City Royals (CORRECTED from 58 to 54)
         { teamId: 'MIN-MLB', wins: 50, losses: 57 }, // Minnesota Twins
-        { teamId: 'DET-MLB', wins: 45, losses: 62 }, // Detroit Tigers
+        { teamId: 'DET-MLB', wins: 64, losses: 46 }, // Detroit Tigers (1st AL Central)
         { teamId: 'CWS', wins: 40, losses: 67 }, // Chicago White Sox = 40 wins (verified)
         
         // American League West
         { teamId: 'HOU-MLB', wins: 52, losses: 55 }, // Houston Astros
         { teamId: 'SEA-MLB', wins: 51, losses: 56 }, // Seattle Mariners
-        { teamId: 'TEX', wins: 46, losses: 61 }, // Texas Rangers
+        { teamId: 'TEX', wins: 57, losses: 53 }, // Texas Rangers
         { teamId: 'LAA', wins: 41, losses: 66 }, // Los Angeles Angels
         { teamId: 'OAK', wins: 39, losses: 68 }, // Oakland Athletics
         
