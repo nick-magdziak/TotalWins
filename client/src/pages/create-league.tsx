@@ -37,7 +37,7 @@ export default function CreateLeague() {
     defaultValues: {
       name: "",
       sport: undefined,
-      season: new Date().getFullYear().toString(),
+      season: new Date().getFullYear().toString(), // Will be updated when sport is selected
       draftConfiguration: "",
       description: "",
     },
@@ -92,27 +92,52 @@ export default function CreateLeague() {
 
   const getSportDefaults = (sport: string) => {
     const defaultConfig = DRAFT_CONFIGURATIONS[sport]?.[0];
+    const currentYear = new Date().getFullYear();
+    
+    // Determine season format based on sport and current month
+    const currentMonth = new Date().getMonth() + 1; // 1-12
+    let season: string;
+    
+    switch (sport) {
+      case "NFL":
+      case "NBA":
+        // These sports span across two calendar years (e.g., 2024-25)
+        // NFL season starts in September, NBA in October
+        if ((sport === "NFL" && currentMonth >= 9) || (sport === "NBA" && currentMonth >= 10)) {
+          season = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
+        } else {
+          season = `${currentYear - 1}-${currentYear.toString().slice(-2)}`;
+        }
+        break;
+      case "MLB":
+        // MLB season is within a single calendar year
+        season = currentYear.toString();
+        break;
+      default:
+        season = currentYear.toString();
+    }
+    
     switch (sport) {
       case "NFL":
         return {
-          season: "2024-25",
+          season,
           draftConfiguration: defaultConfig?.key || "",
           description: "Draft your favorite NFL teams and compete for the most wins this season!"
         };
       case "MLB":
         return {
-          season: "2024",
+          season,
           draftConfiguration: defaultConfig?.key || "",
           description: "Pick your MLB teams and track wins throughout the baseball season!"
         };
       case "NBA":
         return {
-          season: "2024-25",
+          season,
           draftConfiguration: defaultConfig?.key || "",
           description: "Choose your NBA teams and compete for the championship!"
         };
       default:
-        return {};
+        return { season };
     }
   };
 
@@ -249,8 +274,9 @@ export default function CreateLeague() {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., 2024-25"
-                        className="retro-border"
+                        className="retro-border bg-gray-50"
+                        readOnly
+                        disabled
                         {...field}
                       />
                     </FormControl>
@@ -295,7 +321,7 @@ export default function CreateLeague() {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Choose the number of players and teams per player configuration
+                      Choose the number of players and teams per player configuration. You will be able to change this after you create the league.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
