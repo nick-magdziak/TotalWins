@@ -177,13 +177,26 @@ The application is designed to be easily deployable on platforms like Replit, wi
   - Corrected team ID mappings (Boston, Arizona, San Antonio)
   - Resolved data consistency across all three leagues
 
+### Custom Draft Configurations Implementation (August 1, 2025)
+- ✅ **Completed**: Removed linear draft functionality completely from all systems
+- ✅ **Updated Verbiage**: Changed 10-player configuration to display "(custom config)" instead of "(snake draft)"
+- ✅ **Removed Legacy Config**: Eliminated "6 Players, 5 Teams (snake)" from all three leagues
+- ✅ **Custom 6 for 30**: Implemented precise pick order for 6 players, 5 teams each (30 total picks)
+  - Complex balanced draft order across NFL, MLB, and NBA leagues
+  - Each player gets exactly 5 teams with strategic pick distribution
+- ✅ **Custom 8 for 24**: Implemented precise pick order for 8 players, 3 teams each (24 total picks)
+  - Available for MLB and NBA leagues only
+  - Each player gets exactly 3 teams with balanced pick timing
+- ✅ **System Integration**: Updated draftUtils.ts with proper getDraftOrder function routing
+
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
 2. ✅ **Real Draft Functionality** - COMPLETED
 3. ✅ **Live Scoring System** - COMPLETED
-4. **Email Invitations** - NEXT
-5. **User Profile Management**
-6. **League Join by Code**
-7. **Push Notifications**
-8. **Advanced Admin Features**
-9. **Mobile App Feel**
+4. ✅ **Custom Draft Configurations** - COMPLETED
+5. **Email Invitations** - NEXT
+6. **User Profile Management**
+7. **League Join by Code**
+8. **Push Notifications**
+9. **Advanced Admin Features**
+10. **Mobile App Feel**
