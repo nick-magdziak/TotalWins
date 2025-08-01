@@ -124,6 +124,56 @@ export default function Admin() {
     refetchInterval: 3000, // Poll every 3 seconds
   });
 
+  // Get current draft pick info for Manual Entry dialog
+  const { data: currentPickInfo } = useQuery({
+    queryKey: ["/api/leagues", leagueId, "draft", "current-pick"],
+    queryFn: async () => {
+      if (!draftStatus?.isActive || !membersWithUserData) return null;
+      
+      const picks = await fetch(`/api/leagues/${leagueId}/draft/picks`).then(r => r.json());
+      const nextPickNumber = picks.length + 1;
+      const round = Math.ceil(nextPickNumber / membersWithUserData.length);
+      
+      // Calculate whose turn it is based on snake draft
+      const playersInOrder = [...membersWithUserData].sort((a, b) => a.draftPosition - b.draftPosition);
+      const isOddRound = round % 2 === 1;
+      const positionInRound = ((nextPickNumber - 1) % membersWithUserData.length) + 1;
+      
+      const currentPlayerIndex = isOddRound 
+        ? positionInRound - 1 
+        : membersWithUserData.length - positionInRound;
+      
+      const currentPlayer = playersInOrder[currentPlayerIndex];
+      
+      return {
+        player: currentPlayer,
+        round,
+        pickNumber: nextPickNumber,
+        position: positionInRound
+      };
+    },
+    enabled: !!leagueId && !!draftStatus?.isActive && !!membersWithUserData,
+    refetchInterval: 3000, // Poll every 3 seconds
+  });
+
+  // Get available teams for Manual Entry dialog
+  const { data: availableTeams } = useQuery({
+    queryKey: ["/api/leagues", leagueId, "draft", "available-teams"],
+    queryFn: async () => {
+      if (!currentLeague?.sport) return [];
+      
+      const [teams, picks] = await Promise.all([
+        fetch(`/api/${currentLeague.sport.toLowerCase()}/teams`).then(r => r.json()),
+        fetch(`/api/leagues/${leagueId}/draft/picks`).then(r => r.json())
+      ]);
+      
+      const draftedTeamIds = new Set(picks.map((pick: any) => pick.teamId));
+      return teams.filter((team: any) => !draftedTeamIds.has(team.id));
+    },
+    enabled: !!leagueId && !!currentLeague?.sport,
+    refetchInterval: 3000, // Poll every 3 seconds
+  });
+
   const syncScoresMutation = useMutation({
     mutationFn: async () => {
       return apiRequest("POST", "/api/admin/sync-scores", { week: 18, season: "2024" });
@@ -1001,13 +1051,19 @@ export default function Admin() {
           <div className="my-6">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-retro-yellow rounded-full flex items-center justify-center text-retro-charcoal font-bold text-xl mx-auto mb-3">
-                3
+                {currentPickInfo?.position || "?"}
               </div>
               <h3 className="text-retro-charcoal text-lg font-bold retro-font">
-                Player 3 (Sarah D) is selecting...
+                {currentPickInfo?.player?.user?.displayName 
+                  ? `${currentPickInfo.player.user.displayName} is selecting...`
+                  : "Waiting for draft to start..."
+                }
               </h3>
               <p className="text-retro-charcoal/70 text-sm">
-                Round 2, Pick 14
+                {currentPickInfo 
+                  ? `Round ${currentPickInfo.round}, Pick ${currentPickInfo.pickNumber}`
+                  : "Draft not active"
+                }
               </p>
             </div>
 
@@ -1021,14 +1077,16 @@ export default function Admin() {
                     <SelectValue placeholder="Select team for player..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ATL">Atlanta Falcons</SelectItem>
-                    <SelectItem value="CAR">Carolina Panthers</SelectItem>
-                    <SelectItem value="CHI">Chicago Bears</SelectItem>
-                    <SelectItem value="JAX">Jacksonville Jaguars</SelectItem>
-                    <SelectItem value="LV">Las Vegas Raiders</SelectItem>
-                    <SelectItem value="NE">New England Patriots</SelectItem>
-                    <SelectItem value="NYG">New York Giants</SelectItem>
-                    <SelectItem value="TEN">Tennessee Titans</SelectItem>
+                    {availableTeams?.map((team: any) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.city} {team.name}
+                      </SelectItem>
+                    ))}
+                    {(!availableTeams || availableTeams.length === 0) && (
+                      <SelectItem value="no-teams" disabled>
+                        No teams available
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
