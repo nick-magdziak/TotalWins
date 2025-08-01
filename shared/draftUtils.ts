@@ -134,9 +134,39 @@ export function getCustom6Player30PickOrder(): DraftPickOrder[] {
  * Generate custom 8-player, 24-pick draft order
  */
 export function getCustom8Player24PickOrder(): DraftPickOrder[] {
-  // Placeholder for custom 8-player configuration
-  // Will be filled with specific pick order when provided
-  return getSnakeDraftOrder(8, 3); // Temporary fallback
+  const draftOrder: DraftPickOrder[] = [
+    // Round 1
+    { position: 1, round: 1, pick: 1 },   // A
+    { position: 2, round: 1, pick: 2 },   // B
+    { position: 3, round: 1, pick: 3 },   // C
+    { position: 4, round: 1, pick: 4 },   // D
+    { position: 5, round: 1, pick: 5 },   // E
+    { position: 6, round: 1, pick: 6 },   // F
+    { position: 7, round: 1, pick: 7 },   // G - Need assignment
+    { position: 8, round: 1, pick: 8 },   // H - Need assignment
+
+    // Round 2
+    { position: 6, round: 2, pick: 9 },   // F
+    { position: 8, round: 2, pick: 10 },  // H - Need assignment
+    { position: 4, round: 2, pick: 11 },  // D
+    { position: 7, round: 2, pick: 12 },  // G - Need assignment
+    { position: 1, round: 2, pick: 13 },  // A
+    { position: 5, round: 2, pick: 14 },  // E
+    { position: 2, round: 2, pick: 15 },  // B
+    { position: 3, round: 2, pick: 16 },  // C
+
+    // Round 3
+    { position: 8, round: 3, pick: 17 },  // H - Need assignment
+    { position: 5, round: 3, pick: 18 },  // E
+    { position: 3, round: 3, pick: 19 },  // C
+    { position: 7, round: 3, pick: 20 },  // G - Need assignment
+    { position: 2, round: 3, pick: 21 },  // B
+    { position: 6, round: 3, pick: 22 },  // F
+    { position: 4, round: 3, pick: 23 },  // D
+    { position: 1, round: 3, pick: 24 }   // A
+  ];
+
+  return draftOrder;
 }
 
 /**
