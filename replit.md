@@ -184,10 +184,14 @@ The application is designed to be easily deployable on platforms like Replit, wi
 - ✅ **Custom 6 for 30**: Implemented precise pick order for 6 players, 5 teams each (30 total picks)
   - Complex balanced draft order across NFL, MLB, and NBA leagues
   - Each player gets exactly 5 teams with strategic pick distribution
+  - Pick order: A(1,13,17,19,28), B(2,11,16,22,27), C(3,9,12,24,30), D(4,10,15,23,25), E(5,7,18,21,26), F(6,8,14,20,29)
 - ✅ **Custom 8 for 24**: Implemented precise pick order for 8 players, 3 teams each (24 total picks)
   - Available for MLB and NBA leagues only
   - Each player gets exactly 3 teams with balanced pick timing
+  - Pick order: A(1,13,24), B(2,15,21), C(3,16,19), D(4,11,23), E(5,14,18), F(6,9,22), G(7,10,20), H(8,12,17)
 - ✅ **System Integration**: Updated draftUtils.ts with proper getDraftOrder function routing
+- ✅ **UI Improvements**: Ordered configurations by player count (4→5→6→7→8→10)
+- ✅ **Styling Updates**: Clean display with "(custom config)" in grey text below configuration names
 
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
