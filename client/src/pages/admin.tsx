@@ -38,6 +38,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type LeagueMember, type League, type DraftStatus } from "@shared/schema";
+import { DRAFT_CONFIGURATIONS, getDraftConfigByKey, type DraftConfiguration } from "@shared/draftConfig";
 
 export default function Admin() {
   const currentUser = getCurrentUser();
@@ -48,9 +49,8 @@ export default function Admin() {
   const [showManualDraftDialog, setShowManualDraftDialog] = useState(false);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const [draftStyle, setDraftStyle] = useState("snake");
+  const [draftConfiguration, setDraftConfiguration] = useState("");
   const [draftDateTime, setDraftDateTime] = useState("");
-  const [teamsPerPlayer, setTeamsPerPlayer] = useState(4);
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
@@ -244,6 +244,30 @@ export default function Admin() {
       toast({
         title: "Update failed",
         description: "Failed to update records. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateDraftConfigMutation = useMutation({
+    mutationFn: async (newDraftConfiguration: string) => {
+      return apiRequest("PATCH", `/api/leagues/${leagueId}`, {
+        draftConfiguration: newDraftConfiguration
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Draft configuration updated!",
+        description: "The league's draft configuration has been changed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+      setDraftConfiguration(""); // Reset the form
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update draft configuration. Please try again.",
         variant: "destructive",
       });
     },
@@ -833,21 +857,66 @@ export default function Admin() {
               </h3>
               
               <div className="space-y-4">
-                {/* Draft Style */}
+                {/* Current Draft Configuration */}
                 <div>
                   <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
-                    Draft Style
+                    Current Draft Configuration
                   </Label>
-                  <Select value={draftStyle} onValueChange={setDraftStyle}>
+                  {currentLeague?.draftConfiguration ? (
+                    (() => {
+                      const config = getDraftConfigByKey(currentLeague.draftConfiguration);
+                      return config ? (
+                        <div className="w-full border-2 border-retro-pink rounded-lg p-3 bg-gray-50">
+                          <div className="font-medium text-retro-purple">{config.label}</div>
+                          <div className="text-sm text-gray-600">
+                            {config.players} players, {config.teams} teams each ({config.draftStyle} draft)
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full border-2 border-retro-pink rounded-lg p-3 bg-gray-50 text-gray-500">
+                          Unknown configuration: {currentLeague.draftConfiguration}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="w-full border-2 border-retro-pink rounded-lg p-3 bg-gray-50 text-gray-500">
+                      No draft configuration set
+                    </div>
+                  )}
+                </div>
+
+                {/* Update Draft Configuration */}
+                <div>
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Update Draft Configuration
+                  </Label>
+                  <Select value={draftConfiguration} onValueChange={setDraftConfiguration}>
                     <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
-                      <SelectValue placeholder="Select draft style" />
+                      <SelectValue placeholder="Select new configuration" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="snake">Snake Draft</SelectItem>
-                      <SelectItem value="straight">Straight Draft</SelectItem>
-                      <SelectItem value="three-round">3 Round Draft</SelectItem>
+                      {currentLeague?.sport && DRAFT_CONFIGURATIONS[currentLeague.sport]?.map((config) => (
+                        <SelectItem key={config.key} value={config.key}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{config.label}</span>
+                            <span className="text-sm text-gray-600">
+                              {config.players} players, {config.teams} teams each ({config.draftStyle} draft)
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  {draftConfiguration && draftConfiguration !== currentLeague?.draftConfiguration && (
+                    <Button
+                      onClick={() => updateDraftConfigMutation.mutate(draftConfiguration)}
+                      disabled={updateDraftConfigMutation.isPending}
+                      className="w-full bg-gradient-to-br from-retro-purple to-retro-pink text-white font-bold py-2 rounded-lg retro-font mt-2"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {updateDraftConfigMutation.isPending ? "UPDATING..." : "UPDATE DRAFT CONFIG"}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Draft Order */}
@@ -863,27 +932,6 @@ export default function Admin() {
                     <List className="w-4 h-4 mr-2" />
                     SET DRAFT ORDER
                   </Button>
-                </div>
-
-                {/* Teams Per Player */}
-                <div>
-                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
-                    Teams Per Player
-                  </Label>
-                  <Select value={teamsPerPlayer.toString()} onValueChange={(value) => setTeamsPerPlayer(Number(value))}>
-                    <SelectTrigger className="w-full border-2 border-retro-pink focus:border-retro-purple">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="2">2 Teams</SelectItem>
-                      <SelectItem value="3">3 Teams</SelectItem>
-                      <SelectItem value="4">4 Teams</SelectItem>
-                      <SelectItem value="5">5 Teams</SelectItem>
-                      <SelectItem value="6">6 Teams</SelectItem>
-                      <SelectItem value="7">7 Teams</SelectItem>
-                      <SelectItem value="8">8 Teams</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Draft Date/Time */}

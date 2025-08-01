@@ -13,25 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
-import { Trophy, Users, Calendar, Zap, Shuffle } from "lucide-react";
+import { Trophy, Users, Calendar, Zap, Shuffle, Settings } from "lucide-react";
+import { DRAFT_CONFIGURATIONS, type DraftConfiguration } from "@shared/draftConfig";
 
 const createLeagueSchema = z.object({
   name: z.string().min(3, "League name must be at least 3 characters").max(50, "League name must be less than 50 characters"),
   sport: z.enum(["NFL", "MLB", "NBA"], { required_error: "Please select a sport" }),
   season: z.string().min(4, "Season is required"),
-  teamsPerPlayer: z.coerce.number().min(2, "Minimum 2 teams per player").max(8, "Maximum 8 teams per player"),
-  maxPlayers: z.coerce.number().min(2, "Minimum 2 players").max(12, "Maximum 12 players"),
-  draftType: z.enum(["snake", "linear", "custom_10_30"], { required_error: "Please select a draft type" }),
+  draftConfiguration: z.string({ required_error: "Please select a draft configuration" }),
   description: z.string().optional(),
-}).refine((data) => {
-  // Custom validation for the 3 Rds, 10 Pcks draft type
-  if (data.draftType === "custom_10_30") {
-    return data.maxPlayers === 10 && data.teamsPerPlayer === 3;
-  }
-  return true;
-}, {
-  message: "3 Rds, 10 Pcks draft requires exactly 10 players and 3 teams per player",
-  path: ["draftType"]
 });
 
 type CreateLeagueForm = z.infer<typeof createLeagueSchema>;
@@ -48,17 +38,23 @@ export default function CreateLeague() {
       name: "",
       sport: undefined,
       season: new Date().getFullYear().toString(),
-      teamsPerPlayer: 4,
-      maxPlayers: 8,
-      draftType: "snake" as const,
+      draftConfiguration: "",
       description: "",
     },
   });
 
+  const selectedSport = form.watch("sport");
+
   const createLeagueMutation = useMutation({
     mutationFn: async (data: CreateLeagueForm) => {
+      // Parse the draft configuration to get settings
+      const config = DRAFT_CONFIGURATIONS[data.sport]?.find(c => c.key === data.draftConfiguration);
+      
       const leagueData = {
         ...data,
+        teamsPerPlayer: config?.teams || 4,
+        maxPlayers: config?.players || 8,
+        draftType: config?.draftStyle || "snake",
         createdBy: currentUser?.id,
         draftStatus: "pending",
         seasonStatus: "pre_season",
@@ -101,29 +97,24 @@ export default function CreateLeague() {
   };
 
   const getSportDefaults = (sport: string) => {
+    const defaultConfig = DRAFT_CONFIGURATIONS[sport]?.[0];
     switch (sport) {
       case "NFL":
         return {
           season: "2024-25",
-          teamsPerPlayer: 3,
-          maxPlayers: 10,
-          draftType: "custom_10_30",
+          draftConfiguration: defaultConfig?.key || "",
           description: "Draft your favorite NFL teams and compete for the most wins this season!"
         };
       case "MLB":
         return {
           season: "2024",
-          teamsPerPlayer: 4,
-          maxPlayers: 8,
-          draftType: "snake",
+          draftConfiguration: defaultConfig?.key || "",
           description: "Pick your MLB teams and track wins throughout the baseball season!"
         };
       case "NBA":
         return {
           season: "2024-25",
-          teamsPerPlayer: 4,
-          maxPlayers: 8,
-          draftType: "snake",
+          draftConfiguration: defaultConfig?.key || "",
           description: "Choose your NBA teams and compete for the championship!"
         };
       default:
@@ -135,21 +126,9 @@ export default function CreateLeague() {
     const defaults = getSportDefaults(sport);
     form.setValue("sport", sport as "NFL" | "MLB" | "NBA");
     if (defaults.season) form.setValue("season", defaults.season);
-    if (defaults.teamsPerPlayer) form.setValue("teamsPerPlayer", defaults.teamsPerPlayer);
-    if (defaults.maxPlayers) form.setValue("maxPlayers", defaults.maxPlayers);
-    if (defaults.draftType) form.setValue("draftType", defaults.draftType as "snake" | "linear" | "custom_10_30");
+    if (defaults.draftConfiguration) form.setValue("draftConfiguration", defaults.draftConfiguration);
     if (defaults.description && !form.getValues("description")) {
       form.setValue("description", defaults.description);
-    }
-  };
-
-  const handleDraftTypeChange = (draftType: string) => {
-    form.setValue("draftType", draftType as "snake" | "linear" | "custom_10_30");
-    
-    // Auto-adjust settings for custom 10-30 draft
-    if (draftType === "custom_10_30") {
-      form.setValue("maxPlayers", 10);
-      form.setValue("teamsPerPlayer", 3);
     }
   };
 
@@ -287,111 +266,42 @@ export default function CreateLeague() {
                 )}
               />
 
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Teams Per Player */}
-                <FormField
-                  control={form.control}
-                  name="teamsPerPlayer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-retro-purple font-bold retro-font flex items-center gap-2">
-                        <Zap className="w-4 h-4" />
-                        Teams Per Player *
-                      </FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                        <FormControl>
-                          <SelectTrigger className="retro-border">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {[2, 3, 4, 5, 6, 7, 8].map((num) => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num} teams
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        How many teams each player drafts
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Max Players */}
-                <FormField
-                  control={form.control}
-                  name="maxPlayers"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-retro-purple font-bold retro-font flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Max Players *
-                      </FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                        <FormControl>
-                          <SelectTrigger className="retro-border">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num} players
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Maximum number of players
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Draft Type */}
+              {/* Draft Configuration */}
               <FormField
                 control={form.control}
-                name="draftType"
+                name="draftConfiguration"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-retro-purple font-bold retro-font flex items-center gap-2">
-                      <Shuffle className="w-4 h-4" />
-                      Draft Type *
+                      <Settings className="w-4 h-4" />
+                      Draft Configuration *
                     </FormLabel>
-                    <Select onValueChange={handleDraftTypeChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="retro-border">
-                          <SelectValue placeholder="Select draft type" />
+                          <SelectValue placeholder="Select draft configuration" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="snake">
-                          <div className="flex flex-col">
-                            <span className="font-medium">Snake Draft</span>
-                            <span className="text-sm text-gray-600">Round 1: 1→8, Round 2: 8→1, etc.</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="linear">
-                          <div className="flex flex-col">
-                            <span className="font-medium">Linear Draft</span>
-                            <span className="text-sm text-gray-600">Same order every round: 1→8</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="custom_10_30">
-                          <div className="flex flex-col">
-                            <span className="font-medium">3 Rds, 10 Pcks</span>
-                            <span className="text-sm text-gray-600">Special Order for 10 Player, 30 Pick Draft</span>
-                          </div>
-                        </SelectItem>
+                        {selectedSport && DRAFT_CONFIGURATIONS[selectedSport]?.map((config) => (
+                          <SelectItem key={config.key} value={config.key}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{config.label}</span>
+                              <span className="text-sm text-gray-600">
+                                {config.players} players, {config.teams} teams each ({config.draftStyle} draft)
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        {!selectedSport && (
+                          <SelectItem value="" disabled>
+                            Select a sport first
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Choose how the draft order will work
+                      Choose the number of players and teams per player configuration
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
