@@ -1054,18 +1054,18 @@ export class DatabaseStorage implements IStorage {
     let upcomingGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get tomorrow's date for accurate comparison
+      // Get tomorrow's games using same 6 AM cutoff logic as today's games
       const today = new Date();
-      const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-      const dayAfter = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+      const tomorrowStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 6, 0, 0); // Start at 6 AM tomorrow
+      const dayAfterEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 6, 0, 0); // End at 6 AM day after
       
       upcomingGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.sport, league.sport),
-          gte(games.gameDate, tomorrow),
-          lt(games.gameDate, dayAfter)
+          gte(games.gameDate, tomorrowStart),
+          lt(games.gameDate, dayAfterEnd)
         ))
         .orderBy(games.gameDate)
         .limit(limit);
