@@ -164,7 +164,7 @@ export class DatabaseStorage implements IStorage {
         { id: "BOS", city: "Boston", name: "Red Sox", abbreviation: "BOS", division: "AL East", league: "American League", wins: 81, losses: 81 },
         { id: "NYY", city: "New York", name: "Yankees", abbreviation: "NYY", division: "AL East", league: "American League", wins: 94, losses: 68 },
         { id: "TB-MLB", city: "Tampa Bay", name: "Rays", abbreviation: "TB", division: "AL East", league: "American League", wins: 80, losses: 82 },
-        { id: "TOR", city: "Toronto", name: "Blue Jays", abbreviation: "TOR", division: "AL East", league: "American League", wins: 74, losses: 88 },
+        { id: "TOR", city: "Toronto", name: "Blue Jays", abbreviation: "TOR", division: "AL East", league: "American League", wins: 64, losses: 88 },
 
         // American League Central
         { id: "CWS", city: "Chicago", name: "White Sox", abbreviation: "CWS", division: "AL Central", league: "American League", wins: 41, losses: 121 },
