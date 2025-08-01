@@ -493,7 +493,7 @@ export class DatabaseStorage implements IStorage {
         {
           id: "demo-league-2", 
           name: "Sunday Squad",
-          season: "2024",
+          season: "2025",
           sport: "MLB",
           teamsPerPlayer: 4,
           maxPlayers: 8,
