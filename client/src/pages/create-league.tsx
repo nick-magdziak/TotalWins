@@ -20,7 +20,7 @@ const createLeagueSchema = z.object({
   name: z.string().min(3, "League name must be at least 3 characters").max(50, "League name must be less than 50 characters"),
   sport: z.enum(["NFL", "MLB", "NBA"], { required_error: "Please select a sport" }),
   season: z.string().min(4, "Season is required"),
-  draftConfiguration: z.string({ required_error: "Please select a draft configuration" }),
+  draftConfiguration: z.string().min(1, "Please select a draft configuration"),
   description: z.string().optional(),
 });
 
@@ -47,14 +47,8 @@ export default function CreateLeague() {
 
   const createLeagueMutation = useMutation({
     mutationFn: async (data: CreateLeagueForm) => {
-      // Parse the draft configuration to get settings
-      const config = DRAFT_CONFIGURATIONS[data.sport]?.find(c => c.key === data.draftConfiguration);
-      
       const leagueData = {
         ...data,
-        teamsPerPlayer: config?.teams || 4,
-        maxPlayers: config?.players || 8,
-        draftType: config?.draftStyle || "snake",
         createdBy: currentUser?.id,
         draftStatus: "pending",
         seasonStatus: "pre_season",
@@ -130,6 +124,8 @@ export default function CreateLeague() {
     if (defaults.description && !form.getValues("description")) {
       form.setValue("description", defaults.description);
     }
+    // Clear validation errors for draftConfiguration when sport changes
+    form.clearErrors("draftConfiguration");
   };
 
   if (!currentUser) {
@@ -292,7 +288,7 @@ export default function CreateLeague() {
                           </SelectItem>
                         ))}
                         {!selectedSport && (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="no-sport-selected" disabled>
                             Select a sport first
                           </SelectItem>
                         )}
