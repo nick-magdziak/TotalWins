@@ -309,7 +309,11 @@ export default function CreateLeague() {
                           <SelectItem key={config.key} value={config.key}>
                             <div className="flex flex-col">
                               <span className="font-medium">{config.label}</span>
-                              <span className="text-sm text-gray-600">({config.draftStyle} draft)</span>
+                              {config.draftStyle.startsWith('custom') ? (
+                                <span className="text-sm text-gray-500">(custom config)</span>
+                              ) : (
+                                <span className="text-sm text-gray-600">(snake draft)</span>
+                              )}
                             </div>
                           </SelectItem>
                         ))}

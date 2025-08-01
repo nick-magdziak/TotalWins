@@ -868,7 +868,11 @@ export default function Admin() {
                       return config ? (
                         <div className="w-full border-2 border-retro-pink rounded-lg p-3 bg-gray-50">
                           <div className="font-medium text-retro-purple">{config.label}</div>
-                          <div className="text-sm text-gray-600">({config.draftStyle} draft)</div>
+                          {config.draftStyle.startsWith('custom') ? (
+                            <div className="text-sm text-gray-500">(custom config)</div>
+                          ) : (
+                            <div className="text-sm text-gray-600">(snake draft)</div>
+                          )}
                         </div>
                       ) : (
                         <div className="w-full border-2 border-retro-pink rounded-lg p-3 bg-gray-50 text-gray-500">
@@ -897,7 +901,11 @@ export default function Admin() {
                         <SelectItem key={config.key} value={config.key}>
                           <div className="flex flex-col">
                             <span className="font-medium">{config.label}</span>
-                            <span className="text-sm text-gray-600">({config.draftStyle} draft)</span>
+                            {config.draftStyle.startsWith('custom') ? (
+                              <span className="text-sm text-gray-500">(custom config)</span>
+                            ) : (
+                              <span className="text-sm text-gray-600">(snake draft)</span>
+                            )}
                           </div>
                         </SelectItem>
                       ))}
