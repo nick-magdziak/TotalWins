@@ -478,7 +478,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { SportsDataService } = await import("./sportsDataService");
       const sportsService = new SportsDataService(storage);
-      const result = await sportsService.triggerMLBUpdate();
+      await sportsService.updateMLBStandings();
+      const result = { success: true, message: "MLB standings updated successfully" };
       
       if (result.success) {
         res.json({ message: result.message });

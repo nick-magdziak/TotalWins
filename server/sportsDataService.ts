@@ -221,7 +221,7 @@ export class SportsDataService {
     const teams: { teamId: string; wins: number; losses: number }[] = [];
 
     for (const division of data.children) {
-        const entries = division.standings?.entries || division.entries || division;
+        const entries = division.standings?.entries || [];
         if (!Array.isArray(entries)) continue;
         
         for (const entry of entries) {
