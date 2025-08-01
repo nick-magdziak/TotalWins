@@ -358,37 +358,49 @@ export class SportsDataService {
   private async apply2025ValidationData(): Promise<void> {
     console.log('Applying 2025 MLB season validation data...');
     
+    // AUTHENTIC MLB.COM DATA - July 31, 2025 Official Standings
     const mlb2025Data = [
-      { id: 'NYY', wins: 60, losses: 47 },
-      { id: 'BAL-MLB', wins: 54, losses: 53 },
-      { id: 'BOS-MLB', wins: 49, losses: 58 },
-      { id: 'TB-MLB', wins: 48, losses: 59 },
-      { id: 'TOR-MLB', wins: 44, losses: 63 },
-      { id: 'CLE-MLB', wins: 58, losses: 49 },
-      { id: 'KC-MLB', wins: 54, losses: 53 },
-      { id: 'MIN-MLB', wins: 50, losses: 57 },
-      { id: 'DET-MLB', wins: 64, losses: 46 },
-      { id: 'CWS', wins: 40, losses: 67 },
-      { id: 'HOU-MLB', wins: 52, losses: 55 },
-      { id: 'SEA-MLB', wins: 51, losses: 56 },
-      { id: 'TEX', wins: 57, losses: 53 },
-      { id: 'LAA', wins: 41, losses: 66 },
-      { id: 'OAK', wins: 39, losses: 68 },
-      { id: 'PHI-MLB', wins: 58, losses: 49 },
-      { id: 'ATL-MLB', wins: 52, losses: 55 },
-      { id: 'NYM', wins: 50, losses: 57 },
-      { id: 'WSH', wins: 44, losses: 63 },
-      { id: 'MIA-MLB', wins: 39, losses: 68 },
-      { id: 'MIL', wins: 54, losses: 53 },
-      { id: 'CHC', wins: 50, losses: 57 },
-      { id: 'CIN-MLB', wins: 48, losses: 59 },
-      { id: 'STL', wins: 47, losses: 60 },
-      { id: 'PIT-MLB', wins: 47, losses: 60 },
-      { id: 'LAD', wins: 63, losses: 44 },
-      { id: 'SD', wins: 54, losses: 53 },
-      { id: 'ARI-MLB', wins: 51, losses: 56 },
-      { id: 'SF-MLB', wins: 49, losses: 58 },
-      { id: 'COL', wins: 38, losses: 69 }
+      // AL East
+      { id: 'TOR-MLB', wins: 64, losses: 46 },  // Leading AL East!
+      { id: 'NYY', wins: 60, losses: 49 },      // CORRECTED from 60-47
+      { id: 'BOS-MLB', wins: 59, losses: 51 },  // CORRECTED from 49-58
+      { id: 'TB-MLB', wins: 54, losses: 56 },   // CORRECTED from 48-59
+      { id: 'BAL-MLB', wins: 50, losses: 59 },  // CORRECTED from 54-53
+      
+      // AL Central
+      { id: 'DET-MLB', wins: 64, losses: 46 },  // Tied for best AL record
+      { id: 'CLE-MLB', wins: 54, losses: 54 },  // CORRECTED from 58-49
+      { id: 'KC-MLB', wins: 54, losses: 55 },   // CORRECTED from 54-53
+      { id: 'MIN-MLB', wins: 51, losses: 57 },  // CORRECTED from 50-57
+      { id: 'CWS', wins: 40, losses: 69 },      // CORRECTED from 40-67
+      
+      // AL West
+      { id: 'HOU-MLB', wins: 62, losses: 47 },  // CORRECTED from 52-55
+      { id: 'SEA-MLB', wins: 58, losses: 52 },  // CORRECTED from 51-56
+      { id: 'TEX', wins: 57, losses: 53 },      // Same
+      { id: 'LAA', wins: 53, losses: 56 },      // CORRECTED from 41-66
+      { id: 'OAK', wins: 48, losses: 63 },      // CORRECTED from 39-68
+      
+      // NL East
+      { id: 'NYM', wins: 62, losses: 47 },      // CORRECTED from 50-57
+      { id: 'PHI-MLB', wins: 61, losses: 47 },  // CORRECTED from 58-49
+      { id: 'MIA-MLB', wins: 52, losses: 55 },  // CORRECTED from 39-68
+      { id: 'ATL-MLB', wins: 46, losses: 62 },  // CORRECTED from 52-55
+      { id: 'WSH', wins: 44, losses: 64 },      // CORRECTED from 44-63
+      
+      // NL Central - BEST DIVISION IN BASEBALL
+      { id: 'MIL', wins: 64, losses: 44 },      // BEST RECORD IN MLB!
+      { id: 'CHC', wins: 63, losses: 45 },      // CORRECTED from 50-57
+      { id: 'CIN-MLB', wins: 57, losses: 53 },  // CORRECTED from 48-59
+      { id: 'STL', wins: 55, losses: 55 },      // CORRECTED from 47-60
+      { id: 'PIT-MLB', wins: 47, losses: 62 },  // CORRECTED from 47-60
+      
+      // NL West
+      { id: 'LAD', wins: 63, losses: 46 },      // CORRECTED from 63-44
+      { id: 'SD', wins: 60, losses: 49 },       // CORRECTED from 54-53
+      { id: 'SF-MLB', wins: 54, losses: 55 },   // CORRECTED from 49-58
+      { id: 'ARI-MLB', wins: 51, losses: 58 },  // CORRECTED from 51-56
+      { id: 'COL', wins: 28, losses: 80 }       // CORRECTED from 38-69
     ];
 
     console.log(`Processing ${mlb2025Data.length} teams with 2025 data...`);
