@@ -63,11 +63,11 @@ export default function Layout({ children }: LayoutProps) {
     }
   }, [userLeagues, currentLeague]);
 
-  // League-specific navigation items
+  // League-specific navigation items with current league context
   const leagueNavItems = [
-    { path: "/standings", label: "STANDINGS", icon: Trophy },
-    { path: "/draft", label: "DRAFT", icon: Users },
-    ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: "/admin", label: "ADMIN", icon: Settings }] : []),
+    { path: `/standings?league=${currentLeagueId}`, label: "STANDINGS", icon: Trophy },
+    { path: `/draft?league=${currentLeagueId}`, label: "DRAFT", icon: Users },
+    ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: `/admin?league=${currentLeagueId}`, label: "ADMIN", icon: Settings }] : []),
   ];
 
   // General navigation items (not league-specific)
@@ -186,7 +186,10 @@ export default function Layout({ children }: LayoutProps) {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-6">
             {[...leagueNavItems, ...generalNavItems].map((item) => {
-              const isActive = location === item.path;
+              // Check if current location matches the item path (handle query parameters)
+              const currentPath = location.split('?')[0];
+              const itemPath = item.path.split('?')[0];
+              const isActive = currentPath === itemPath;
               return (
                 <Link key={item.path} href={item.path}>
                   <Button
@@ -227,9 +230,12 @@ export default function Layout({ children }: LayoutProps) {
                   <div className="space-y-2 mb-4">
                     {leagueNavItems.map((item) => {
                       const Icon = item.icon;
-                      const isActive = location === item.path;
+                      // Check if current location matches the item path (handle query parameters)
+                      const currentPath = location.split('?')[0];
+                      const itemPath = item.path.split('?')[0];
+                      const isActive = currentPath === itemPath;
                       return (
-                        <Link key={item.path} href={`${item.path}${currentLeague ? `?league=${currentLeague.id}` : ''}`}>
+                        <Link key={item.path} href={item.path}>
                           <div
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
                               isActive 
@@ -253,7 +259,10 @@ export default function Layout({ children }: LayoutProps) {
                   <div className="space-y-2">
                     {generalNavItems.map((item) => {
                       const Icon = item.icon;
-                      const isActive = location === item.path;
+                      // Check if current location matches the item path (handle query parameters)
+                      const currentPath = location.split('?')[0];
+                      const itemPath = item.path.split('?')[0];
+                      const isActive = currentPath === itemPath;
                       return (
                         <Link key={item.path} href={item.path}>
                           <div
