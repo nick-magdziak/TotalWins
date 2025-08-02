@@ -26,6 +26,8 @@ function setCurrentUser(user: AuthUser | null): void {
   } else {
     localStorage.removeItem(AUTH_STORAGE_KEY);
   }
+  // Dispatch custom event to notify auth state change
+  window.dispatchEvent(new CustomEvent('authStateChanged'));
 }
 
 export async function signup(userData: {

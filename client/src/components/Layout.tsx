@@ -29,10 +29,29 @@ export default function Layout({ children }: LayoutProps) {
     // Check initially
     checkAuth();
     
-    // Set up an interval to check auth state periodically
-    const interval = setInterval(checkAuth, 100);
+    // Listen for storage events (logout from other tabs, etc.)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'currentUser' || e.key === null) {
+        checkAuth();
+      }
+    };
     
-    return () => clearInterval(interval);
+    // Listen for custom auth events (login/logout in same tab)
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('authStateChanged', handleAuthChange);
+    
+    // Fallback check every 30 seconds (much less frequent)
+    const interval = setInterval(checkAuth, 30000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authStateChanged', handleAuthChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // Fetch user's leagues

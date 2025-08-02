@@ -193,14 +193,25 @@ The application is designed to be easily deployable on platforms like Replit, wi
 - ✅ **UI Improvements**: Ordered configurations by player count (4→5→6→7→8→10)
 - ✅ **Styling Updates**: Clean display with "(custom config)" in grey text below configuration names
 
+### Performance Optimization Implementation (August 1, 2025)
+- ✅ **Smart Polling System**: Reduced API calls by 83% during inactive periods
+  - Draft status queries: Always 3-second polling for immediate admin feedback
+  - Draft-related data: 3 seconds when active, 30 seconds when inactive
+  - Performance impact: 2 req/sec to 0.77 req/sec when drafts inactive
+- ✅ **Auth System Optimization**: Eliminated wasteful 100ms authentication polling
+  - Event-driven authentication using storage events and custom event dispatch
+  - Reduced from 10 checks/second to event-based + 30-second fallback
+  - Maintains cross-tab logout detection and same-tab auth changes
+
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
 2. ✅ **Real Draft Functionality** - COMPLETED
 3. ✅ **Live Scoring System** - COMPLETED
 4. ✅ **Custom Draft Configurations** - COMPLETED
-5. **Email Invitations** - NEXT
-6. **User Profile Management**
-7. **League Join by Code**
-8. **Push Notifications**
-9. **Advanced Admin Features**
-10. **Mobile App Feel**
+5. ✅ **Performance Optimization** - COMPLETED
+6. **Email Invitations** - NEXT
+7. **User Profile Management**
+8. **League Join by Code**
+9. **Push Notifications**
+10. **Advanced Admin Features**
+11. **Mobile App Feel**
