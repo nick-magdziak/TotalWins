@@ -24,10 +24,12 @@ export default function Standings() {
 
   const { data: recentGames } = useQuery<any[]>({
     queryKey: ["/api/leagues", leagueId, "games/recent"],
+    refetchInterval: 60000, // Poll every 1 minute for live game updates
   });
 
   const { data: upcomingGames } = useQuery<any[]>({
     queryKey: ["/api/leagues", leagueId, "games/upcoming"],
+    refetchInterval: 300000, // Poll every 5 minutes for upcoming games
   });
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
@@ -180,7 +182,7 @@ export default function Standings() {
                           {getTeamDisplayName(game.awayTeamId)} @ {getTeamDisplayName(game.homeTeamId)}
                         </div>
                         <div className="text-xs text-retro-charcoal font-bold">
-                          {game.status === 'completed' ? (
+                          {game.status === 'completed' || game.status === 'in_progress' ? (
                             `${game.awayScore} - ${game.homeScore}`
                           ) : (
                             new Date(game.gameDate).toLocaleDateString('en-US', { 
@@ -199,9 +201,11 @@ export default function Standings() {
                       <Badge className={
                         game.status === 'completed' 
                           ? "bg-retro-lime text-retro-charcoal text-xs" 
+                          : game.status === 'in_progress'
+                          ? "bg-red-500 text-white text-xs animate-pulse"
                           : "bg-retro-orange text-white text-xs"
                       }>
-                        {game.status === 'completed' ? 'FINAL' : 'SCHEDULED'}
+                        {game.status === 'completed' ? 'FINAL' : game.status === 'in_progress' ? 'LIVE' : 'SCHEDULED'}
                       </Badge>
                     </div>
                   ))

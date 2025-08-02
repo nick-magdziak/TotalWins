@@ -43,11 +43,35 @@ app.use((req, res, next) => {
   try {
     const { SportsDataService } = await import("./sportsDataService");
     const { storage } = await import("./storage");
+    const { sportsApi } = await import("./services/sportsApi");
     const sportsService = new SportsDataService(storage);
     
     // Initial data update on startup
     await sportsService.updateMLBStandings();
+    await sportsApi.syncMLBGames();
     log("ESPN API sports data service initialized");
+    
+    // Set up automatic live game updates every 2 minutes during active hours
+    const startLiveUpdates = () => {
+      setInterval(async () => {
+        try {
+          // Only sync during reasonable hours (6 AM to 2 AM ET)
+          const now = new Date();
+          const hour = now.getHours();
+          if (hour >= 6 || hour <= 2) {
+            await sportsApi.syncMLBGames();
+            console.log("🔄 Auto-synced live MLB games");
+          }
+        } catch (error) {
+          console.error("Auto-sync error:", error);
+        }
+      }, 120000); // 2 minutes
+    };
+    
+    // Start live updates after initial sync
+    startLiveUpdates();
+    log("Live game auto-sync enabled (2 minute intervals)");
+    
   } catch (error) {
     console.error("Failed to initialize sports data service:", error);
   }
