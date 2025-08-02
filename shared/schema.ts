@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   displayName: text("display_name").notNull(),
   isAdmin: boolean("is_admin").default(false),
   notifications: boolean("notifications").default(true),
+  draftNotifications: boolean("draft_notifications").default(true),
+  gameNotifications: boolean("game_notifications").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -26,6 +28,7 @@ export const leagues = pgTable("leagues", {
   draftConfiguration: text("draft_configuration"), // e.g., "4_players_8_teams" for the new unified config
   draftStatus: text("draft_status").notNull().default("pending"), // pending, active, completed
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
+  inviteCode: text("invite_code").unique(),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });

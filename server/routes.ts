@@ -306,27 +306,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/invite-player", async (req, res) => {
-    try {
-      const { email, leagueId } = req.body;
-      const { sendLeagueInvitation } = await import("./services/emailService");
-      
-      // In a real app, you'd generate a proper invite link with a token
-      const success = await sendLeagueInvitation(
-        email,
-        "League Admin", // You'd get this from the requesting user
-        "2024 NFL Wins Pool Championship"
-      );
-      
-      if (success) {
-        res.json({ message: "Invitation sent successfully" });
-      } else {
-        res.status(500).json({ message: "Failed to send invitation" });
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to send invitation" });
-    }
-  });
+  // Import email route handlers
+  const { 
+    sendLeagueInvite, 
+    sendDraftNotification, 
+    updateNotificationPreferences, 
+    getNotificationPreferences,
+    testEmail
+  } = await import("./routes/email");
+
+  // Email routes
+  app.post("/api/email/invite", sendLeagueInvite);
+  app.post("/api/email/draft-notification", sendDraftNotification);
+  app.put("/api/users/:userId/notification-preferences", updateNotificationPreferences);
+  app.get("/api/users/:userId/notification-preferences", getNotificationPreferences);
+  app.post("/api/admin/test-email", testEmail);
 
   app.post("/api/admin/update-privileges", async (req, res) => {
     try {

@@ -44,6 +44,7 @@ export default function Admin() {
   const currentUser = getCurrentUser();
   const { toast } = useToast();
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
   const [selectedMember, setSelectedMember] = useState<LeagueMember | null>(null);
   const [showPrivilegeDialog, setShowPrivilegeDialog] = useState(false);
   const [showManualDraftDialog, setShowManualDraftDialog] = useState(false);
@@ -294,18 +295,30 @@ export default function Admin() {
   });
 
   const invitePlayerMutation = useMutation({
-    mutationFn: async (email: string) => {
-      return apiRequest("POST", "/api/admin/invite-player", { 
-        email, 
-        leagueId 
+    mutationFn: async ({ email, name }: { email: string; name: string }) => {
+      const response = await fetch("/api/email/invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          name,
+          leagueId: leagueId,
+        }),
       });
+      if (!response.ok) {
+        throw new Error("Failed to send invitation");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Invitation sent!",
-        description: `Invitation sent to ${inviteEmail}`,
+        description: `Invitation email sent to ${inviteEmail}`,
       });
       setInviteEmail("");
+      setInviteName("");
     },
     onError: () => {
       toast({
@@ -370,8 +383,11 @@ export default function Admin() {
 
   const handleInvitePlayer = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inviteEmail.trim()) {
-      invitePlayerMutation.mutate(inviteEmail.trim());
+    if (inviteEmail.trim() && inviteName.trim()) {
+      invitePlayerMutation.mutate({ 
+        email: inviteEmail.trim(), 
+        name: inviteName.trim() 
+      });
     }
   };
 
@@ -779,15 +795,22 @@ export default function Admin() {
               <div className="border-t border-retro-teal pt-4">
                 <form onSubmit={handleInvitePlayer} className="space-y-3">
                   <Input
+                    type="text"
+                    placeholder="Enter player name..."
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    className="w-full p-3 rounded-lg border-2 border-retro-pink focus:border-retro-purple text-retro-charcoal"
+                  />
+                  <Input
                     type="email"
-                    placeholder="Enter email to invite player..."
+                    placeholder="Enter email address..."
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     className="w-full p-3 rounded-lg border-2 border-retro-pink focus:border-retro-purple text-retro-charcoal"
                   />
                   <Button
                     type="submit"
-                    disabled={invitePlayerMutation.isPending || !inviteEmail.trim()}
+                    disabled={invitePlayerMutation.isPending || !inviteEmail.trim() || !inviteName.trim()}
                     className="w-full bg-retro-yellow text-retro-charcoal px-4 py-3 rounded-lg font-bold hover:scale-105 transform transition-all duration-200 retro-font hover:bg-retro-lime"
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
