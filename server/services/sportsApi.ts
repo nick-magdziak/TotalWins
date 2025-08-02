@@ -95,8 +95,12 @@ export class SportsApiService {
           } else {
             // Demo period data for live games when ESPN doesn't provide it
             const gameId = event.id;
-            const demoInnings = ['Top 1', 'Bottom 3', 'Top 5', 'Bottom 7', 'Top 9'];
-            const periodIndex = parseInt(gameId.slice(-1)) % demoInnings.length;
+            const now = new Date();
+            // Use time-based variation to make periods more dynamic
+            const timeBasedIndex = Math.floor(now.getMinutes() / 10); // Changes every 10 minutes
+            const gameBasedIndex = parseInt(gameId.slice(-1));
+            const demoInnings = ['Top 1', 'Bottom 2', 'Top 3', 'Bottom 4', 'Top 5', 'Bottom 6', 'Top 7', 'Bottom 8', 'Top 9'];
+            const periodIndex = (gameBasedIndex + timeBasedIndex) % demoInnings.length;
             period = demoInnings[periodIndex];
           }
         }
@@ -233,8 +237,12 @@ export class SportsApiService {
           } else {
             // Demo period data for live games when ESPN doesn't provide it
             const gameId = event.id;
-            const demoPeriods = ['Q1 12:45', 'Q2 8:23', 'Q3 5:17', 'Q4 2:08'];
-            const periodIndex = parseInt(gameId.slice(-1)) % demoPeriods.length;
+            const now = new Date();
+            // Use time-based variation to make periods more dynamic
+            const timeBasedIndex = Math.floor(now.getMinutes() / 15); // Changes every 15 minutes
+            const gameBasedIndex = parseInt(gameId.slice(-1));
+            const demoPeriods = ['Q1 14:32', 'Q1 7:18', 'Q2 11:45', 'Q2 3:22', 'Q3 13:07', 'Q3 6:41', 'Q4 9:15', 'Q4 2:38'];
+            const periodIndex = (gameBasedIndex + timeBasedIndex) % demoPeriods.length;
             period = demoPeriods[periodIndex];
           }
         }
