@@ -97,7 +97,8 @@ export class SportsApiService {
           else if (event.status.type.detail || event.status.type.shortDetail) {
             const detail = event.status.type.detail || event.status.type.shortDetail;
             // Parse formats like "Top 3rd", "Bottom 5th", "Mid 7th", etc.
-            const inningMatch = detail.match(/(Top|Bottom|Mid)\s+(\d+)/i);
+            // Also handle ordinal formats: "3rd", "5th", "1st", etc.
+            const inningMatch = detail.match(/(Top|Bottom|Mid)\s+(\d+)(?:st|nd|rd|th)?/i);
             if (inningMatch) {
               period = `${inningMatch[1]} ${inningMatch[2]}`;
             }
