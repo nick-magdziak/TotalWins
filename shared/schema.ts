@@ -96,6 +96,7 @@ export const games = pgTable("games", {
   status: text("status").notNull().default("scheduled"), // scheduled, in_progress, completed
   gameDate: timestamp("game_date").notNull(),
   completedAt: timestamp("completed_at"),
+  period: text("period"), // e.g., "Top 9", "Q4 2:45", "Bottom 7"
 });
 
 // Insert schemas

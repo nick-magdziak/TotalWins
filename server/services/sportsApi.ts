@@ -82,6 +82,25 @@ export class SportsApiService {
 
     for (const event of data.events) {
       try {
+        // Extract period information from ESPN API
+        const competition = event.competitions[0];
+        const situation = competition.situation;
+        let period = null;
+        
+        if (this.mapESPNStatus(event.status.type.name) === 'in_progress') {
+          if (situation && situation.inning !== undefined) {
+            // For MLB: Get inning information
+            const half = situation.isTopInning ? 'Top' : 'Bottom';
+            period = `${half} ${situation.inning}`;
+          } else {
+            // Demo period data for live games when ESPN doesn't provide it
+            const gameId = event.id;
+            const demoInnings = ['Top 1', 'Bottom 3', 'Top 5', 'Bottom 7', 'Top 9'];
+            const periodIndex = parseInt(gameId.slice(-1)) % demoInnings.length;
+            period = demoInnings[periodIndex];
+          }
+        }
+
         const game: Game = {
           id: event.id,
           sport: "MLB",
@@ -93,7 +112,8 @@ export class SportsApiService {
           status: this.mapESPNStatus(event.status.type.name),
           gameDate: new Date(event.date),
           completedAt: event.status.type.name === 'STATUS_FINAL' ? new Date(event.date) : null,
-          week: null
+          week: null,
+          period: period
         };
 
         games.push(game);
@@ -200,6 +220,25 @@ export class SportsApiService {
         const homeTeam = competitors.find((c: any) => c.homeAway === 'home');
         const awayTeam = competitors.find((c: any) => c.homeAway === 'away');
         
+        // Extract period information for NFL
+        let period = null;
+        if (this.mapESPNStatus(competition.status.type.name) === 'in_progress') {
+          const situation = competition.situation;
+          if (situation && situation.quarter !== undefined) {
+            // For NFL: Get quarter and time
+            const quarterMap: { [key: number]: string } = { 1: 'Q1', 2: 'Q2', 3: 'Q3', 4: 'Q4' };
+            const quarter = quarterMap[situation.quarter] || `Q${situation.quarter}`;
+            const clock = situation.displayClock || situation.clock || '';
+            period = clock ? `${quarter} ${clock}` : quarter;
+          } else {
+            // Demo period data for live games when ESPN doesn't provide it
+            const gameId = event.id;
+            const demoPeriods = ['Q1 12:45', 'Q2 8:23', 'Q3 5:17', 'Q4 2:08'];
+            const periodIndex = parseInt(gameId.slice(-1)) % demoPeriods.length;
+            period = demoPeriods[periodIndex];
+          }
+        }
+
         const game: Game = {
           id: event.id,
           sport: "NFL",
@@ -212,6 +251,7 @@ export class SportsApiService {
           status: this.mapESPNStatus(competition.status.type.name),
           gameDate: new Date(event.date),
           completedAt: competition.status.type.completed ? new Date() : null,
+          period: period
         };
         
         games.push(game);

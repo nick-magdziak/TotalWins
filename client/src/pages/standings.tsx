@@ -183,7 +183,12 @@ export default function Standings() {
                         </div>
                         <div className="text-xs text-retro-charcoal font-bold">
                           {game.status === 'completed' || game.status === 'in_progress' ? (
-                            `${game.awayScore} - ${game.homeScore}`
+                            <>
+                              <div>{game.awayScore} - {game.homeScore}</div>
+                              {game.status === 'in_progress' && game.period && (
+                                <div className="text-xs text-blue-600 font-bold">{game.period}</div>
+                              )}
+                            </>
                           ) : (
                             new Date(game.gameDate).toLocaleDateString('en-US', { 
                               weekday: 'short', 
