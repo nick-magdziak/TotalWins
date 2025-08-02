@@ -88,26 +88,19 @@ export class SportsApiService {
         let period = null;
         
         if (this.mapESPNStatus(event.status.type.name) === 'in_progress') {
+          // Try to get inning from situation first
           if (situation && situation.inning !== undefined) {
-            // For MLB: Get inning information
             const half = situation.isTopInning ? 'Top' : 'Bottom';
             period = `${half} ${situation.inning}`;
-          } else {
-            // Demo period data for live games when ESPN doesn't provide it
-            const gameId = event.id;
-            const gameTime = new Date(event.date);
-            const now = new Date();
-            const gameElapsedHours = (now.getTime() - gameTime.getTime()) / (1000 * 60 * 60);
-            
-            // Create realistic inning progression based on game elapsed time
-            let inningProgress = Math.max(1, Math.min(9, Math.floor(gameElapsedHours * 3) + 1));
-            const isTop = gameElapsedHours % 0.5 < 0.25; // Alternate top/bottom every ~15 minutes
-            
-            // Add some game-specific variation
-            const gameBasedOffset = parseInt(gameId.slice(-1)) % 3;
-            inningProgress = Math.max(1, Math.min(9, inningProgress + gameBasedOffset - 1));
-            
-            period = `${isTop ? 'Top' : 'Bottom'} ${inningProgress}`;
+          } 
+          // If no situation data, try to parse from status detail
+          else if (event.status.type.detail || event.status.type.shortDetail) {
+            const detail = event.status.type.detail || event.status.type.shortDetail;
+            // Parse formats like "Top 3rd", "Bottom 5th", "Mid 7th", etc.
+            const inningMatch = detail.match(/(Top|Bottom|Mid)\s+(\d+)/i);
+            if (inningMatch) {
+              period = `${inningMatch[1]} ${inningMatch[2]}`;
+            }
           }
         }
 
@@ -226,41 +219,19 @@ export class SportsApiService {
       for (const event of espnData.events) {
         const competition = event.competitions[0];
         const competitors = competition.competitors;
+        const situation = competition.situation;
         
         const homeTeam = competitors.find((c: any) => c.homeAway === 'home');
         const awayTeam = competitors.find((c: any) => c.homeAway === 'away');
         
         // Extract period information for NFL
         let period = null;
-        if (this.mapESPNStatus(competition.status.type.name) === 'in_progress') {
-          const situation = competition.situation;
-          if (situation && situation.quarter !== undefined) {
-            // For NFL: Get quarter and time
-            const quarterMap: { [key: number]: string } = { 1: 'Q1', 2: 'Q2', 3: 'Q3', 4: 'Q4' };
-            const quarter = quarterMap[situation.quarter] || `Q${situation.quarter}`;
-            const clock = situation.displayClock || situation.clock || '';
-            period = clock ? `${quarter} ${clock}` : quarter;
-          } else {
-            // Demo period data for live games when ESPN doesn't provide it
-            const gameId = event.id;
-            const gameTime = new Date(event.date);
-            const now = new Date();
-            const gameElapsedHours = (now.getTime() - gameTime.getTime()) / (1000 * 60 * 60);
-            
-            // Create realistic quarter progression (NFL games ~3 hours)
-            let quarter = Math.max(1, Math.min(4, Math.floor(gameElapsedHours * 1.5) + 1));
-            
-            // Add game-specific variation
-            const gameBasedOffset = parseInt(gameId.slice(-1)) % 3;
-            quarter = Math.max(1, Math.min(4, quarter + gameBasedOffset - 1));
-            
-            // Generate realistic clock times
-            const baseMinutes = [14, 11, 8, 5, 2];
-            const baseSeconds = [45, 23, 17, 8, 52];
-            const timeIndex = (parseInt(gameId.slice(-1)) + Math.floor(now.getMinutes() / 5)) % baseMinutes.length;
-            
-            period = `Q${quarter} ${baseMinutes[timeIndex]}:${baseSeconds[timeIndex].toString().padStart(2, '0')}`;
-          }
+        if (situation && situation.quarter !== undefined && this.mapESPNStatus(competition.status.type.name) === 'in_progress') {
+          // For NFL: Get quarter and time from ESPN API
+          const quarterMap: { [key: number]: string } = { 1: 'Q1', 2: 'Q2', 3: 'Q3', 4: 'Q4' };
+          const quarter = quarterMap[situation.quarter] || `Q${situation.quarter}`;
+          const clock = situation.displayClock || situation.clock || '';
+          period = clock ? `${quarter} ${clock}` : quarter;
         }
 
         const game: Game = {
