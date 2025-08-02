@@ -95,13 +95,19 @@ export class SportsApiService {
           } else {
             // Demo period data for live games when ESPN doesn't provide it
             const gameId = event.id;
+            const gameTime = new Date(event.date);
             const now = new Date();
-            // Use time-based variation to make periods more dynamic
-            const timeBasedIndex = Math.floor(now.getMinutes() / 10); // Changes every 10 minutes
-            const gameBasedIndex = parseInt(gameId.slice(-1));
-            const demoInnings = ['Top 1', 'Bottom 2', 'Top 3', 'Bottom 4', 'Top 5', 'Bottom 6', 'Top 7', 'Bottom 8', 'Top 9'];
-            const periodIndex = (gameBasedIndex + timeBasedIndex) % demoInnings.length;
-            period = demoInnings[periodIndex];
+            const gameElapsedHours = (now.getTime() - gameTime.getTime()) / (1000 * 60 * 60);
+            
+            // Create realistic inning progression based on game elapsed time
+            let inningProgress = Math.max(1, Math.min(9, Math.floor(gameElapsedHours * 3) + 1));
+            const isTop = gameElapsedHours % 0.5 < 0.25; // Alternate top/bottom every ~15 minutes
+            
+            // Add some game-specific variation
+            const gameBasedOffset = parseInt(gameId.slice(-1)) % 3;
+            inningProgress = Math.max(1, Math.min(9, inningProgress + gameBasedOffset - 1));
+            
+            period = `${isTop ? 'Top' : 'Bottom'} ${inningProgress}`;
           }
         }
 
@@ -237,13 +243,23 @@ export class SportsApiService {
           } else {
             // Demo period data for live games when ESPN doesn't provide it
             const gameId = event.id;
+            const gameTime = new Date(event.date);
             const now = new Date();
-            // Use time-based variation to make periods more dynamic
-            const timeBasedIndex = Math.floor(now.getMinutes() / 15); // Changes every 15 minutes
-            const gameBasedIndex = parseInt(gameId.slice(-1));
-            const demoPeriods = ['Q1 14:32', 'Q1 7:18', 'Q2 11:45', 'Q2 3:22', 'Q3 13:07', 'Q3 6:41', 'Q4 9:15', 'Q4 2:38'];
-            const periodIndex = (gameBasedIndex + timeBasedIndex) % demoPeriods.length;
-            period = demoPeriods[periodIndex];
+            const gameElapsedHours = (now.getTime() - gameTime.getTime()) / (1000 * 60 * 60);
+            
+            // Create realistic quarter progression (NFL games ~3 hours)
+            let quarter = Math.max(1, Math.min(4, Math.floor(gameElapsedHours * 1.5) + 1));
+            
+            // Add game-specific variation
+            const gameBasedOffset = parseInt(gameId.slice(-1)) % 3;
+            quarter = Math.max(1, Math.min(4, quarter + gameBasedOffset - 1));
+            
+            // Generate realistic clock times
+            const baseMinutes = [14, 11, 8, 5, 2];
+            const baseSeconds = [45, 23, 17, 8, 52];
+            const timeIndex = (parseInt(gameId.slice(-1)) + Math.floor(now.getMinutes() / 5)) % baseMinutes.length;
+            
+            period = `Q${quarter} ${baseMinutes[timeIndex]}:${baseSeconds[timeIndex].toString().padStart(2, '0')}`;
           }
         }
 
