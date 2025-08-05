@@ -37,6 +37,12 @@ class EmailService {
             },
           },
         },
+        Tags: [
+          {
+            Name: "EmailType",
+            Value: "TotalWinsNotification"
+          }
+        ]
       });
 
       await sesClient.send(command);
@@ -65,6 +71,8 @@ class EmailService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="x-apple-disable-message-reformatting">
         <title>You're Invited to Join ${leagueName}!</title>
         <style>
           body { 
