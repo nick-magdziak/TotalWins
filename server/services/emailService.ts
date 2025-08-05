@@ -6,7 +6,6 @@ const sesClient = new SESClient({
 });
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
-console.log("🔍 FROM_EMAIL being used:", FROM_EMAIL);
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
 class EmailService {
