@@ -5,7 +5,8 @@ const sesClient = new SESClient({
   region: process.env.AWS_REGION || "us-east-1",
 });
 
-const FROM_EMAIL = "Total Wins <admin@totalwins.app>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
+console.log("🔍 FROM_EMAIL being used:", FROM_EMAIL);
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
 class EmailService {
