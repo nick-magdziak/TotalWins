@@ -213,6 +213,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const pick = await storage.addDraftPick(pickData);
+      
+      // Send draft notification to the next player
+      try {
+        const draftStatus = await storage.getDraftStatus(req.params.leagueId);
+        if (draftStatus.isActive && draftStatus.currentPlayer) {
+          const league = await storage.getLeague(req.params.leagueId);
+          const members = await storage.getLeagueMembers(req.params.leagueId);
+          
+          // Find the current player based on draft status
+          const picks = await storage.getDraftPicks(req.params.leagueId);
+          const currentPickNumber = picks.length + 1;
+          const round = Math.ceil(currentPickNumber / members.length);
+          const positionInRound = ((currentPickNumber - 1) % members.length) + 1;
+          const isSnakeRound = round % 2 === 0;
+          const draftPosition = isSnakeRound ? members.length - positionInRound + 1 : positionInRound;
+          
+          const currentMember = members.find(m => m.draftPosition === draftPosition);
+          if (currentMember) {
+            const currentUser = await storage.getUser(currentMember.userId!);
+            if (currentUser && currentUser.draftNotifications) {
+              console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              const { EmailService } = await import('./services/emailService.js');
+              const emailService = new EmailService();
+              await emailService.sendDraftNotification(
+                currentUser.email!,
+                currentUser.displayName!,
+                league?.name || 'League',
+                draftStatus.currentPick,
+                draftStatus.round,
+                req.params.leagueId
+              );
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send draft notification:', emailError);
+        // Don't fail the pick if email fails
+      }
+      
       res.json(pick);
     } catch (error) {
       res.status(400).json({ message: "Invalid draft pick data" });
@@ -386,6 +425,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateLeague(leagueId, { draftStatus: "active" });
+      
+      // Send draft notification to the first player
+      try {
+        const draftStatus = await storage.getDraftStatus(leagueId);
+        if (draftStatus.isActive && draftStatus.currentPlayer) {
+          const league = await storage.getLeague(leagueId);
+          const members = await storage.getLeagueMembers(leagueId);
+          const currentMember = members.find(m => m.draftPosition === 1);
+          if (currentMember) {
+            const currentUser = await storage.getUser(currentMember.userId!);
+            if (currentUser && currentUser.draftNotifications) {
+              console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              const { EmailService } = await import('./services/emailService.js');
+              const emailService = new EmailService();
+              await emailService.sendDraftNotification(
+                currentUser.email!,
+                currentUser.displayName!,
+                league?.name || 'League',
+                draftStatus.currentPick,
+                draftStatus.round,
+                leagueId
+              );
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send draft start notification:', emailError);
+        // Don't fail the draft start if email fails
+      }
       
       res.json({ success: true, message: "Draft started successfully" });
     } catch (error) {
