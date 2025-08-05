@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Mail, User, Settings } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Bell, Mail, User, Settings, Key, Shield, UserCog } from "lucide-react";
+import { getCurrentUser, setCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type League } from "@shared/schema";
@@ -18,6 +19,12 @@ interface NotificationPreferences {
   gameNotifications: boolean;
 }
 
+interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export default function Profile() {
   const currentUser = getCurrentUser();
   const { toast } = useToast();
@@ -25,10 +32,16 @@ export default function Profile() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>("");
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editData, setEditData] = useState({
     firstName: currentUser?.firstName || "",
     lastName: currentUser?.lastName || "",
     displayName: currentUser?.displayName || "",
+  });
+  const [passwordData, setPasswordData] = useState<PasswordChangeData>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   // Get user's leagues
@@ -83,6 +96,56 @@ export default function Profile() {
     },
   });
 
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (profileData: { firstName: string; lastName: string; displayName: string }) => {
+      const response = await apiRequest("PUT", `/api/users/${currentUser?.id}/profile`, profileData);
+      return response.json();
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id] });
+      setCurrentUser(updatedUser);
+      setIsEditing(false);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update profile information.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (passwordData: PasswordChangeData) => {
+      const response = await apiRequest("PUT", `/api/users/${currentUser?.id}/password`, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setIsPasswordDialogOpen(false);
+      toast({
+        title: "Password Updated",
+        description: "Your password has been changed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Test email functionality
   const testEmailMutation = useMutation({
     mutationFn: async (type: "invitation" | "draft" | "game") => {
@@ -119,6 +182,59 @@ export default function Profile() {
 
   const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean) => {
     updatePreferencesMutation.mutate({ [key]: value });
+  };
+
+  const handleProfileSave = () => {
+    if (!editData.firstName.trim() || !editData.lastName.trim() || !editData.displayName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "All fields are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (editData.displayName.length > 16) {
+      toast({
+        title: "Validation Error", 
+        description: "Display name must be 16 characters or less.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateProfileMutation.mutate(editData);
+  };
+
+  const handlePasswordChange = () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast({
+        title: "Validation Error",
+        description: "All password fields are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "New password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Validation Error",
+        description: "New passwords don't match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    changePasswordMutation.mutate(passwordData);
   };
 
   if (!currentUser) {
@@ -196,16 +312,10 @@ export default function Profile() {
               ) : (
                 <>
                   <Button 
-                    onClick={() => {
-                      // TODO: Implement profile update
-                      setIsEditing(false);
-                      toast({
-                        title: "Profile Updated",
-                        description: "Your profile information has been saved.",
-                      });
-                    }}
+                    onClick={handleProfileSave}
+                    disabled={updateProfileMutation.isPending}
                   >
-                    Save Changes
+                    {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -226,7 +336,109 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Notification Preferences */}
+        {/* Account Security */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Account Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Password</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="password"
+                  value="••••••••"
+                  disabled
+                  className="bg-gray-50 dark:bg-gray-800"
+                />
+                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Key className="h-4 w-4 mr-2" />
+                      Change
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Password</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <Input
+                          id="currentPassword"
+                          type="password"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                          placeholder="Enter current password"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                          placeholder="Enter new password (min 6 characters)"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-4">
+                        <Button 
+                          onClick={handlePasswordChange}
+                          disabled={changePasswordMutation.isPending}
+                        >
+                          {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                            setIsPasswordDialogOpen(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Account Type</Label>
+              <div className="flex items-center gap-2">
+                <UserCog className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  {currentUser?.isAdmin ? "Administrator" : "Standard User"}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Member Since</Label>
+              <div className="text-sm text-muted-foreground">
+                {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : "N/A"}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Email Notifications */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

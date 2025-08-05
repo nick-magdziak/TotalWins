@@ -67,6 +67,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.put("/api/users/:id/profile", async (req, res) => {
+    try {
+      const profileData = req.body;
+      const user = await storage.updateUser(req.params.id, profileData);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ ...user, password: undefined });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid profile data" });
+    }
+  });
+
+  // Change password
+  app.put("/api/users/:id/password", async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      // Get current user to verify password
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify current password
+      if (user.password !== currentPassword) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Update password
+      const updatedUser = await storage.updateUser(req.params.id, { password: newPassword });
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid password change request" });
+    }
+  });
+
   // Leagues
   app.post("/api/leagues", async (req, res) => {
     try {

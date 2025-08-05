@@ -110,6 +110,21 @@ export const insertUserSchema = createInsertSchema(users).omit({
   displayName: z.string().min(1).max(16, "Display name must be 16 characters or less"),
 });
 
+export const updateUserProfileSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  displayName: z.string().min(1).max(16, "Display name must be 16 characters or less"),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password confirmation is required"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 export const insertLeagueSchema = createInsertSchema(leagues).omit({
   id: true,
   createdAt: true,

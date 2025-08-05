@@ -19,7 +19,7 @@ try {
   localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
-function setCurrentUser(user: AuthUser | null): void {
+export function setCurrentUser(user: AuthUser | null): void {
   currentUser = user;
   if (user) {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
