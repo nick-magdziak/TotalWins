@@ -209,7 +209,7 @@ The application is designed to be easily deployable on platforms like Replit, wi
 - ✅ **Custom Domain Setup**: Successfully purchased and verified totalwins.app domain
 - ✅ **AWS SES Domain Verification**: Completed domain authentication in AWS SES Console
 - ✅ **DNS Configuration**: Set up SPF, DKIM, and DMARC records for email authentication
-- ✅ **Email Branding**: Updated email sender to "Total Wins <noreply@totalwins.app>"
+- ✅ **Email Branding**: Updated email sender to "Total Wins <admin@totalwins.app>"
 - ✅ **Spam Prevention**: Implemented proper domain authentication to prevent spam filtering
 - ✅ **Professional Email Templates**: Clean, emoji-free design with sport-specific messaging
 - ✅ **Email Service Integration**: AWS SES fully configured with authenticated domain
