@@ -184,31 +184,48 @@ export async function testEmail(req: Request, res: Response) {
     const schema = z.object({
       type: z.enum(["invitation", "draft", "game"]),
       email: z.string().email(),
+      leagueId: z.string().optional(),
     });
 
-    const { type, email } = schema.parse(req.body);
+    const { type, email, leagueId } = schema.parse(req.body);
 
     let success = false;
+    
+    // Get league information if leagueId is provided
+    let leagueName = "Test League";
+    let leagueSport = "MLB";
+    
+    if (leagueId) {
+      try {
+        const league = await storage.getLeague(leagueId);
+        if (league) {
+          leagueName = league.name;
+          leagueSport = league.sport || "MLB";
+        }
+      } catch (error) {
+        console.log("Could not fetch league info for test email:", error);
+      }
+    }
     
     switch (type) {
       case "invitation":
         success = await emailService.sendLeagueInvitation(
           email,
           "Test User",
-          "Test League",
+          leagueName,
           "Admin",
           "TEST123",
-          "MLB"
+          leagueSport
         );
         break;
       case "draft":
         success = await emailService.sendDraftNotification(
           email,
           "Test User",
-          "Test League",
+          leagueName,
           1,
           1,
-          "test-league-id"
+          leagueId || "test-league-id"
         );
         break;
       case "game":
@@ -220,7 +237,7 @@ export async function testEmail(req: Request, res: Response) {
           true,
           "Yankees 8 - Red Sox 3",
           "Red Sox",
-          "test-league-id"
+          leagueId || "test-league-id"
         );
         break;
     }

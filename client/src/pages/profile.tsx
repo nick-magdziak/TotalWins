@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bell, Mail, User, Settings } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { type League } from "@shared/schema";
 
 interface NotificationPreferences {
   draftNotifications: boolean;
@@ -22,11 +24,25 @@ export default function Profile() {
   const queryClient = useQueryClient();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>("");
   const [editData, setEditData] = useState({
     firstName: currentUser?.firstName || "",
     lastName: currentUser?.lastName || "",
     displayName: currentUser?.displayName || "",
   });
+
+  // Get user's leagues
+  const { data: userLeagues } = useQuery<League[]>({
+    queryKey: ["/api/users", currentUser?.id, "leagues"],
+    enabled: !!currentUser?.id,
+  });
+
+  // Set default league when leagues are loaded
+  useEffect(() => {
+    if (userLeagues && userLeagues.length > 0 && !selectedLeagueId) {
+      setSelectedLeagueId(userLeagues[0].id);
+    }
+  }, [userLeagues, selectedLeagueId]);
 
   // Get notification preferences
   const { data: preferences, isLoading: preferencesLoading } = useQuery<NotificationPreferences>({
@@ -78,6 +94,7 @@ export default function Profile() {
         body: JSON.stringify({
           type,
           email: currentUser?.email,
+          leagueId: selectedLeagueId,
         }),
       });
       if (!response.ok) {
@@ -222,6 +239,30 @@ export default function Profile() {
               <div>Loading preferences...</div>
             ) : (
               <>
+                {/* League Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="league-select" className="text-base">
+                    League
+                  </Label>
+                  <Select value={selectedLeagueId} onValueChange={setSelectedLeagueId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a league..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userLeagues?.map((league) => (
+                        <SelectItem key={league.id} value={league.id}>
+                          {league.name} ({league.sport?.toUpperCase()})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Email notifications will be sent for the selected league
+                  </p>
+                </div>
+
+                <Separator />
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
