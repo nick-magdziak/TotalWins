@@ -155,16 +155,16 @@ class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🏆 TOTAL WINS INVITATION 🏆</h1>
+            <h1>TOTAL WINS INVITATION</h1>
           </div>
           <div class="content">
             <h2>Hey ${playerName}!</h2>
-            <p><strong>${adminName}</strong> has invited you to join their sports league:</p>
+            <p><strong>${adminName}</strong> has invited you to join their Total Wins league:</p>
             
             <div class="league-info">
               <h3>${leagueName}</h3>
               <span class="sport-badge">${sport} League</span>
-              <p>Get ready for an exciting season of wins pool competition!</p>
+              <p>${sport === 'MLB' ? 'The baseball diamond awaits...' : sport === 'NFL' ? 'The gridiron awaits...' : sport === 'NBA' ? 'The hardwood awaits...' : 'The season awaits...'}</p>
             </div>
 
             <p>Use this invite code to join:</p>
@@ -176,7 +176,7 @@ class EmailService {
             <p><strong>Already have an account?</strong></p>
             <a href="${joinUrl}" class="cta-button">Join League Now</a>
 
-            <p>Total Wins is the ultimate sports wins pool experience with live scoring, real-time standings, and interactive drafts. Join your friends and see who can pick the most winning teams!</p>
+            <p>Total Wins is the ultimate wins pool league system with live scoring, real-time standings and quick drafting. Join your friends, compete to draft the best roster of teams and dominate your league in Total Wins.</p>
           </div>
           <div class="footer">
             <p>This invitation was sent by ${adminName} through Total Wins.<br>
@@ -188,25 +188,27 @@ class EmailService {
     `;
 
     const textBody = `
-      🏆 TOTAL WINS INVITATION 🏆
+      TOTAL WINS INVITATION
 
       Hey ${playerName}!
 
-      ${adminName} has invited you to join their ${sport} league: ${leagueName}
+      ${adminName} has invited you to join their Total Wins league: ${leagueName}
+
+      ${sport === 'MLB' ? 'The baseball diamond awaits...' : sport === 'NFL' ? 'The gridiron awaits...' : sport === 'NBA' ? 'The hardwood awaits...' : 'The season awaits...'}
 
       Use this invite code to join: ${inviteCode}
 
       New to Total Wins? Sign up here: ${signupUrl}
       Already have an account? Join here: ${joinUrl}
 
-      Total Wins is the ultimate sports wins pool experience with live scoring, real-time standings, and interactive drafts.
+      Total Wins is the ultimate wins pool league system with live scoring, real-time standings and quick drafting. Join your friends, compete to draft the best roster of teams and dominate your league in Total Wins.
 
       This invitation was sent by ${adminName} through Total Wins.
     `;
 
     return this.sendEmail({
       to: email,
-      subject: `🏆 You're invited to join ${leagueName} on Total Wins!`,
+      subject: `You're invited to join ${leagueName} on Total Wins!`,
       htmlBody,
       textBody,
     });
