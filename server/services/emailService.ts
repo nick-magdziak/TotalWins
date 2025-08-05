@@ -5,8 +5,8 @@ const sesClient = new SESClient({
   region: process.env.AWS_REGION || "us-east-1",
 });
 
-const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <noreply@totalwins.app>";
-const APP_URL = process.env.APP_URL || "https://totalwins.app";
+const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <noreply@replit.dev>";
+const APP_URL = process.env.APP_URL || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "https://your-app.replit.app");
 
 class EmailService {
   async sendEmail(params: {
