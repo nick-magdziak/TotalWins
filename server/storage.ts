@@ -42,8 +42,10 @@ export interface IStorage {
 
   // League Members
   getLeagueMembers(leagueId: string): Promise<LeagueMember[]>;
+  getLeagueMember(leagueId: string, userId: string): Promise<LeagueMember | undefined>;
   addLeagueMember(member: InsertLeagueMember): Promise<LeagueMember>;
   removeLeagueMember(leagueId: string, userId: string): Promise<boolean>;
+  updateLeagueMemberPreferences(leagueId: string, userId: string, preferences: { draftNotifications?: boolean; gameNotifications?: boolean; }): Promise<boolean>;
   getPlayerStandings(leagueId: string): Promise<PlayerStanding[]>;
 
   // NFL Teams
@@ -765,6 +767,28 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(leagueMembers)
       .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getLeagueMember(leagueId: string, userId: string): Promise<LeagueMember | undefined> {
+    const [member] = await db
+      .select()
+      .from(leagueMembers)
+      .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
+    
+    return member || undefined;
+  }
+
+  async updateLeagueMemberPreferences(
+    leagueId: string, 
+    userId: string, 
+    preferences: { draftNotifications?: boolean; gameNotifications?: boolean; }
+  ): Promise<boolean> {
+    const result = await db
+      .update(leagueMembers)
+      .set(preferences)
+      .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
+    
     return result.rowCount ? result.rowCount > 0 : false;
   }
 

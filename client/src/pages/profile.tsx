@@ -57,16 +57,20 @@ export default function Profile() {
     }
   }, [userLeagues, selectedLeagueId]);
 
-  // Get notification preferences
+  // Get league-specific notification preferences
   const { data: preferences, isLoading: preferencesLoading } = useQuery<NotificationPreferences>({
-    queryKey: ["/api/users", currentUser?.id, "notification-preferences"],
-    enabled: !!currentUser?.id,
+    queryKey: ["/api/leagues", selectedLeagueId, "members", currentUser?.id, "notification-preferences"],
+    enabled: !!currentUser?.id && !!selectedLeagueId,
   });
 
-  // Update notification preferences
+  // Update league-specific notification preferences
   const updatePreferencesMutation = useMutation({
     mutationFn: async (newPreferences: Partial<NotificationPreferences>) => {
-      const response = await fetch(`/api/users/${currentUser?.id}/notification-preferences`, {
+      if (!selectedLeagueId) {
+        throw new Error("No league selected");
+      }
+      
+      const response = await fetch(`/api/leagues/${selectedLeagueId}/members/${currentUser?.id}/notification-preferences`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -80,11 +84,11 @@ export default function Profile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/users", currentUser?.id, "notification-preferences"] 
+        queryKey: ["/api/leagues", selectedLeagueId, "members", currentUser?.id, "notification-preferences"] 
       });
       toast({
         title: "Settings Updated",
-        description: "Your notification preferences have been saved.",
+        description: `Your notification preferences for this league have been saved.`,
       });
     },
     onError: () => {
@@ -469,7 +473,7 @@ export default function Profile() {
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Email notifications will be sent for the selected league
+                    Notification settings apply only to the selected league above
                   </p>
                 </div>
 

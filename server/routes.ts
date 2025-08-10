@@ -399,6 +399,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email routes
   app.post("/api/email/invite", sendLeagueInvite);
   app.post("/api/email/draft-notification", sendDraftNotification);
+  // League-specific notification preferences
+  app.get("/api/leagues/:leagueId/members/:userId/notification-preferences", async (req, res) => {
+    try {
+      const member = await storage.getLeagueMember(req.params.leagueId, req.params.userId);
+      if (!member) {
+        return res.status(404).json({ message: "League member not found" });
+      }
+      
+      res.json({
+        draftNotifications: member.draftNotifications ?? true,
+        gameNotifications: member.gameNotifications ?? false,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get notification preferences" });
+    }
+  });
+
+  app.put("/api/leagues/:leagueId/members/:userId/notification-preferences", async (req, res) => {
+    try {
+      const updates = req.body;
+      const success = await storage.updateLeagueMemberPreferences(
+        req.params.leagueId, 
+        req.params.userId, 
+        updates
+      );
+      
+      if (!success) {
+        return res.status(404).json({ message: "League member not found" });
+      }
+      
+      const member = await storage.getLeagueMember(req.params.leagueId, req.params.userId);
+      res.json({
+        draftNotifications: member?.draftNotifications ?? true,
+        gameNotifications: member?.gameNotifications ?? false,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update notification preferences" });
+    }
+  });
+
   app.put("/api/users/:userId/notification-preferences", updateNotificationPreferences);
   app.get("/api/users/:userId/notification-preferences", getNotificationPreferences);
   app.post("/api/admin/test-email", testEmail);

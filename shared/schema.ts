@@ -39,6 +39,8 @@ export const leagueMembers = pgTable("league_members", {
   userId: varchar("user_id").references(() => users.id),
   draftPosition: integer("draft_position"),
   totalWins: integer("total_wins").default(0),
+  draftNotifications: boolean("draft_notifications").default(true),
+  gameNotifications: boolean("game_notifications").default(false),
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
