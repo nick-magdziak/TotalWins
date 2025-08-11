@@ -382,7 +382,6 @@ class EmailService {
   ): Promise<boolean> {
     const standingsUrl = `${APP_URL}/standings?league=${leagueId}`;
     const result = isWin ? "WON" : "LOST";
-    const emoji = isWin ? "🎉" : "😔";
 
     const htmlBody = `
       <!DOCTYPE html>
@@ -459,7 +458,7 @@ class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>${emoji} GAME UPDATE ${emoji}</h1>
+            <h1>GAME UPDATE</h1>
           </div>
           <div class="content">
             <h2>Hey ${playerName}!</h2>
@@ -473,8 +472,8 @@ class EmailService {
             </div>
 
             ${isWin 
-              ? "<p>🎉 Congratulations! Your team picked up another win. Every victory counts in the standings!</p>" 
-              : "<p>😔 Tough loss, but there are plenty more games ahead. Your other teams might be doing better!</p>"
+              ? "<p>Congratulations! Your team picked up another win. Every victory counts in the standings!</p>" 
+              : "<p>Tough loss, but there are plenty more games ahead. Your other teams might be doing better!</p>"
             }
 
             <a href="${standingsUrl}" class="cta-button">Check Updated Standings</a>
@@ -491,7 +490,7 @@ class EmailService {
     `;
 
     const textBody = `
-      ${emoji} GAME UPDATE ${emoji}
+      GAME UPDATE
 
       Hey ${playerName}!
 
@@ -501,8 +500,8 @@ class EmailService {
       ${gameResult}
 
       ${isWin 
-        ? "🎉 Congratulations! Your team picked up another win. Every victory counts in the standings!" 
-        : "😔 Tough loss, but there are plenty more games ahead. Your other teams might be doing better!"
+        ? "Congratulations! Your team picked up another win. Every victory counts in the standings!" 
+        : "Tough loss, but there are plenty more games ahead. Your other teams might be doing better!"
       }
 
       Check the updated standings: ${standingsUrl}
@@ -514,7 +513,7 @@ class EmailService {
 
     return this.sendEmail({
       to: email,
-      subject: `${emoji} ${teamCity} ${teamName} ${result}! - ${gameResult}`,
+      subject: `${teamCity} ${teamName} ${result}! - ${gameResult}`,
       htmlBody,
       textBody,
     });
