@@ -25,6 +25,12 @@ interface PasswordChangeData {
   confirmPassword: string;
 }
 
+interface EmailChangeData {
+  currentPassword: string;
+  newEmail: string;
+  confirmEmail: string;
+}
+
 export default function Profile() {
   const currentUser = getCurrentUser();
   const { toast } = useToast();
@@ -33,6 +39,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>("");
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [editData, setEditData] = useState({
     firstName: currentUser?.firstName || "",
     lastName: currentUser?.lastName || "",
@@ -42,6 +49,11 @@ export default function Profile() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+  const [emailData, setEmailData] = useState<EmailChangeData>({
+    currentPassword: "",
+    newEmail: "",
+    confirmEmail: "",
   });
 
   // Get user's leagues
@@ -150,6 +162,34 @@ export default function Profile() {
     },
   });
 
+  // Change email mutation
+  const changeEmailMutation = useMutation({
+    mutationFn: async (emailData: EmailChangeData) => {
+      const response = await apiRequest("PUT", `/api/users/${currentUser?.id}/email`, {
+        currentPassword: emailData.currentPassword,
+        newEmail: emailData.newEmail,
+      });
+      return response.json();
+    },
+    onSuccess: (updatedUser) => {
+      setEmailData({ currentPassword: "", newEmail: "", confirmEmail: "" });
+      setIsEmailDialogOpen(false);
+      setCurrentUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id] });
+      toast({
+        title: "Email Updated",
+        description: "Your email address has been changed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update email address.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Test email functionality
   const testEmailMutation = useMutation({
     mutationFn: async (type: "invitation" | "draft" | "game") => {
@@ -241,6 +281,47 @@ export default function Profile() {
     changePasswordMutation.mutate(passwordData);
   };
 
+  const handleEmailChange = () => {
+    if (!emailData.currentPassword || !emailData.newEmail || !emailData.confirmEmail) {
+      toast({
+        title: "Validation Error",
+        description: "All email fields are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailData.newEmail)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (emailData.newEmail !== emailData.confirmEmail) {
+      toast({
+        title: "Validation Error",
+        description: "Email addresses don't match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (emailData.newEmail === currentUser?.email) {
+      toast({
+        title: "Validation Error",
+        description: "New email must be different from current email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    changeEmailMutation.mutate(emailData);
+  };
+
   if (!currentUser) {
     return <div>Please log in to view your profile.</div>;
   }
@@ -268,7 +349,73 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="email">Email</Label>
+                <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-xs">
+                      <Mail className="h-3 w-3 mr-1" />
+                      Change
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Change Email Address</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPasswordEmail">Current Password</Label>
+                        <Input
+                          id="currentPasswordEmail"
+                          type="password"
+                          value={emailData.currentPassword}
+                          onChange={(e) => setEmailData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                          placeholder="Enter your current password"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="newEmail">New Email Address</Label>
+                        <Input
+                          id="newEmail"
+                          type="email"
+                          value={emailData.newEmail}
+                          onChange={(e) => setEmailData(prev => ({ ...prev, newEmail: e.target.value }))}
+                          placeholder="Enter your new email address"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmEmail">Confirm New Email</Label>
+                        <Input
+                          id="confirmEmail"
+                          type="email"
+                          value={emailData.confirmEmail}
+                          onChange={(e) => setEmailData(prev => ({ ...prev, confirmEmail: e.target.value }))}
+                          placeholder="Confirm your new email address"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-4">
+                        <Button 
+                          onClick={handleEmailChange}
+                          disabled={changeEmailMutation.isPending}
+                          className="flex-1"
+                        >
+                          {changeEmailMutation.isPending ? "Updating..." : "Update Email"}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsEmailDialogOpen(false);
+                            setEmailData({ currentPassword: "", newEmail: "", confirmEmail: "" });
+                          }}
+                          disabled={changeEmailMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <Input
                 id="email"
                 value={currentUser.email}

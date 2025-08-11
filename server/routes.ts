@@ -109,6 +109,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Change email
+  app.put("/api/users/:id/email", async (req, res) => {
+    try {
+      const { currentPassword, newEmail } = req.body;
+      
+      // Get current user to verify password
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify current password for security
+      if (user.password !== currentPassword) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmail)) {
+        return res.status(400).json({ message: "Please enter a valid email address" });
+      }
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(newEmail);
+      if (existingUser && existingUser.id !== req.params.id) {
+        return res.status(400).json({ message: "This email address is already in use" });
+      }
+      
+      // Update email
+      const updatedUser = await storage.updateUser(req.params.id, { email: newEmail });
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update email" });
+      }
+      
+      res.json({ ...updatedUser, password: undefined });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid email change request" });
+    }
+  });
+
   // Leagues
   app.post("/api/leagues", async (req, res) => {
     try {
