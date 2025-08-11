@@ -316,6 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const currentUser = await storage.getUser(currentMember.userId!);
             if (currentUser && currentUser.draftNotifications) {
               console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              
+              // Send email notification
               const { EmailService } = await import('./services/emailService.js');
               const emailService = new EmailService();
               await emailService.sendDraftNotification(
@@ -324,6 +326,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 league?.name || 'League',
                 draftStatus.currentPick,
                 draftStatus.round,
+                req.params.leagueId
+              );
+
+              // Send push notification
+              const { pushNotificationService } = await import("./services/pushNotificationService");
+              await pushNotificationService.sendDraftTurnNotification(
+                currentUser.id,
+                league?.name || 'League',
                 req.params.leagueId
               );
             }
@@ -479,7 +489,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:userId/notification-preferences", updateNotificationPreferences);
+  app.put("/api/users/:userId/notification-preferences", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const preferences = req.body;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, preferences);
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update preferences" });
+      }
+
+      res.json({
+        draftNotifications: updatedUser.draftNotifications,
+        standingsNotifications: updatedUser.standingsNotifications,
+      });
+    } catch (error) {
+      console.error("Error updating user notification preferences:", error);
+      res.status(500).json({ message: "Failed to update preferences" });
+    }
+  });
+  
   app.get("/api/users/:userId/notification-preferences", getNotificationPreferences);
   app.post("/api/admin/test-email", testEmail);
 
@@ -692,6 +726,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Live scoring sync error:", error);
       res.status(500).json({ message: "Failed to sync live scores" });
+    }
+  });
+
+  // Push notification routes
+  app.get("/api/push/vapid-key", async (req, res) => {
+    const { pushNotificationService } = await import("./services/pushNotificationService");
+    res.json({ 
+      publicKey: pushNotificationService.getVapidPublicKey() 
+    });
+  });
+
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const { userId, subscription } = req.body;
+      
+      if (!userId || !subscription) {
+        return res.status(400).json({ message: "User ID and subscription required" });
+      }
+
+      const { pushNotificationService } = await import("./services/pushNotificationService");
+      await pushNotificationService.subscribeUser(userId, subscription);
+      
+      res.json({ message: "Successfully subscribed to push notifications" });
+    } catch (error) {
+      console.error("Error subscribing to push notifications:", error);
+      res.status(500).json({ message: "Failed to subscribe to push notifications" });
+    }
+  });
+
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+
+      const { pushNotificationService } = await import("./services/pushNotificationService");
+      await pushNotificationService.unsubscribeUser(userId);
+      
+      res.json({ message: "Successfully unsubscribed from push notifications" });
+    } catch (error) {
+      console.error("Error unsubscribing from push notifications:", error);
+      res.status(500).json({ message: "Failed to unsubscribe from push notifications" });
     }
   });
 

@@ -882,6 +882,43 @@ export class DatabaseStorage implements IStorage {
     await db.update(mlbTeams).set({ wins, losses }).where(eq(mlbTeams.id, teamId));
   }
 
+  // Helper method to check for standings changes and send notifications
+  async checkAndNotifyStandingsChanges(): Promise<void> {
+    try {
+      const { pushNotificationService } = await import("./services/pushNotificationService");
+      
+      // Get all active leagues
+      const allLeagues = await db.select().from(leagues);
+      
+      for (const league of allLeagues) {
+        // Get current standings
+        const currentStandings = await this.getPlayerStandings(league.id);
+        
+        // For now, we'll store the previous standings in memory
+        // In a production system, you'd want to store this in a database
+        const cacheKey = `standings_${league.id}`;
+        const previousStandings = (global as any).standingsCache?.[cacheKey] || [];
+        
+        // Check if standings have changed
+        if (previousStandings.length > 0) {
+          await pushNotificationService.sendStandingsUpdates(
+            league.id,
+            previousStandings,
+            currentStandings
+          );
+        }
+        
+        // Update the cache
+        if (!(global as any).standingsCache) {
+          (global as any).standingsCache = {};
+        }
+        (global as any).standingsCache[cacheKey] = currentStandings;
+      }
+    } catch (error) {
+      console.error('Error checking standings changes:', error);
+    }
+  }
+
   async updateNBATeamRecord(teamId: string, wins: number, losses: number): Promise<void> {
     await db.update(nbaTeams).set({ wins, losses }).where(eq(nbaTeams.id, teamId));
   }

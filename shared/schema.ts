@@ -13,7 +13,8 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false),
   notifications: boolean("notifications").default(true),
   draftNotifications: boolean("draft_notifications").default(true),
-  gameNotifications: boolean("game_notifications").default(false),
+  standingsNotifications: boolean("standings_notifications").default(true),
+  pushSubscription: jsonb("push_subscription"), // Store push subscription data
   createdAt: timestamp("created_at").defaultNow(),
 });
 

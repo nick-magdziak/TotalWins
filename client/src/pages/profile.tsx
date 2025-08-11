@@ -8,15 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Bell, Mail, User, Settings, Key, Shield, UserCog } from "lucide-react";
+import { Bell, Mail, User, Settings, Key, Shield, UserCog, Smartphone } from "lucide-react";
 import { getCurrentUser, setCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type League } from "@shared/schema";
+import { pushNotificationManager } from "@/lib/pushNotifications";
 
 interface NotificationPreferences {
   draftNotifications: boolean;
   gameNotifications: boolean;
+}
+
+interface UserNotificationPreferences {
+  draftNotifications: boolean;
+  standingsNotifications: boolean;
 }
 
 interface PasswordChangeData {
@@ -56,6 +62,15 @@ export default function Profile() {
     confirmEmail: "",
   });
 
+  // Push notification state
+  const [isPushSupported, setIsPushSupported] = useState(false);
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+  const [isPushSubscribing, setIsPushSubscribing] = useState(false);
+  const [userNotificationPrefs, setUserNotificationPrefs] = useState<UserNotificationPreferences>({
+    draftNotifications: currentUser?.draftNotifications ?? true,
+    standingsNotifications: currentUser?.standingsNotifications ?? true,
+  });
+
   // Get user's leagues
   const { data: userLeagues } = useQuery<League[]>({
     queryKey: ["/api/users", currentUser?.id, "leagues"],
@@ -68,6 +83,31 @@ export default function Profile() {
       setSelectedLeagueId(userLeagues[0].id);
     }
   }, [userLeagues, selectedLeagueId]);
+
+  // Check push notification support and subscription status
+  useEffect(() => {
+    const checkPushNotifications = async () => {
+      const isSupported = pushNotificationManager.isSupported();
+      setIsPushSupported(isSupported);
+
+      if (isSupported) {
+        const isSubscribed = await pushNotificationManager.isSubscribed();
+        setIsPushSubscribed(isSubscribed);
+      }
+    };
+
+    checkPushNotifications();
+  }, []);
+
+  // Update user notification preferences in real-time
+  useEffect(() => {
+    if (currentUser) {
+      setUserNotificationPrefs({
+        draftNotifications: currentUser.draftNotifications ?? true,
+        standingsNotifications: currentUser.standingsNotifications ?? true,
+      });
+    }
+  }, [currentUser]);
 
   // Get league-specific notification preferences
   const { data: preferences, isLoading: preferencesLoading } = useQuery<NotificationPreferences>({
@@ -111,6 +151,68 @@ export default function Profile() {
       });
     },
   });
+
+  // Push notification mutations
+  const updateUserNotificationsMutation = useMutation({
+    mutationFn: async (preferences: Partial<UserNotificationPreferences>) => {
+      const response = await apiRequest("PUT", `/api/users/${currentUser?.id}/notification-preferences`, preferences);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id] });
+      toast({
+        title: "Settings Updated",
+        description: "Your notification preferences have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update notification preferences.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Toggle push notifications
+  const handlePushToggle = async (enabled: boolean) => {
+    if (!isPushSupported) {
+      toast({
+        title: "Not Supported",
+        description: "Push notifications are not supported in this browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPushSubscribing(true);
+    try {
+      if (enabled) {
+        await pushNotificationManager.subscribe();
+        setIsPushSubscribed(true);
+        toast({
+          title: "Push Notifications Enabled",
+          description: "You'll now receive push notifications for draft turns and standings changes.",
+        });
+      } else {
+        await pushNotificationManager.unsubscribe();
+        setIsPushSubscribed(false);
+        toast({
+          title: "Push Notifications Disabled",
+          description: "You'll no longer receive push notifications.",
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling push notifications:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update push notification settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPushSubscribing(false);
+    }
+  };
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -703,6 +805,100 @@ export default function Profile() {
                   <p className="text-xs text-gray-500">
                     Test emails will be sent to {currentUser.email}
                   </p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Push Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5" />
+              Push Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!isPushSupported ? (
+              <div className="text-sm text-muted-foreground p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Bell className="h-4 w-4" />
+                  <span className="font-medium">Browser Not Supported</span>
+                </div>
+                <p>Push notifications are not supported in this browser. Try using Chrome, Firefox, or Safari for the best experience.</p>
+              </div>
+            ) : (
+              <>
+                {/* Main Push Toggle */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="space-y-1">
+                      <Label className="text-base font-medium">Enable Push Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive instant notifications for draft turns and standings changes
+                      </p>
+                    </div>
+                    <Switch
+                      checked={isPushSubscribed}
+                      onCheckedChange={handlePushToggle}
+                      disabled={isPushSubscribing}
+                    />
+                  </div>
+
+                  {isPushSubscribed && (
+                    <div className="space-y-4 pl-4 border-l-2 border-teal-300">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Draft Turn Notifications</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Get notified when it's your turn to pick in any league
+                          </p>
+                        </div>
+                        <Switch
+                          checked={userNotificationPrefs.draftNotifications}
+                          onCheckedChange={(checked) => {
+                            const newPrefs = { ...userNotificationPrefs, draftNotifications: checked };
+                            setUserNotificationPrefs(newPrefs);
+                            updateUserNotificationsMutation.mutate({ draftNotifications: checked });
+                          }}
+                          disabled={updateUserNotificationsMutation.isPending}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Standings Change Notifications</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Get notified when you move up or down in league standings
+                          </p>
+                        </div>
+                        <Switch
+                          checked={userNotificationPrefs.standingsNotifications}
+                          onCheckedChange={(checked) => {
+                            const newPrefs = { ...userNotificationPrefs, standingsNotifications: checked };
+                            setUserNotificationPrefs(newPrefs);
+                            updateUserNotificationsMutation.mutate({ standingsNotifications: checked });
+                          }}
+                          disabled={updateUserNotificationsMutation.isPending}
+                        />
+                      </div>
+
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start gap-2">
+                          <Bell className="h-4 w-4 text-blue-500 mt-0.5" />
+                          <div className="text-xs text-blue-700 dark:text-blue-300">
+                            <p className="font-medium mb-1">Push notifications work when:</p>
+                            <ul className="space-y-1 text-xs">
+                              <li>• Your browser is open (even in background tabs)</li>
+                              <li>• Your device allows notifications</li>
+                              <li>• You're logged into Total Wins</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}
