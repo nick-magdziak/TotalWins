@@ -227,11 +227,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/leagues/:leagueId/members/:userId", async (req, res) => {
-    const success = await storage.removeLeagueMember(req.params.leagueId, req.params.userId);
-    if (!success) {
-      return res.status(404).json({ message: "Member not found" });
+    try {
+      // Check if league exists and get its draft status
+      const league = await storage.getLeague(req.params.leagueId);
+      if (!league) {
+        return res.status(404).json({ message: "League not found" });
+      }
+
+      // Prevent removing players once draft has started
+      if (league.draftStatus === "active") {
+        return res.status(400).json({ 
+          message: "Cannot remove players from league once the draft has started" 
+        });
+      }
+
+      const success = await storage.removeLeagueMember(req.params.leagueId, req.params.userId);
+      if (!success) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove member from league" });
     }
-    res.json({ success: true });
   });
 
   // Standings
