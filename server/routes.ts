@@ -897,10 +897,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up periodic score updates (every 30 minutes during season)
   setInterval(async () => {
     try {
-      await sportsApi.syncGamesForWeek(18, "2024"); // Current week
-      console.log("Automatic score sync completed");
+      await sportsApi.syncGamesForWeek(3, "2025"); // Current week - 2025-26 NFL season
+      console.log("Automatic NFL score sync completed");
     } catch (error) {
-      console.error("Automatic score sync failed:", error);
+      console.error("Automatic NFL score sync failed:", error);
     }
   }, 30 * 60 * 1000); // 30 minutes
 
