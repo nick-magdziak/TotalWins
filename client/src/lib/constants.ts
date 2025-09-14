@@ -38,8 +38,8 @@ export const TEAM_ICONS = {
   "ARI": "🏜️", "LAR": "🐏", "SF": "🌉", "SEA": "🦅"
 } as const;
 
-export const CURRENT_SEASON = "2024";
-export const CURRENT_WEEK = 18;
+export const CURRENT_SEASON = "2025";
+export const CURRENT_WEEK = 3; // Week 3 of 2025-26 NFL season (mid-September)
 
 // NFL Team Colors from official team branding
 export const NFL_TEAM_COLORS = {
