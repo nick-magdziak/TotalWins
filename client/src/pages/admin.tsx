@@ -537,6 +537,21 @@ export default function Admin() {
 
   const startDraftMutation = useMutation({
     mutationFn: async () => {
+      // Validate player count matches draft configuration
+      if (currentLeague?.draftConfiguration) {
+        const config = getDraftConfigByKey(currentLeague.draftConfiguration);
+        if (config) {
+          const expectedPlayerCount = config.players;
+          const actualPlayerCount = membersWithUserData?.length || 0;
+          
+          if (expectedPlayerCount !== actualPlayerCount) {
+            throw new Error(
+              `Player count mismatch: Expected ${expectedPlayerCount} players for "${config.label}" but found ${actualPlayerCount} players in league. Please adjust the player count or change the draft configuration.`
+            );
+          }
+        }
+      }
+      
       return apiRequest("POST", `/api/leagues/${leagueId}/draft/start`);
     },
     onSuccess: () => {
@@ -1006,7 +1021,7 @@ export default function Admin() {
                   <p className="text-xs text-retro-charcoal/70 text-center">
                     {lastPick 
                       ? `Last pick: ${lastPick.playerName} selected ${lastPick.teamName} (Round ${lastPick.round}, Pick ${lastPick.pickNumber})`
-                      : "Past Pick: none"
+                      : "Last Pick: none"
                     }
                   </p>
 
@@ -1124,6 +1139,9 @@ export default function Admin() {
                   {membersWithUserData?.find(m => m.id === selectedMember.id)?.user?.displayName || 
                    `Player ${membersWithUserData?.findIndex(m => m.id === selectedMember.id)! + 1}`}
                 </h3>
+                <p className="text-retro-charcoal/60 text-sm">
+                  {membersWithUserData?.find(m => m.id === selectedMember.id)?.user?.email || "No email available"}
+                </p>
                 <p className="text-retro-charcoal/70 text-sm">
                   Set privileges for this player
                 </p>

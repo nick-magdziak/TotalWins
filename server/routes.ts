@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               );
 
               // Send push notification
-              const { pushNotificationService } = await import("./services/pushNotificationService");
+              const { pushNotificationService } = await import('./services/pushNotificationService.js');
               await pushNotificationService.sendDraftTurnNotification(
                 currentUser.id,
                 league?.name || 'League',
@@ -572,12 +572,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // League-specific draft start endpoint (called by client)
+  app.post("/api/leagues/:leagueId/draft/start", async (req, res) => {
+    try {
+      const { leagueId } = req.params;
+      
+      if (!leagueId) {
+        return res.status(400).json({ error: "League ID required" });
+      }
+      
+      // Validate player count matches draft configuration
+      const league = await storage.getLeague(leagueId);
+      if (league?.draftConfiguration) {
+        const { getDraftConfigByKey } = await import('../shared/draftConfig.js');
+        const config = getDraftConfigByKey(league.draftConfiguration);
+        if (config) {
+          const members = await storage.getLeagueMembers(leagueId);
+          const expectedPlayerCount = config.players;
+          const actualPlayerCount = members.length;
+          
+          if (expectedPlayerCount !== actualPlayerCount) {
+            return res.status(400).json({ 
+              error: `Player count mismatch: Expected ${expectedPlayerCount} players for "${config.label}" but found ${actualPlayerCount} players in league. Please adjust the player count or change the draft configuration.` 
+            });
+          }
+        }
+      }
+      
+      await storage.updateLeague(leagueId, { draftStatus: "active" });
+
+      // Send draft notification to the first player
+      try {
+        const draftStatus = await storage.getDraftStatus(leagueId);
+        if (draftStatus.isActive && draftStatus.currentPlayer) {
+          const members = await storage.getLeagueMembers(leagueId);
+          const currentMember = members.find(m => m.draftPosition === 1);
+          if (currentMember) {
+            const currentUser = await storage.getUser(currentMember.userId!);
+            if (currentUser && currentUser.draftNotifications) {
+              console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              
+              // Send email notification
+              const { EmailService } = await import('./services/emailService.js');
+              const emailService = new EmailService();
+              await emailService.sendDraftNotification(
+                currentUser.email!,
+                currentUser.displayName!,
+                league?.name || 'League',
+                draftStatus.currentPick,
+                draftStatus.round,
+                leagueId
+              );
+
+              // Send push notification
+              const { pushNotificationService } = await import('./services/pushNotificationService.js');
+              await pushNotificationService.sendDraftTurnNotification(
+                currentUser.id,
+                league?.name || 'League',
+                leagueId
+              );
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send draft start notification:', emailError);
+        // Don't fail the draft start if email fails
+      }
+      
+      res.json({ success: true, message: "Draft started successfully" });
+    } catch (error) {
+      console.error("Error starting draft:", error);
+      res.status(500).json({ error: "Failed to start draft" });
+    }
+  });
+
   app.post("/api/admin/start-draft", async (req, res) => {
     try {
       const { leagueId } = req.body;
       
       if (!leagueId) {
         return res.status(400).json({ error: "League ID required" });
+      }
+      
+      // Validate player count matches draft configuration
+      const league = await storage.getLeague(leagueId);
+      if (league?.draftConfiguration) {
+        const { getDraftConfigByKey } = await import('../shared/draftConfig.js');
+        const config = getDraftConfigByKey(league.draftConfiguration);
+        if (config) {
+          const members = await storage.getLeagueMembers(leagueId);
+          const expectedPlayerCount = config.players;
+          const actualPlayerCount = members.length;
+          
+          if (expectedPlayerCount !== actualPlayerCount) {
+            return res.status(400).json({ 
+              error: `Player count mismatch: Expected ${expectedPlayerCount} players for "${config.label}" but found ${actualPlayerCount} players in league. Please adjust the player count or change the draft configuration.` 
+            });
+          }
+        }
       }
       
       await storage.updateLeague(leagueId, { draftStatus: "active" });
@@ -593,6 +685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const currentUser = await storage.getUser(currentMember.userId!);
             if (currentUser && currentUser.draftNotifications) {
               console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              
+              // Send email notification
               const { EmailService } = await import('./services/emailService.js');
               const emailService = new EmailService();
               await emailService.sendDraftNotification(
@@ -601,6 +695,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 league?.name || 'League',
                 draftStatus.currentPick,
                 draftStatus.round,
+                leagueId
+              );
+
+              // Send push notification
+              const { pushNotificationService } = await import('./services/pushNotificationService.js');
+              await pushNotificationService.sendDraftTurnNotification(
+                currentUser.id,
+                league?.name || 'League',
                 leagueId
               );
             }
