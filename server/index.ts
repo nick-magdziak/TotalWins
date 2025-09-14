@@ -48,8 +48,9 @@ app.use((req, res, next) => {
     
     // Initial data update on startup
     await sportsService.updateMLBStandings();
+    await sportsService.updateNFLStandings();
     await sportsApi.syncMLBGames();
-    log("ESPN API sports data service initialized");
+    log("ESPN API sports data service initialized (MLB & NFL)");
     
     // Set up automatic live game updates every 2 minutes during active hours
     const startLiveUpdates = () => {
