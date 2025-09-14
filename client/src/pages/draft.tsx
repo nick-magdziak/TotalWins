@@ -205,7 +205,7 @@ export default function Draft() {
                     </div>
                   </div>
                   <div className="bg-retro-cream p-3 rounded-lg">
-                    <div className="text-sm text-retro-charcoal opacity-75">Past Pick</div>
+                    <div className="text-sm text-retro-charcoal opacity-75">Last Pick</div>
                     <div className="text-lg font-bold text-retro-purple retro-font">
                       {draftPicks && draftPicks.length > 0 ? (
                         (() => {
