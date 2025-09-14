@@ -562,12 +562,23 @@ export default function Admin() {
         description: "The draft is now active. Players can begin drafting!",
       });
     },
-    onError: () => {
-      toast({
-        title: "Failed to start draft",
-        description: "Could not start the draft. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Could not start the draft. Please try again.";
+      
+      // Check if it's a player count mismatch error
+      if (errorMessage.includes("Player count mismatch")) {
+        toast({
+          title: "Failed to start draft",
+          description: "Make sure the player count in the draft configuration matches the player count of the league.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to start draft", 
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     },
   });
 
