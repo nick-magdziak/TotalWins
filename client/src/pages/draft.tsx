@@ -8,6 +8,11 @@ import { Users, ListOrdered, Volleyball } from "lucide-react";
 import TeamCard from "@/components/TeamCard";
 import { type NFLTeam, type MLBTeam, type NBATeam, type DraftPick, type DraftStatus } from "@shared/schema";
 import { NFL_DIVISIONS, MLB_DIVISIONS, NBA_DIVISIONS, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
+
+// Helper function to check if team belongs to division
+const isTeamInDivision = (teamAbbr: string, divisionTeams: readonly string[]): boolean => {
+  return divisionTeams.includes(teamAbbr);
+};
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -325,7 +330,7 @@ export default function Draft() {
                     {["AFC East", "AFC North", "AFC South", "AFC West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
+                        return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
                       }) || [];
                       
                       return (
@@ -363,7 +368,7 @@ export default function Draft() {
                     {["NFC East", "NFC North", "NFC South", "NFC West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
+                        return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
                       }) || [];
                       
                       return (
@@ -404,7 +409,7 @@ export default function Draft() {
                     {["AL East", "AL Central", "AL West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
+                        return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
                       }) || [];
                       
                       return (
@@ -442,7 +447,7 @@ export default function Draft() {
                     {["NL East", "NL Central", "NL West"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
+                        return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
                       }) || [];
                       
                       return (
@@ -483,7 +488,7 @@ export default function Draft() {
                     {["Atlantic", "Central", "Southeast"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
+                        return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
                       }) || [];
                       
                       return (
@@ -521,7 +526,7 @@ export default function Draft() {
                     {["Northwest", "Pacific", "Southwest"].map((division) => {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
-                        return divisionTeamIds && divisionTeamIds.includes(team.abbreviation as any);
+                        return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
                       }) || [];
                       
                       return (
