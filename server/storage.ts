@@ -488,7 +488,7 @@ export class DatabaseStorage implements IStorage {
         {
           id: "demo-league-1",
           name: "Champions League",
-          season: "2024-25",
+          season: "2025-26",
           sport: "NFL",
           teamsPerPlayer: 4,
           maxPlayers: 8,
