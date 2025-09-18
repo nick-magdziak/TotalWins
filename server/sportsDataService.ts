@@ -61,17 +61,19 @@ interface ESPNNFLTeam {
   abbreviation: string;
 }
 
-interface ESPNNFLStandings {
-  children: Array<{
-    standings: {
-      entries: Array<{
+interface ESPNNFLScoreboardResponse {
+  events?: Array<{
+    competitions?: Array<{
+      competitors?: Array<{
         team: ESPNNFLTeam;
-        stats: Array<{
+        records?: Array<{
           name: string;
-          value: number;
+          summary: string; // e.g., "8-1"
+          displayValue?: string;
+          type?: string;
         }>;
       }>;
-    };
+    }>;
   }>;
 }
 
@@ -79,7 +81,7 @@ export class SportsDataService {
   private storage: DatabaseStorage;
   private readonly MLB_STATS_API_URL = 'https://statsapi.mlb.com/api/v1/standings';
   private readonly ESPN_MLB_STANDINGS_URL = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/standings';
-  private readonly ESPN_NFL_STANDINGS_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/standings';
+  private readonly ESPN_NFL_STANDINGS_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2';
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
@@ -206,10 +208,10 @@ export class SportsDataService {
       const response = await fetch(this.ESPN_NFL_STANDINGS_URL);
       if (!response.ok) return false;
       
-      const data: ESPNNFLStandings = await response.json();
+      const data: ESPNNFLScoreboardResponse = await response.json();
       
-      if (data.children && data.children.length > 0) {
-        console.log(`🟢 ESPN NFL API success: Found ${data.children.length} divisions`);
+      if (data.events && data.events.length > 0) {
+        console.log(`🟢 ESPN NFL API success: Found events with team data`);
         await this.processNFLData(data);
         return true;
       }
@@ -438,33 +440,56 @@ export class SportsDataService {
   /**
    * Process data from ESPN NFL API
    */
-  private async processNFLData(data: ESPNNFLStandings): Promise<void> {
+  private async processNFLData(data: ESPNNFLScoreboardResponse): Promise<void> {
     const teams: { teamId: string; wins: number; losses: number; ties: number }[] = [];
 
-    for (const division of data.children) {
-      const entries = division.standings?.entries || [];
-      if (!Array.isArray(entries)) continue;
+    // Handle scoreboard API structure with events  
+    const events = data.events || [];
+    console.log(`🏈 Processing ${events.length} NFL games for team records`);
+    
+    if (!Array.isArray(events)) {
+      console.warn('⚠️ No events data found in NFL API response');
+      return;
+    }
+
+    const processedTeams = new Set<string>(); // Track processed teams to avoid duplicates
       
-      for (const entry of entries) {
-        const winsStatObject = entry.stats?.find((stat: any) => stat.name === 'wins');
-        const lossesStatObject = entry.stats?.find((stat: any) => stat.name === 'losses');
-        const tiesStatObject = entry.stats?.find((stat: any) => stat.name === 'ties');
+    // Process all events to get all 32 teams
+    for (const event of events) {
+      if (!event.competitions?.[0]?.competitors) continue;
+      
+      for (const competitor of event.competitions[0].competitors) {
+        const team = competitor.team;
+        if (!team || processedTeams.has(team.abbreviation)) continue;
         
-        const wins = winsStatObject ? winsStatObject.value : 0;
-        const losses = lossesStatObject ? lossesStatObject.value : 0;
-        const ties = tiesStatObject ? tiesStatObject.value : 0;
+        // Find the overall record from the records array
+        const records = competitor.records || [];
+        const overallRecord = records.find(r => r.name === 'overall' || r.type === 'total');
         
-        const teamId = this.mapNFLTeamToOurId(entry.team.abbreviation);
-        if (teamId) {
-          teams.push({
-            teamId,
-            wins,
-            losses,
-            ties
-          });
-          console.log(`📊 ESPN NFL data: ${entry.team.abbreviation} → ${teamId} = ${wins}-${losses}-${ties}`);
-        } else {
-          console.warn(`⚠️ No mapping found for ESPN NFL team: ${entry.team.abbreviation}`);
+        if (!overallRecord) continue;
+        
+        // Parse record from summary like "8-1" or "7-2" or "8-1-0"
+        const recordSummary = overallRecord.summary;
+        const recordParts = recordSummary.split('-');
+        
+        if (recordParts.length >= 2) {
+          const wins = parseInt(recordParts[0]) || 0;
+          const losses = parseInt(recordParts[1]) || 0;
+          const ties = recordParts.length >= 3 ? parseInt(recordParts[2]) || 0 : 0;
+          
+          const teamId = this.mapNFLTeamToOurId(team.abbreviation);
+          if (teamId) {
+            teams.push({
+              teamId,
+              wins,
+              losses,
+              ties
+            });
+            processedTeams.add(team.abbreviation);
+            console.log(`📊 ESPN NFL data: ${team.abbreviation} → ${teamId} = ${wins}-${losses}-${ties}`);
+          } else {
+            console.warn(`⚠️ No mapping found for ESPN NFL team: ${team.abbreviation}`);
+          }
         }
       }
     }
@@ -487,7 +512,7 @@ export class SportsDataService {
       // AFC West
       'DEN': 'DEN', 'KC': 'KC', 'LV': 'LV', 'LAC': 'LAC',
       // NFC East
-      'DAL': 'DAL', 'NYG': 'NYG', 'PHI': 'PHI', 'WAS': 'WAS',
+      'DAL': 'DAL', 'NYG': 'NYG', 'PHI': 'PHI', 'WAS': 'WAS', 'WSH': 'WAS',
       // NFC North
       'CHI': 'CHI', 'DET': 'DET', 'GB': 'GB', 'MIN': 'MIN',
       // NFC South
