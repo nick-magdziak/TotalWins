@@ -105,14 +105,17 @@ export class SportsApiService {
           }
         }
 
+        const homeCompetitor = event.competitions[0].competitors.find((c: any) => c.homeAway === 'home');
+        const awayCompetitor = event.competitions[0].competitors.find((c: any) => c.homeAway === 'away');
+        
         const game: Game = {
           id: event.id,
           sport: "MLB",
           season: event.season?.year?.toString() || "2024",
-          homeTeamId: this.mapESPNTeamToMLBId(event.competitions[0].competitors.find((c: any) => c.homeAway === 'home')?.team),
-          awayTeamId: this.mapESPNTeamToMLBId(event.competitions[0].competitors.find((c: any) => c.homeAway === 'away')?.team),
-          homeScore: event.competitions[0].competitors.find((c: any) => c.homeAway === 'home')?.score || null,
-          awayScore: event.competitions[0].competitors.find((c: any) => c.homeAway === 'away')?.score || null,
+          homeTeamId: this.mapESPNTeamToMLBId(homeCompetitor?.team),
+          awayTeamId: this.mapESPNTeamToMLBId(awayCompetitor?.team),
+          homeScore: homeCompetitor?.score != null ? Number(homeCompetitor.score) : null,
+          awayScore: awayCompetitor?.score != null ? Number(awayCompetitor.score) : null,
           status: this.mapESPNStatus(event.status.type.name),
           gameDate: new Date(event.date),
           completedAt: event.status.type.name === 'STATUS_FINAL' ? new Date(event.date) : null,
@@ -242,8 +245,8 @@ export class SportsApiService {
           season,
           homeTeamId: this.mapESPNTeamToId(homeTeam.team.abbreviation),
           awayTeamId: this.mapESPNTeamToId(awayTeam.team.abbreviation),
-          homeScore: parseInt(homeTeam.score) || null,
-          awayScore: parseInt(awayTeam.score) || null,
+          homeScore: homeTeam.score != null ? Number(homeTeam.score) : null,
+          awayScore: awayTeam.score != null ? Number(awayTeam.score) : null,
           status: this.mapESPNStatus(competition.status.type.name),
           gameDate: new Date(event.date),
           completedAt: competition.status.type.completed ? new Date() : null,

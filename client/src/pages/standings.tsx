@@ -53,28 +53,81 @@ export default function Standings() {
 
   const getCurrentPeriodLabel = () => {
     switch(currentLeague?.sport) {
-      case 'NFL': return 'WEEK 9 COMPLETE';
+      case 'NFL': {
+        // Calculate current NFL week dynamically
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const seasonStartYear = now.getMonth() >= 8 ? currentYear : currentYear - 1;
+        const seasonStart = new Date(seasonStartYear, 8, 4); // September 4th estimate
+        
+        // Find the first Thursday of September
+        while (seasonStart.getDay() !== 4) {
+          seasonStart.setDate(seasonStart.getDate() + 1);
+        }
+        
+        const diffTime = now.getTime() - seasonStart.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.max(1, Math.ceil(diffDays / 7));
+        const currentWeek = Math.min(weekNumber, 18);
+        
+        return `WEEK ${currentWeek} LIVE`;
+      }
       case 'MLB': return 'SEASON ACTIVE';
       case 'NBA': return 'SEASON ACTIVE';
-      default: return 'WEEK 9 COMPLETE';
+      default: return 'SEASON ACTIVE';
     }
   };
 
   const getRecentResultsTitle = () => {
     switch(currentLeague?.sport) {
-      case 'NFL': return 'WEEK 9 RESULTS';
+      case 'NFL': {
+        // Calculate current NFL week dynamically
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const seasonStartYear = now.getMonth() >= 8 ? currentYear : currentYear - 1;
+        const seasonStart = new Date(seasonStartYear, 8, 4);
+        
+        while (seasonStart.getDay() !== 4) {
+          seasonStart.setDate(seasonStart.getDate() + 1);
+        }
+        
+        const diffTime = now.getTime() - seasonStart.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.max(1, Math.ceil(diffDays / 7));
+        const currentWeek = Math.min(weekNumber, 18);
+        
+        return `WEEK ${currentWeek} RESULTS`;
+      }
       case 'MLB': return "TODAY'S GAMES";
       case 'NBA': return "TODAY'S GAMES";
-      default: return 'WEEK 9 RESULTS';
+      default: return "TODAY'S GAMES";
     }
   };
 
   const getUpcomingTitle = () => {
     switch(currentLeague?.sport) {
-      case 'NFL': return 'WEEK 10 PREVIEW';
+      case 'NFL': {
+        // Calculate next NFL week dynamically
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const seasonStartYear = now.getMonth() >= 8 ? currentYear : currentYear - 1;
+        const seasonStart = new Date(seasonStartYear, 8, 4);
+        
+        while (seasonStart.getDay() !== 4) {
+          seasonStart.setDate(seasonStart.getDate() + 1);
+        }
+        
+        const diffTime = now.getTime() - seasonStart.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.max(1, Math.ceil(diffDays / 7));
+        const currentWeek = Math.min(weekNumber, 18);
+        const nextWeek = Math.min(currentWeek + 1, 18);
+        
+        return `WEEK ${nextWeek} PREVIEW`;
+      }
       case 'MLB': return "TOMORROW'S GAMES";
       case 'NBA': return "TOMORROW'S GAMES";
-      default: return 'WEEK 10 PREVIEW';
+      default: return "TOMORROW'S GAMES";
     }
   };
 
@@ -99,11 +152,27 @@ export default function Standings() {
   const getByeWeekTeams = () => {
     // Only NFL has bye weeks
     if (currentLeague?.sport === 'NFL') {
+      // Calculate current NFL week dynamically
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const seasonStartYear = now.getMonth() >= 8 ? currentYear : currentYear - 1;
+      const seasonStart = new Date(seasonStartYear, 8, 4);
+      
+      while (seasonStart.getDay() !== 4) {
+        seasonStart.setDate(seasonStart.getDate() + 1);
+      }
+      
+      const diffTime = now.getTime() - seasonStart.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const weekNumber = Math.max(1, Math.ceil(diffDays / 7));
+      const currentWeek = Math.min(weekNumber, 18);
+      const nextWeek = Math.min(currentWeek + 1, 18);
+      
       return {
         current: ['CIN', 'CLE', 'LV', 'NYG'],
         next: ['CHI', 'DAL', 'DET', 'PHI'],
-        currentLabel: 'WEEK 9 BYES:',
-        nextLabel: 'WEEK 10 BYES:'
+        currentLabel: `WEEK ${currentWeek} BYES:`,
+        nextLabel: `WEEK ${nextWeek} BYES:`
       };
     }
     return null;
