@@ -360,6 +360,73 @@ export class SportsApiService {
       console.error('Error syncing MLB games:', error);
     }
   }
+
+  /**
+   * Calculate current NFL week based on the date
+   * NFL season typically starts first week of September
+   */
+  private getCurrentNFLWeek(): number {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // NFL season typically starts around Labor Day (first Monday in September)
+    // For 2024-25 season, Week 1 started September 5, 2024
+    // For 2025-26 season, estimate around September 4, 2025
+    const seasonStartYear = now.getMonth() >= 8 ? currentYear : currentYear - 1; // Sept onwards = current year's season
+    const seasonStart = new Date(seasonStartYear, 8, 4); // September 4th as estimate
+    
+    // Find the first Thursday of September (NFL season usually starts Thursday night)
+    while (seasonStart.getDay() !== 4) { // 4 = Thursday
+      seasonStart.setDate(seasonStart.getDate() + 1);
+    }
+    
+    const diffTime = now.getTime() - seasonStart.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const weekNumber = Math.max(1, Math.ceil(diffDays / 7));
+    
+    // Cap at week 18 (regular season)
+    return Math.min(weekNumber, 18);
+  }
+
+  /**
+   * Get the current NFL season year
+   */
+  private getCurrentNFLSeason(): string {
+    const now = new Date();
+    // NFL season spans two years (e.g., 2024-25 season)
+    // If it's September or later, it's the current year's season
+    // If it's January-August, it's the previous year's season
+    const seasonYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    return seasonYear.toString();
+  }
+
+  /**
+   * Sync current week NFL games for live scores
+   */
+  async syncCurrentNFLGames(): Promise<void> {
+    try {
+      const currentWeek = this.getCurrentNFLWeek();
+      const currentSeason = this.getCurrentNFLSeason();
+      
+      console.log(`🏈 Syncing NFL Week ${currentWeek} games for ${currentSeason} season...`);
+      const games = await this.fetchNFLGames(currentWeek, currentSeason);
+      
+      for (const game of games) {
+        const existingGame = await storage.getGames(currentWeek, currentSeason)
+          .then(games => games.find(g => g.id === game.id));
+        
+        if (existingGame) {
+          await storage.updateGame(game.id, game);
+        } else {
+          await storage.addGame(game);
+        }
+      }
+      
+      console.log(`✅ Synced ${games.length} NFL games for Week ${currentWeek}`);
+    } catch (error) {
+      console.error('Error syncing NFL games:', error);
+    }
+  }
 }
 
 export const sportsApi = new SportsApiService();
