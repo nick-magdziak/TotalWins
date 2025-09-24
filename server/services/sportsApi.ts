@@ -430,6 +430,38 @@ export class SportsApiService {
       console.error('Error syncing NFL games:', error);
     }
   }
+
+  /**
+   * Sync next week NFL games for upcoming preview
+   */
+  async syncNextWeekNFLGames(): Promise<void> {
+    try {
+      const currentWeek = this.getCurrentNFLWeek();
+      const nextWeek = currentWeek + 1;
+      const currentSeason = this.getCurrentNFLSeason();
+      
+      // Only sync if next week is within the regular season
+      if (nextWeek <= 18) {
+        console.log(`🏈 Syncing NFL Week ${nextWeek} games for ${currentSeason} season...`);
+        const games = await this.fetchNFLGames(nextWeek, currentSeason);
+        
+        for (const game of games) {
+          const existingGame = await storage.getGames(nextWeek, currentSeason)
+            .then(games => games.find(g => g.id === game.id));
+          
+          if (existingGame) {
+            await storage.updateGame(game.id, game);
+          } else {
+            await storage.addGame(game);
+          }
+        }
+        
+        console.log(`✅ Synced ${games.length} NFL games for Week ${nextWeek}`);
+      }
+    } catch (error) {
+      console.error('Error syncing next week NFL games:', error);
+    }
+  }
 }
 
 export const sportsApi = new SportsApiService();

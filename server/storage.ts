@@ -1156,13 +1156,16 @@ export class DatabaseStorage implements IStorage {
         .orderBy(games.gameDate)
         .limit(limit);
     } else {
-      // For NFL, get upcoming scheduled games (Week-based approach)
+      // For NFL, get next week's upcoming scheduled games only
+      const currentWeek = this.getCurrentNFLWeek();
+      const nextWeek = currentWeek + 1;
       upcomingGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.status, "scheduled"),
-          eq(games.sport, league.sport || "NFL")
+          eq(games.sport, league.sport || "NFL"),
+          eq(games.week, nextWeek)
         ))
         .orderBy(games.gameDate)
         .limit(limit);

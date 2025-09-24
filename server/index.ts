@@ -51,6 +51,7 @@ app.use((req, res, next) => {
     await sportsService.updateNFLStandings();
     await sportsApi.syncMLBGames();
     await sportsApi.syncCurrentNFLGames();
+    await sportsApi.syncNextWeekNFLGames();
     log("ESPN API sports data service initialized (MLB & NFL)");
     
     // Set up automatic live game updates every 2 minutes during active hours
@@ -63,7 +64,8 @@ app.use((req, res, next) => {
           if (hour >= 6 || hour <= 2) {
             await sportsApi.syncMLBGames();
             await sportsApi.syncCurrentNFLGames();
-            console.log("🔄 Auto-synced live MLB and NFL games");
+            await sportsApi.syncNextWeekNFLGames();
+            console.log("🔄 Auto-synced live MLB and NFL games (current + next week)");
           }
         } catch (error) {
           console.error("Auto-sync error:", error);
