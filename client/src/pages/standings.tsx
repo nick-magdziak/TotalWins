@@ -331,7 +331,7 @@ export default function Standings() {
           {/* Next Week's Games */}
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
-              <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
+              <h4 className="text-black text-xl font-bold mb-4 retro-font">
                 {getUpcomingTitle()}
               </h4>
               <div className="space-y-2">
