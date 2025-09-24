@@ -235,7 +235,7 @@ export default function Standings() {
 
       {/* Recent Updates Section */}
       <section className="mb-8 px-4">
-        <h3 className="text-retro-pink text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+        <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
           <Clock className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
           {currentLeague?.sport === 'NFL' && 'NFL GAMES'}
           {currentLeague?.sport === 'MLB' && 'MLB GAMES'}
@@ -331,7 +331,7 @@ export default function Standings() {
           {/* Next Week's Games */}
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
-              <h4 className="text-black text-xl font-bold mb-4 retro-font">
+              <h4 className="text-retro-purple text-xl font-bold mb-4 retro-font">
                 {getUpcomingTitle()}
               </h4>
               <div className="space-y-2">
