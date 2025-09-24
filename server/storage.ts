@@ -1093,7 +1093,7 @@ export class DatabaseStorage implements IStorage {
           eq(games.sport, league.sport || "NFL"),
           eq(games.week, currentWeek)
         ))
-        .orderBy(desc(games.completedAt))
+        .orderBy(games.gameDate)
         .limit(limit);
     }
     
