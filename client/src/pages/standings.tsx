@@ -168,9 +168,20 @@ export default function Standings() {
       const currentWeek = Math.min(weekNumber, 18);
       const nextWeek = Math.min(currentWeek + 1, 18);
       
+      // NFL bye weeks start in Week 5 - no byes in Weeks 1-4
+      if (currentWeek < 5) {
+        return {
+          current: [],
+          next: [],
+          currentLabel: `WEEK ${currentWeek} BYES:`,
+          nextLabel: `WEEK ${nextWeek} BYES:`
+        };
+      }
+      
+      // For weeks 5+ when byes actually happen, would need real bye week data
       return {
-        current: ['CIN', 'CLE', 'LV', 'NYG'],
-        next: ['CHI', 'DAL', 'DET', 'PHI'],
+        current: [],
+        next: [],
         currentLabel: `WEEK ${currentWeek} BYES:`,
         nextLabel: `WEEK ${nextWeek} BYES:`
       };

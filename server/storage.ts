@@ -1006,6 +1006,29 @@ export class DatabaseStorage implements IStorage {
     return game;
   }
 
+  private getCurrentNFLWeek(): number {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // NFL season typically starts around Labor Day (first Monday in September)
+    // For 2024-25 season, Week 1 started September 5, 2024
+    // For 2025-26 season, estimate around September 4, 2025
+    const seasonStartYear = now.getMonth() >= 8 ? currentYear : currentYear - 1; // Sept onwards = current year's season
+    const seasonStart = new Date(seasonStartYear, 8, 4); // September 4th as estimate
+    
+    // Find the first Thursday of September (NFL season usually starts Thursday night)
+    while (seasonStart.getDay() !== 4) { // 4 = Thursday
+      seasonStart.setDate(seasonStart.getDate() + 1);
+    }
+    
+    const diffTime = now.getTime() - seasonStart.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const weekNumber = Math.max(1, Math.ceil(diffDays / 7));
+    
+    // Cap at week 18 (regular season)
+    return Math.min(weekNumber, 18);
+  }
+
   async getRecentCompletedGames(limit: number): Promise<Game[]> {
     return await db
       .select()
@@ -1060,13 +1083,15 @@ export class DatabaseStorage implements IStorage {
         .orderBy(games.gameDate)
         .limit(limit);
     } else {
-      // For NFL, get recent completed games (Week-based approach)
+      // For NFL, get current week's completed games only
+      const currentWeek = this.getCurrentNFLWeek();
       recentGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.status, "completed"),
-          eq(games.sport, league.sport || "NFL")
+          eq(games.sport, league.sport || "NFL"),
+          eq(games.week, currentWeek)
         ))
         .orderBy(desc(games.completedAt))
         .limit(limit);
