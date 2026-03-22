@@ -510,7 +510,7 @@ export class DatabaseStorage implements IStorage {
         {
           id: "demo-league-3",
           name: "Fantasy Friends",
-          season: "2024-25", 
+          season: "2025-26",
           sport: "NBA",
           teamsPerPlayer: 4,
           maxPlayers: 8,
