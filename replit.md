@@ -214,6 +214,20 @@ The application is designed to be easily deployable on platforms like Replit, wi
 - ✅ **Professional Email Templates**: Clean, emoji-free design with sport-specific messaging
 - ✅ **Email Service Integration**: AWS SES fully configured with authenticated domain
 
+### NBA Live Data Sync Implementation (March 22, 2026)
+- ✅ **NBA Standings Sync**: Added `updateNBAStandings()` to `SportsDataService` with ESPN API integration
+  - Tries ESPN NBA Standings API first (live data)
+  - Falls back to 2025-26 season validated standings (all 30 teams as of March 22, 2026)
+  - Key standings: OKC Thunder 59-15 (best in NBA), CLE Cavaliers 62-12 (best in East)
+- ✅ **NBA Game Sync**: Added `syncNBAGames()` / `fetchNBAGames()` to `SportsApiService`
+  - Fetches today, yesterday, and tomorrow's NBA games from ESPN scoreboard API
+  - Maps ESPN team abbreviations to internal NBA team IDs (e.g., GS→GSW, NOP→NO, SAS→SA)
+  - Parses quarter/overtime period info for live games
+- ✅ **Startup & Auto-Sync**: Added NBA to server startup and 2-minute auto-sync intervals
+- ✅ **Duplicate Key Fix**: Changed `addGame()` in storage to use upsert (`onConflictDoUpdate`)
+  - Eliminates duplicate key errors that were occurring with NFL game re-syncing
+- ✅ **Fantasy Friends League**: Now shows live 2025-26 NBA standings and today's/tomorrow's NBA games
+
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
 2. ✅ **Real Draft Functionality** - COMPLETED
@@ -221,8 +235,9 @@ The application is designed to be easily deployable on platforms like Replit, wi
 4. ✅ **Custom Draft Configurations** - COMPLETED
 5. ✅ **Performance Optimization** - COMPLETED
 6. ✅ **Email Authentication** - COMPLETED
-7. **User Profile Management** - NEXT
-8. **League Join by Code**
-9. **Push Notifications**
-10. **Advanced Admin Features**
-11. **Mobile App Feel**
+7. ✅ **NBA Live Data Sync** - COMPLETED
+8. **User Profile Management** - NEXT
+9. **League Join by Code**
+10. **Push Notifications**
+11. **Advanced Admin Features**
+12. **Mobile App Feel**

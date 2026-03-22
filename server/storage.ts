@@ -1002,7 +1002,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addGame(insertGame: InsertGame): Promise<Game> {
-    const [game] = await db.insert(games).values(insertGame).returning();
+    const [game] = await db.insert(games).values(insertGame)
+      .onConflictDoUpdate({
+        target: games.id,
+        set: {
+          homeScore: insertGame.homeScore,
+          awayScore: insertGame.awayScore,
+          status: insertGame.status,
+          completedAt: insertGame.completedAt,
+          period: insertGame.period,
+        }
+      })
+      .returning();
     return game;
   }
 

@@ -364,6 +364,102 @@ export class SportsApiService {
     }
   }
 
+  async fetchNBAGames(): Promise<Game[]> {
+    const allGames: Game[] = [];
+    try {
+      const dates = [new Date(), new Date(Date.now() + 86400000), new Date(Date.now() - 86400000)];
+      for (const date of dates) {
+        const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+        const response = await fetch(
+          `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${dateStr}`,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        if (!response.ok) continue;
+        const data = await response.json();
+        allGames.push(...this.parseESPNNBAGames(data));
+      }
+    } catch (error) {
+      console.error('Error fetching NBA games:', error);
+    }
+    return allGames;
+  }
+
+  private parseESPNNBAGames(data: any): Game[] {
+    const games: Game[] = [];
+    if (!data.events || !Array.isArray(data.events)) return games;
+
+    for (const event of data.events) {
+      try {
+        const competition = event.competitions[0];
+        const homeCompetitor = competition.competitors.find((c: any) => c.homeAway === 'home');
+        const awayCompetitor = competition.competitors.find((c: any) => c.homeAway === 'away');
+        const situation = competition.situation;
+        const statusName = event.status?.type?.name || '';
+
+        let period: string | null = null;
+        if (this.mapESPNStatus(statusName) === 'in_progress' && situation) {
+          const quarter = situation.period ?? situation.quarter;
+          const clock = situation.displayClock || '';
+          if (quarter) {
+            const qLabel = quarter <= 4 ? `Q${quarter}` : `OT${quarter - 4}`;
+            period = clock ? `${qLabel} ${clock}` : qLabel;
+          }
+        }
+
+        const game: Game = {
+          id: event.id,
+          sport: 'NBA',
+          season: event.season?.year?.toString() || '2025',
+          homeTeamId: this.mapESPNTeamToNBAId(homeCompetitor?.team),
+          awayTeamId: this.mapESPNTeamToNBAId(awayCompetitor?.team),
+          homeScore: homeCompetitor?.score != null ? Number(homeCompetitor.score) : null,
+          awayScore: awayCompetitor?.score != null ? Number(awayCompetitor.score) : null,
+          status: this.mapESPNStatus(statusName),
+          gameDate: new Date(event.date),
+          completedAt: statusName === 'STATUS_FINAL' ? new Date(event.date) : null,
+          week: null,
+          period
+        };
+        games.push(game);
+      } catch (err) {
+        console.error('Error parsing NBA game:', err);
+      }
+    }
+    return games;
+  }
+
+  private mapESPNTeamToNBAId(team: any): string {
+    if (!team) return 'UNKNOWN';
+    const map: { [key: string]: string } = {
+      'BOS': 'BOS-NBA', 'BKN': 'BKN', 'NYK': 'NYK', 'PHI': 'PHI-NBA', 'TOR': 'TOR-NBA',
+      'CHI': 'CHI-NBA', 'CLE': 'CLE-NBA', 'DET': 'DET-NBA', 'IND': 'IND-NBA', 'MIL': 'MIL-NBA',
+      'ATL': 'ATL-NBA', 'CHA': 'CHA', 'MIA': 'MIA-NBA', 'ORL': 'ORL', 'WAS': 'WAS-NBA',
+      'DEN': 'DEN-NBA', 'MIN': 'MIN-NBA', 'OKC': 'OKC', 'POR': 'POR', 'UTA': 'UTA',
+      'GS': 'GSW', 'GSW': 'GSW', 'LAC': 'LAC-NBA', 'LAL': 'LAL', 'PHX': 'PHX', 'SAC': 'SAC',
+      'DAL': 'DAL-NBA', 'HOU': 'HOU-NBA', 'MEM': 'MEM', 'NO': 'NO', 'NOP': 'NO', 'SA': 'SA', 'SAS': 'SA'
+    };
+    return map[team.abbreviation] || team.abbreviation;
+  }
+
+  async syncNBAGames(): Promise<void> {
+    try {
+      console.log('🏀 Syncing NBA games from ESPN API...');
+      const games = await this.fetchNBAGames();
+      for (const game of games) {
+        const existingGame = await storage.getGames(undefined, game.season)
+          .then(gs => gs.find(g => g.id === game.id));
+        if (existingGame) {
+          await storage.updateGame(game.id, game);
+        } else {
+          await storage.addGame(game);
+        }
+      }
+      console.log(`🏀 Synced ${games.length} NBA games`);
+    } catch (error) {
+      console.error('Error syncing NBA games:', error);
+    }
+  }
+
   /**
    * Calculate current NFL week based on the date
    * NFL season typically starts first week of September
