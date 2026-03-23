@@ -415,13 +415,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/leagues/:leagueId/games/recent", async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-    const games = await storage.getRecentGamesWithOwners(req.params.leagueId, limit);
+    const localDate = req.query.localDate as string | undefined;
+    const tzOffset = req.query.tzOffset ? parseInt(req.query.tzOffset as string) : 0;
+    const games = await storage.getRecentGamesWithOwners(req.params.leagueId, limit, localDate, tzOffset);
     res.json(games);
   });
 
   app.get("/api/leagues/:leagueId/games/upcoming", async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-    const games = await storage.getUpcomingGamesWithOwners(req.params.leagueId, limit);
+    const localDate = req.query.localDate as string | undefined;
+    const tzOffset = req.query.tzOffset ? parseInt(req.query.tzOffset as string) : 0;
+    const games = await storage.getUpcomingGamesWithOwners(req.params.leagueId, limit, localDate, tzOffset);
     res.json(games);
   });
 

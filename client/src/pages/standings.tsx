@@ -22,13 +22,27 @@ export default function Standings() {
   // Determine current league
   const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
 
+  // Compute local date info from the browser's clock (not the server's UTC clock)
+  const now = new Date();
+  const tzOffset = now.getTimezoneOffset(); // minutes west of UTC (e.g. 240 for ET, 420 for PT)
+  const toLocalDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = toLocalDateStr(now);
+  const tomorrowStr = toLocalDateStr(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+
   const { data: recentGames } = useQuery<any[]>({
-    queryKey: ["/api/leagues", leagueId, "games/recent"],
+    queryKey: ["/api/leagues", leagueId, "games/recent", todayStr],
+    queryFn: () =>
+      fetch(`/api/leagues/${leagueId}/games/recent?localDate=${todayStr}&tzOffset=${tzOffset}`)
+        .then(r => r.json()),
     refetchInterval: 60000, // Poll every 1 minute for live game updates
   });
 
   const { data: upcomingGames } = useQuery<any[]>({
-    queryKey: ["/api/leagues", leagueId, "games/upcoming"],
+    queryKey: ["/api/leagues", leagueId, "games/upcoming", tomorrowStr],
+    queryFn: () =>
+      fetch(`/api/leagues/${leagueId}/games/upcoming?localDate=${tomorrowStr}&tzOffset=${tzOffset}`)
+        .then(r => r.json()),
     refetchInterval: 300000, // Poll every 5 minutes for upcoming games
   });
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];

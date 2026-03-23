@@ -1069,7 +1069,7 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  async getRecentGamesWithOwners(leagueId: string, limit: number): Promise<any[]> {
+  async getRecentGamesWithOwners(leagueId: string, limit: number, localDate?: string, tzOffset: number = 0): Promise<any[]> {
     // Get the league to determine sport
     const league = await this.getLeague(leagueId);
     if (!league) return [];
@@ -1078,10 +1078,22 @@ export class DatabaseStorage implements IStorage {
     let recentGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get today's games that are scheduled or in progress (not completed)
-      const now = new Date();
-      const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-      const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59));
+      // Compute the UTC window for the user's local "today"
+      // localDate = "YYYY-MM-DD" in user's timezone, tzOffset = minutes (from getTimezoneOffset(), positive = west of UTC)
+      let todayStart: Date, todayEnd: Date;
+      if (localDate) {
+        const [year, month, day] = localDate.split('-').map(Number);
+        // UTC timestamp for midnight of that local date
+        // Local midnight = UTC midnight + tzOffset minutes
+        const utcMidnight = Date.UTC(year, month - 1, day, 0, 0, 0);
+        todayStart = new Date(utcMidnight + tzOffset * 60 * 1000);
+        todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      } else {
+        // Fallback: use server UTC date
+        const now = new Date();
+        todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+        todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59));
+      }
       
       recentGames = await db
         .select()
@@ -1089,8 +1101,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(games.sport, league.sport),
           gte(games.gameDate, todayStart),
-          lte(games.gameDate, todayEnd),
-          sql`${games.status} != 'completed'`
+          lte(games.gameDate, todayEnd)
         ))
         .orderBy(games.gameDate)
         .limit(limit);
@@ -1143,7 +1154,7 @@ export class DatabaseStorage implements IStorage {
     return gamesWithOwners;
   }
 
-  async getUpcomingGamesWithOwners(leagueId: string, limit: number): Promise<any[]> {
+  async getUpcomingGamesWithOwners(leagueId: string, limit: number, localDate?: string, tzOffset: number = 0): Promise<any[]> {
     // Get the league to determine sport
     const league = await this.getLeague(leagueId);
     if (!league) return [];
@@ -1152,11 +1163,21 @@ export class DatabaseStorage implements IStorage {
     let upcomingGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get tomorrow's games (games happening tomorrow in UTC)
-      const now = new Date();
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      const tomorrowStart = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0));
-      const tomorrowEnd = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 23, 59, 59));
+      // Compute the UTC window for the user's local "tomorrow"
+      // localDate here is already tomorrow's date (YYYY-MM-DD) in user's timezone
+      let tomorrowStart: Date, tomorrowEnd: Date;
+      if (localDate) {
+        const [year, month, day] = localDate.split('-').map(Number);
+        const utcMidnight = Date.UTC(year, month - 1, day, 0, 0, 0);
+        tomorrowStart = new Date(utcMidnight + tzOffset * 60 * 1000);
+        tomorrowEnd = new Date(tomorrowStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      } else {
+        // Fallback: use server UTC date + 1 day
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        tomorrowStart = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0));
+        tomorrowEnd = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 23, 59, 59));
+      }
       
       upcomingGames = await db
         .select()
