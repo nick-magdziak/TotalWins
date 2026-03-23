@@ -148,7 +148,7 @@ export const WC_CONFEDERATION_COLORS: Record<string, { background: string; font:
   "CONMEBOL": { background: "#007A4D", font: "#FFFFFF" },
   "CONCACAF": { background: "#CC0001", font: "#FFFFFF" },
   "CAF": { background: "#009B48", font: "#FFFFFF" },
-  "AFC": { background: "#D40000", font: "#FFFFFF" },
+  "AFC": { background: "#5B9BD5", font: "#FFFFFF" },
   "OFC": { background: "#0057A8", font: "#FFFFFF" },
   "Playoff": { background: "#808080", font: "#FFFFFF" },
 };
