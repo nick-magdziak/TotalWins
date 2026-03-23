@@ -54,7 +54,17 @@ app.use((req, res, next) => {
     await sportsApi.syncNBAGames();
     await sportsApi.syncCurrentNFLGames();
     await sportsApi.syncNextWeekNFLGames();
-    log("ESPN API sports data service initialized (MLB, NFL & NBA)");
+
+    // World Cup sync
+    try {
+      const { worldCupDataService } = await import("./services/worldCupService");
+      await worldCupDataService.syncWorldCupGames();
+      log("World Cup data service initialized");
+    } catch (wcError) {
+      console.error("Failed to initialize World Cup data service:", wcError);
+    }
+
+    log("ESPN API sports data service initialized (MLB, NFL, NBA & World Cup)");
     
     // Set up automatic live game updates every 2 minutes during active hours
     const startLiveUpdates = () => {
@@ -68,7 +78,14 @@ app.use((req, res, next) => {
             await sportsApi.syncNBAGames();
             await sportsApi.syncCurrentNFLGames();
             await sportsApi.syncNextWeekNFLGames();
-            console.log("🔄 Auto-synced live MLB, NBA, and NFL games");
+            // Sync World Cup during tournament period (June-July 2026)
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+            if (year === 2026 && month >= 6 && month <= 7) {
+              const { worldCupDataService } = await import("./services/worldCupService");
+              await worldCupDataService.syncWorldCupGames();
+            }
+            console.log("🔄 Auto-synced live MLB, NBA, NFL, and World Cup games");
           }
         } catch (error) {
           console.error("Auto-sync error:", error);

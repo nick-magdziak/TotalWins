@@ -13,12 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
-import { Trophy, Users, Calendar, Zap, Shuffle, Settings } from "lucide-react";
+import { Trophy, Users, Calendar, Zap, Shuffle, Settings, Globe } from "lucide-react";
 import { DRAFT_CONFIGURATIONS, type DraftConfiguration } from "@shared/draftConfig";
 
 const createLeagueSchema = z.object({
   name: z.string().min(3, "League name must be at least 3 characters").max(50, "League name must be less than 50 characters"),
-  sport: z.enum(["NFL", "MLB", "NBA"], { required_error: "Please select a sport" }),
+  sport: z.enum(["NFL", "MLB", "NBA", "WORLD_CUP"], { required_error: "Please select a sport" }),
   season: z.string().min(4, "Season is required"),
   draftConfiguration: z.string().min(1, "Please select a draft configuration"),
   description: z.string().optional(),
@@ -136,6 +136,12 @@ export default function CreateLeague() {
           draftConfiguration: defaultConfig?.key || "",
           description: "Choose your NBA teams and compete for the championship!"
         };
+      case "WORLD_CUP":
+        return {
+          season: "2026",
+          draftConfiguration: defaultConfig?.key || "",
+          description: "Draft national teams and earn points as they advance through the 2026 FIFA World Cup (June 11 – July 19, 2026)!"
+        };
       default:
         return { season };
     }
@@ -143,7 +149,7 @@ export default function CreateLeague() {
 
   const handleSportChange = (sport: string) => {
     const defaults = getSportDefaults(sport);
-    form.setValue("sport", sport as "NFL" | "MLB" | "NBA");
+    form.setValue("sport", sport as "NFL" | "MLB" | "NBA" | "WORLD_CUP");
     if (defaults.season) form.setValue("season", defaults.season);
     if (defaults.draftConfiguration) form.setValue("draftConfiguration", defaults.draftConfiguration);
     if (defaults.description && !form.getValues("description")) {
@@ -250,6 +256,12 @@ export default function CreateLeague() {
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 bg-retro-pink rounded-full"></div>
                             NBA - National Basketball Association
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="WORLD_CUP">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            World Cup 2026 - FIFA World Cup
                           </div>
                         </SelectItem>
                       </SelectContent>

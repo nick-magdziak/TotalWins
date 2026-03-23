@@ -138,6 +138,29 @@ export const DRAFT_CONFIGURATIONS: Record<string, DraftConfiguration[]> = {
       teams: 3,
       draftStyle: "custom_10_30"
     }
+  ],
+  WORLD_CUP: [
+    {
+      key: "6_players_8_teams",
+      label: "6 Players, 8 Teams",
+      players: 6,
+      teams: 8,
+      draftStyle: "snake"
+    },
+    {
+      key: "8_players_4_teams",
+      label: "8 Players, 4 Teams",
+      players: 8,
+      teams: 4,
+      draftStyle: "snake"
+    },
+    {
+      key: "8_players_6_teams",
+      label: "8 Players, 6 Teams",
+      players: 8,
+      teams: 6,
+      draftStyle: "snake"
+    }
   ]
 };
 

@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Clock, TrendingUp } from "lucide-react";
+import { Trophy, Clock, TrendingUp, Globe } from "lucide-react";
 import StandingsTable from "@/components/StandingsTable";
-import { type Game, type League } from "@shared/schema";
-import { CURRENT_SEASON, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
+import { type Game, type League, type WCGroupStanding, type WCPlayerStanding } from "@shared/schema";
+import { CURRENT_SEASON, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
 
 export default function Standings() {
@@ -48,11 +48,25 @@ export default function Standings() {
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   // Sport-specific content functions
+  const isWorldCup = currentLeague?.sport === 'WORLD_CUP';
+
+  const { data: wcGroups } = useQuery<Record<string, WCGroupStanding[]>>({
+    queryKey: ["/api/world-cup/groups"],
+    enabled: isWorldCup,
+  });
+
+  const { data: wcPlayerStandings } = useQuery<WCPlayerStanding[]>({
+    queryKey: ["/api/leagues", leagueId, "world-cup/standings"],
+    enabled: isWorldCup,
+    refetchInterval: 60000,
+  });
+
   const getGamePeriodLabel = () => {
     switch(currentLeague?.sport) {
       case 'NFL': return 'WEEK';
       case 'MLB': return 'SERIES';
       case 'NBA': return 'GAMES';
+      case 'WORLD_CUP': return 'TOURNAMENT';
       default: return 'WEEK';
     }
   };
@@ -67,6 +81,14 @@ export default function Standings() {
 
   const getCurrentPeriodLabel = () => {
     switch(currentLeague?.sport) {
+      case 'WORLD_CUP': {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        if (year < 2026 || (year === 2026 && month < 6)) return 'STARTS JUNE 11, 2026';
+        if (year === 2026 && month >= 6 && month <= 7) return 'TOURNAMENT LIVE';
+        return 'TOURNAMENT COMPLETE';
+      }
       case 'NFL': {
         // Calculate current NFL week dynamically
         const now = new Date();
@@ -114,6 +136,7 @@ export default function Standings() {
       }
       case 'MLB': return "TODAY'S GAMES";
       case 'NBA': return "TODAY'S GAMES";
+      case 'WORLD_CUP': return "RECENT MATCHES";
       default: return "TODAY'S GAMES";
     }
   };
@@ -141,6 +164,7 @@ export default function Standings() {
       }
       case 'MLB': return "TOMORROW'S GAMES";
       case 'NBA': return "TOMORROW'S GAMES";
+      case 'WORLD_CUP': return "UPCOMING MATCHES";
       default: return "TOMORROW'S GAMES";
     }
   };
@@ -247,6 +271,67 @@ export default function Standings() {
         <StandingsTable leagueId={leagueId} />
       </section>
 
+      {/* World Cup Group Tables */}
+      {isWorldCup && (
+        <section className="mb-8 px-4">
+          <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+            <Globe className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
+            GROUP STAGE STANDINGS
+          </h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wcGroups && Object.keys(wcGroups).length > 0 ? Object.entries(wcGroups).map(([groupLetter, group]) => {
+              const groupName = `Group ${groupLetter}`;
+              return (
+                <Card key={groupLetter} className="bg-white rounded-2xl retro-border shadow-xl">
+                  <CardContent className="p-4">
+                    <h4 className="text-retro-purple font-bold mb-2 text-center retro-font text-sm">{groupName}</h4>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-gray-500 border-b">
+                          <th className="text-left py-1">Team</th>
+                          <th className="text-center py-1">P</th>
+                          <th className="text-center py-1">W</th>
+                          <th className="text-center py-1">D</th>
+                          <th className="text-center py-1">L</th>
+                          <th className="text-center py-1">GF</th>
+                          <th className="text-center py-1">GA</th>
+                          <th className="text-center py-1">Pts</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.map((standing, si) => (
+                          <tr key={si} className={`border-b border-gray-100 ${si < 2 ? 'bg-green-50' : ''}`}>
+                            <td className="py-1">
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm">{standing.flagEmoji || "🏳️"}</span>
+                                <span className="font-bold truncate" title={standing.name}>{standing.abbreviation || standing.name}</span>
+                              </div>
+                            </td>
+                            <td className="text-center py-1">{standing.played}</td>
+                            <td className="text-center py-1">{standing.wins}</td>
+                            <td className="text-center py-1">{standing.draws}</td>
+                            <td className="text-center py-1">{standing.losses}</td>
+                            <td className="text-center py-1">{standing.goalsFor}</td>
+                            <td className="text-center py-1">{standing.goalsAgainst}</td>
+                            <td className="text-center py-1 font-bold">{standing.points}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-1 text-xs text-gray-400 text-right">Top 2 advance</div>
+                  </CardContent>
+                </Card>
+              );
+            }) : (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                <Globe className="mx-auto mb-2 w-8 h-8 opacity-40" />
+                <p>Group stage data will appear once the tournament begins on June 11, 2026.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Recent Updates Section */}
       <section className="mb-8 px-4">
         <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
@@ -254,6 +339,7 @@ export default function Standings() {
           {currentLeague?.sport === 'NFL' && 'NFL GAMES'}
           {currentLeague?.sport === 'MLB' && 'MLB GAMES'}
           {currentLeague?.sport === 'NBA' && 'NBA GAMES'}
+          {currentLeague?.sport === 'WORLD_CUP' && 'WORLD CUP MATCHES'}
           {!currentLeague?.sport && 'NFL GAMES'}
         </h3>
         

@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Users, ListOrdered, Volleyball } from "lucide-react";
 import TeamCard from "@/components/TeamCard";
-import { type NFLTeam, type MLBTeam, type NBATeam, type DraftPick, type DraftStatus } from "@shared/schema";
-import { NFL_DIVISIONS, MLB_DIVISIONS, NBA_DIVISIONS, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
+import { type NFLTeam, type MLBTeam, type NBATeam, type WorldCupTeam, type DraftPick, type DraftStatus } from "@shared/schema";
+import { NFL_DIVISIONS, MLB_DIVISIONS, NBA_DIVISIONS, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_GROUPS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
 
 // Helper function to check if team belongs to division
 const isTeamInDivision = (teamAbbr: string, divisionTeams: readonly string[]): boolean => {
@@ -38,9 +38,12 @@ export default function Draft() {
   const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
-  // Get teams based on current league's sport
-  const { data: teams } = useQuery<(NFLTeam | MLBTeam | NBATeam)[]>({
-    queryKey: [`/api/${currentLeague?.sport?.toLowerCase() || 'nfl'}/teams`],
+  const sportTeamsPath = currentLeague?.sport === 'WORLD_CUP'
+    ? '/api/world-cup/teams'
+    : `/api/${currentLeague?.sport?.toLowerCase() || 'nfl'}/teams`;
+
+  const { data: teams } = useQuery<(NFLTeam | MLBTeam | NBATeam | WorldCupTeam)[]>({
+    queryKey: [sportTeamsPath],
     enabled: !!currentLeague?.sport,
   });
 
@@ -318,10 +321,55 @@ export default function Draft() {
                     🏈
                   </div>
                 )}
-                {currentLeague?.sport || "NFL"} TEAMS
+                {currentLeague?.sport === 'WORLD_CUP' && (
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                    ⚽
+                  </div>
+                )}
+                {currentLeague?.sport === 'WORLD_CUP' ? "WORLD CUP 2026 TEAMS" : `${currentLeague?.sport || "NFL"} TEAMS`}
               </h3>
 
-              {currentLeague?.sport === 'NFL' ? (
+              {currentLeague?.sport === 'WORLD_CUP' ? (
+                // World Cup Group Layout
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(WC_GROUPS).map(([groupName, teamIds]) => {
+                    const groupTeams = (teams as WorldCupTeam[] | undefined)?.filter(t => (teamIds as readonly string[]).includes(t.id)) || [];
+                    return (
+                      <div key={groupName} className="mb-4">
+                        <h5 className="text-retro-charcoal font-bold mb-2 text-sm border-b border-gray-200 pb-1">{groupName}</h5>
+                        <div className="space-y-2">
+                          {groupTeams.map((team) => {
+                            const confColors = WC_CONFEDERATION_COLORS[team.confederation] || { background: "#6b7280", font: "#ffffff" };
+                            const isDrafted = drafted.has(team.id);
+                            return (
+                              <button
+                                key={team.id}
+                                onClick={() => handleTeamSelect(team.id)}
+                                disabled={isDrafted || !isCurrentUserTurn || draftPickMutation.isPending}
+                                className={`w-full p-2 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
+                                  isDrafted ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
+                                }`}
+                                style={{
+                                  backgroundColor: isDrafted ? '#d1d5db' : confColors.background,
+                                  color: isDrafted ? '#6b7280' : confColors.font,
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">{team.flagEmoji || "🏳️"}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="retro-font text-sm truncate">{team.placeholder || team.name}</div>
+                                    <div className="text-xs opacity-75">{team.confederation}{team.fifaRanking ? ` • #${team.fifaRanking}` : ""}</div>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : currentLeague?.sport === 'NFL' ? (
                 // NFL Division Layout
                 <div className="grid grid-cols-2 gap-6">
                   {/* AFC Column */}

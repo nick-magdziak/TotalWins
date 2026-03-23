@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { type PlayerStanding, type League } from "@shared/schema";
-import { NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS } from "@/lib/constants";
+import { type PlayerStanding, type League, type WorldCupTeam } from "@shared/schema";
+import { NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
 
 interface StandingsTableProps {
   leagueId: string;
@@ -72,7 +72,9 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
             <tr>
               <th className="pl-2 pr-0 py-3 text-left font-bold text-xs retro-font" style={{ width: '24px' }}>RANK</th>
               <th className="pl-0 pr-0 py-3 text-left font-bold text-xs retro-font" style={{ width: '120px' }}>PLAYER</th>
-              <th className="pl-0 pr-2 py-3 text-center font-bold text-xs retro-font" style={{ width: '60px' }}>WINS</th>
+              <th className="pl-0 pr-2 py-3 text-center font-bold text-xs retro-font" style={{ width: '60px' }}>
+                {league?.sport === 'WORLD_CUP' ? 'PTS' : 'WINS'}
+              </th>
               <th className="px-2 py-3 text-left font-bold text-xs retro-font">TEAMS</th>
             </tr>
           </thead>
@@ -95,6 +97,23 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                 <td className="px-2 py-3">
                   <div className="flex flex-col gap-1">
                     {standing.teams.map((team) => {
+                      if (league?.sport === 'WORLD_CUP') {
+                        const wcTeam = team as unknown as WorldCupTeam;
+                        const confColors = WC_CONFEDERATION_COLORS[wcTeam.confederation] || { background: '#374151', font: '#ffffff' };
+                        return (
+                          <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
+                            <Badge 
+                              className="px-2 py-1 rounded text-xs font-bold border-0"
+                              style={{
+                                backgroundColor: confColors.background,
+                                color: confColors.font
+                              }}
+                            >
+                              {wcTeam.flagEmoji || "🏳️"} {wcTeam.abbreviation}
+                            </Badge>
+                          </div>
+                        );
+                      }
                       const teamColorsMap = getTeamColors();
                       const teamColors = teamColorsMap[team.abbreviation as keyof typeof teamColorsMap];
                       return (

@@ -126,6 +126,33 @@ export const MLB_TEAM_COLORS = {
   "WSH": { background: "#AB0003", font: "#14225A" }
 } as const;
 
+// World Cup 2026 Groups
+export const WC_GROUPS = {
+  "Group A": ["wc-MEX", "wc-RSA", "wc-KOR", "wc-A4"],
+  "Group B": ["wc-CAN", "wc-HON", "wc-MAR", "wc-CRO"],
+  "Group C": ["wc-ARG", "wc-CHI", "wc-ALB", "wc-C4"],
+  "Group D": ["wc-USA", "wc-PAN", "wc-SRB", "wc-ECU"],
+  "Group E": ["wc-ESP", "wc-EGY", "wc-UZB", "wc-KSA"],
+  "Group F": ["wc-POR", "wc-BRA", "wc-TZA", "wc-F4"],
+  "Group G": ["wc-FRA", "wc-CMR", "wc-MEX2", "wc-JPN"],
+  "Group H": ["wc-GER", "wc-COL", "wc-COD", "wc-NZL"],
+  "Group I": ["wc-ENG", "wc-URU", "wc-IRQ", "wc-I4"],
+  "Group J": ["wc-NED", "wc-SEN", "wc-AUS", "wc-J4"],
+  "Group K": ["wc-ITA", "wc-MEX3", "wc-VEN", "wc-K4"],
+  "Group L": ["wc-POR2", "wc-NGR", "wc-QAT", "wc-L4"],
+} as const;
+
+// World Cup team colors by confederation
+export const WC_CONFEDERATION_COLORS: Record<string, { background: string; font: string }> = {
+  "UEFA": { background: "#003399", font: "#FFD700" },
+  "CONMEBOL": { background: "#007A4D", font: "#FFFFFF" },
+  "CONCACAF": { background: "#CC0001", font: "#FFFFFF" },
+  "CAF": { background: "#009B48", font: "#FFFFFF" },
+  "AFC": { background: "#D40000", font: "#FFFFFF" },
+  "OFC": { background: "#0057A8", font: "#FFFFFF" },
+  "Playoff": { background: "#808080", font: "#FFFFFF" },
+};
+
 // NBA Team Colors
 export const NBA_TEAM_COLORS = {
   "ATL": { background: "#C8102E", font: "#FDB927" },

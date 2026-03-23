@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, lt, lte } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lt, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   type User,
@@ -10,18 +10,23 @@ import {
   type NFLTeam,
   type MLBTeam,
   type NBATeam,
+  type WorldCupTeam,
+  type InsertWorldCupTeam,
   type DraftPick,
   type InsertDraftPick,
   type Game,
   type InsertGame,
   type PlayerStanding,
   type DraftStatus,
+  type WCGroupStanding,
+  type WCPlayerStanding,
   users,
   leagues,
   leagueMembers,
   nflTeams,
   mlbTeams,
   nbaTeams,
+  worldCupTeams,
   draftPicks,
   games,
 } from "@shared/schema";
@@ -70,6 +75,15 @@ export interface IStorage {
   updateGame(gameId: string, updates: Partial<Game>): Promise<Game | undefined>;
   addGame(game: InsertGame): Promise<Game>;
   getRecentCompletedGames(limit: number): Promise<Game[]>;
+
+  // World Cup
+  getAllWorldCupTeams(): Promise<WorldCupTeam[]>;
+  getWorldCupTeam(id: string): Promise<WorldCupTeam | undefined>;
+  getWorldCupGroups(): Promise<Record<string, WCGroupStanding[]>>;
+  getWorldCupBracket(): Promise<Record<string, { homeTeamId: string; awayTeamId: string; homeScore: number | null; awayScore: number | null; status: string; gameDate: Date }[]>>;
+  getWorldCupPlayerStandings(leagueId: string): Promise<WCPlayerStanding[]>;
+  calculateWorldCupPlayerPoints(): Promise<void>;
+  getWorldCupGames(): Promise<Game[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -77,6 +91,7 @@ export class DatabaseStorage implements IStorage {
     this.initializeNFLTeams();
     this.initializeMLBTeams();
     this.initializeNBATeams();
+    this.initializeWorldCupTeams();
     this.initializeSampleGameData();
     this.initializeDemoLeagues();
     // Sync real MLB games after initialization
@@ -807,6 +822,18 @@ export class DatabaseStorage implements IStorage {
 
     const standings: PlayerStanding[] = [];
 
+    // For WORLD_CUP, use fantasy points from getWorldCupPlayerStandings
+    if (league.sport === 'WORLD_CUP') {
+      const wcStandings = await this.getWorldCupPlayerStandings(leagueId);
+      return wcStandings.map((s, index) => ({
+        userId: s.userId,
+        displayName: s.displayName,
+        totalWins: s.fantasyPoints,
+        teams: s.teams as unknown as (NFLTeam | MLBTeam | NBATeam)[],
+        rank: s.rank,
+      }));
+    }
+
     for (const { member, user } of members) {
       const userPicks = await this.getUserDraftPicks(leagueId, user.id);
       const teams = await Promise.all(
@@ -861,7 +888,7 @@ export class DatabaseStorage implements IStorage {
     return team || undefined;
   }
 
-  async getTeamBySport(id: string, sport: string): Promise<NFLTeam | MLBTeam | NBATeam | undefined> {
+  async getTeamBySport(id: string, sport: string): Promise<NFLTeam | MLBTeam | NBATeam | WorldCupTeam | undefined> {
     switch (sport) {
       case 'NFL':
         return await this.getNFLTeam(id);
@@ -869,6 +896,8 @@ export class DatabaseStorage implements IStorage {
         return await this.getMLBTeam(id);
       case 'NBA':
         return await this.getNBATeam(id);
+      case 'WORLD_CUP':
+        return await this.getWorldCupTeam(id);
       default:
         return undefined;
     }
@@ -1152,6 +1181,306 @@ export class DatabaseStorage implements IStorage {
     );
 
     return gamesWithOwners;
+  }
+
+  private async initializeWorldCupTeams() {
+    try {
+      const existing = await db.select().from(worldCupTeams).limit(1);
+      if (existing.length > 0) return;
+
+      const wcTeams: InsertWorldCupTeam[] = [
+        // Group A
+        { id: "wc-MEX", name: "Mexico", abbreviation: "MEX", group: "A", confederation: "CONCACAF", qualified: true, fifaRanking: 16, flagEmoji: "🇲🇽" },
+        { id: "wc-RSA", name: "South Africa", abbreviation: "RSA", group: "A", confederation: "CAF", qualified: true, fifaRanking: 62, flagEmoji: "🇿🇦" },
+        { id: "wc-KOR", name: "South Korea", abbreviation: "KOR", group: "A", confederation: "AFC", qualified: true, fifaRanking: 23, flagEmoji: "🇰🇷" },
+        { id: "wc-A4", name: "UEFA Path D Winner", abbreviation: "A4", group: "A", confederation: "UEFA", qualified: false, placeholder: "UEFA Path D Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        // Group B
+        { id: "wc-CAN", name: "Canada", abbreviation: "CAN", group: "B", confederation: "CONCACAF", qualified: true, fifaRanking: 48, flagEmoji: "🇨🇦" },
+        { id: "wc-HON", name: "Honduras", abbreviation: "HON", group: "B", confederation: "CONCACAF", qualified: true, fifaRanking: 81, flagEmoji: "🇭🇳" },
+        { id: "wc-MAR", name: "Morocco", abbreviation: "MAR", group: "B", confederation: "CAF", qualified: true, fifaRanking: 14, flagEmoji: "🇲🇦" },
+        { id: "wc-CRO", name: "Croatia", abbreviation: "CRO", group: "B", confederation: "UEFA", qualified: true, fifaRanking: 10, flagEmoji: "🇭🇷" },
+        // Group C
+        { id: "wc-ARG", name: "Argentina", abbreviation: "ARG", group: "C", confederation: "CONMEBOL", qualified: true, fifaRanking: 1, flagEmoji: "🇦🇷" },
+        { id: "wc-CHI", name: "Chile", abbreviation: "CHI", group: "C", confederation: "CONMEBOL", qualified: true, fifaRanking: 41, flagEmoji: "🇨🇱" },
+        { id: "wc-ALB", name: "Albania", abbreviation: "ALB", group: "C", confederation: "UEFA", qualified: true, fifaRanking: 66, flagEmoji: "🇦🇱" },
+        { id: "wc-C4", name: "Inter-Conf Playoff B Winner", abbreviation: "C4", group: "C", confederation: "Playoff", qualified: false, placeholder: "Inter-Conf Playoff B Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        // Group D
+        { id: "wc-USA", name: "United States", abbreviation: "USA", group: "D", confederation: "CONCACAF", qualified: true, fifaRanking: 11, flagEmoji: "🇺🇸" },
+        { id: "wc-PAN", name: "Panama", abbreviation: "PAN", group: "D", confederation: "CONCACAF", qualified: true, fifaRanking: 49, flagEmoji: "🇵🇦" },
+        { id: "wc-SRB", name: "Serbia", abbreviation: "SRB", group: "D", confederation: "UEFA", qualified: true, fifaRanking: 33, flagEmoji: "🇷🇸" },
+        { id: "wc-ECU", name: "Ecuador", abbreviation: "ECU", group: "D", confederation: "CONMEBOL", qualified: true, fifaRanking: 38, flagEmoji: "🇪🇨" },
+        // Group E
+        { id: "wc-ESP", name: "Spain", abbreviation: "ESP", group: "E", confederation: "UEFA", qualified: true, fifaRanking: 2, flagEmoji: "🇪🇸" },
+        { id: "wc-EGY", name: "Egypt", abbreviation: "EGY", group: "E", confederation: "CAF", qualified: true, fifaRanking: 36, flagEmoji: "🇪🇬" },
+        { id: "wc-UZB", name: "Uzbekistan", abbreviation: "UZB", group: "E", confederation: "AFC", qualified: true, fifaRanking: 74, flagEmoji: "🇺🇿" },
+        { id: "wc-KSA", name: "Saudi Arabia", abbreviation: "KSA", group: "E", confederation: "AFC", qualified: true, fifaRanking: 56, flagEmoji: "🇸🇦" },
+        // Group F
+        { id: "wc-POR", name: "Portugal", abbreviation: "POR", group: "F", confederation: "UEFA", qualified: true, fifaRanking: 6, flagEmoji: "🇵🇹" },
+        { id: "wc-BRA", name: "Brazil", abbreviation: "BRA", group: "F", confederation: "CONMEBOL", qualified: true, fifaRanking: 5, flagEmoji: "🇧🇷" },
+        { id: "wc-TZA", name: "Tanzania", abbreviation: "TZA", group: "F", confederation: "CAF", qualified: true, fifaRanking: 108, flagEmoji: "🇹🇿" },
+        { id: "wc-F4", name: "CONCACAF Playoff Winner", abbreviation: "F4", group: "F", confederation: "Playoff", qualified: false, placeholder: "CONCACAF Playoff Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        // Group G
+        { id: "wc-FRA", name: "France", abbreviation: "FRA", group: "G", confederation: "UEFA", qualified: true, fifaRanking: 3, flagEmoji: "🇫🇷" },
+        { id: "wc-CMR", name: "Cameroon", abbreviation: "CMR", group: "G", confederation: "CAF", qualified: true, fifaRanking: 43, flagEmoji: "🇨🇲" },
+        { id: "wc-MEX2", name: "Mexico (2nd entry)", abbreviation: "G3", group: "G", confederation: "CONCACAF", qualified: false, placeholder: "CONCACAF 3rd Qualifier", fifaRanking: null, flagEmoji: "🏳️" },
+        { id: "wc-JPN", name: "Japan", abbreviation: "JPN", group: "G", confederation: "AFC", qualified: true, fifaRanking: 18, flagEmoji: "🇯🇵" },
+        // Group H
+        { id: "wc-GER", name: "Germany", abbreviation: "GER", group: "H", confederation: "UEFA", qualified: true, fifaRanking: 13, flagEmoji: "🇩🇪" },
+        { id: "wc-COL", name: "Colombia", abbreviation: "COL", group: "H", confederation: "CONMEBOL", qualified: true, fifaRanking: 9, flagEmoji: "🇨🇴" },
+        { id: "wc-COD", name: "DR Congo", abbreviation: "COD", group: "H", confederation: "CAF", qualified: true, fifaRanking: 55, flagEmoji: "🇨🇩" },
+        { id: "wc-NZL", name: "New Zealand", abbreviation: "NZL", group: "H", confederation: "OFC", qualified: true, fifaRanking: 93, flagEmoji: "🇳🇿" },
+        // Group I
+        { id: "wc-ENG", name: "England", abbreviation: "ENG", group: "I", confederation: "UEFA", qualified: true, fifaRanking: 5, flagEmoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+        { id: "wc-URU", name: "Uruguay", abbreviation: "URU", group: "I", confederation: "CONMEBOL", qualified: true, fifaRanking: 17, flagEmoji: "🇺🇾" },
+        { id: "wc-IRQ", name: "Iraq", abbreviation: "IRQ", group: "I", confederation: "AFC", qualified: true, fifaRanking: 61, flagEmoji: "🇮🇶" },
+        { id: "wc-I4", name: "UEFA Path B Winner", abbreviation: "I4", group: "I", confederation: "UEFA", qualified: false, placeholder: "UEFA Path B Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        // Group J
+        { id: "wc-NED", name: "Netherlands", abbreviation: "NED", group: "J", confederation: "UEFA", qualified: true, fifaRanking: 7, flagEmoji: "🇳🇱" },
+        { id: "wc-SEN", name: "Senegal", abbreviation: "SEN", group: "J", confederation: "CAF", qualified: true, fifaRanking: 20, flagEmoji: "🇸🇳" },
+        { id: "wc-AUS", name: "Australia", abbreviation: "AUS", group: "J", confederation: "AFC", qualified: true, fifaRanking: 25, flagEmoji: "🇦🇺" },
+        { id: "wc-J4", name: "UEFA Path C Winner", abbreviation: "J4", group: "J", confederation: "UEFA", qualified: false, placeholder: "UEFA Path C Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        // Group K
+        { id: "wc-ITA", name: "Italy", abbreviation: "ITA", group: "K", confederation: "UEFA", qualified: true, fifaRanking: 9, flagEmoji: "🇮🇹" },
+        { id: "wc-MEX3", name: "CONCACAF 4th Qualifier", abbreviation: "K2", group: "K", confederation: "CONCACAF", qualified: false, placeholder: "CONCACAF 4th Qualifier", fifaRanking: null, flagEmoji: "🏳️" },
+        { id: "wc-VEN", name: "Venezuela", abbreviation: "VEN", group: "K", confederation: "CONMEBOL", qualified: true, fifaRanking: 47, flagEmoji: "🇻🇪" },
+        { id: "wc-K4", name: "UEFA Path A Winner", abbreviation: "K4", group: "K", confederation: "UEFA", qualified: false, placeholder: "UEFA Path A Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        // Group L
+        { id: "wc-POR2", name: "Inter-Conf Playoff A Winner", abbreviation: "L1", group: "L", confederation: "Playoff", qualified: false, placeholder: "Inter-Conf Playoff A Winner", fifaRanking: null, flagEmoji: "🏳️" },
+        { id: "wc-NGR", name: "Nigeria", abbreviation: "NGR", group: "L", confederation: "CAF", qualified: true, fifaRanking: 40, flagEmoji: "🇳🇬" },
+        { id: "wc-QAT", name: "Qatar", abbreviation: "QAT", group: "L", confederation: "AFC", qualified: true, fifaRanking: 37, flagEmoji: "🇶🇦" },
+        { id: "wc-L4", name: "UEFA Path E Winner", abbreviation: "L4", group: "L", confederation: "UEFA", qualified: false, placeholder: "UEFA Path E Winner", fifaRanking: null, flagEmoji: "🏳️" },
+      ];
+
+      await db.insert(worldCupTeams).values(wcTeams);
+      console.log("World Cup teams initialized");
+    } catch (error) {
+      console.error("Error initializing World Cup teams:", error);
+    }
+  }
+
+  async getAllWorldCupTeams(): Promise<WorldCupTeam[]> {
+    return await db.select().from(worldCupTeams).orderBy(worldCupTeams.group, worldCupTeams.id);
+  }
+
+  async getWorldCupTeam(id: string): Promise<WorldCupTeam | undefined> {
+    const [team] = await db.select().from(worldCupTeams).where(eq(worldCupTeams.id, id));
+    return team || undefined;
+  }
+
+  async getWorldCupGames(): Promise<Game[]> {
+    return await db.select().from(games).where(eq(games.sport, "WORLD_CUP")).orderBy(games.gameDate);
+  }
+
+  async getWorldCupGroups(): Promise<Record<string, WCGroupStanding[]>> {
+    const allTeams = await this.getAllWorldCupTeams();
+    const allGames = await this.getWorldCupGames();
+    const groupStageGames = allGames.filter((g) => g.wcRound === "group_stage" && g.status === "completed");
+
+    const advancedTeamIds = new Set<string>();
+    const knockoutGames = allGames.filter((g) => g.wcRound !== "group_stage" && g.wcRound !== null);
+    for (const g of knockoutGames) {
+      advancedTeamIds.add(g.homeTeamId);
+      advancedTeamIds.add(g.awayTeamId);
+    }
+
+    const result: Record<string, WCGroupStanding[]> = {};
+
+    for (const group of ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]) {
+      const groupTeams = allTeams.filter((t) => t.group === group);
+      const standings: WCGroupStanding[] = groupTeams.map((team) => {
+        const teamGames = groupStageGames.filter(
+          (g) => g.homeTeamId === team.id || g.awayTeamId === team.id
+        );
+
+        let wins = 0, draws = 0, losses = 0, goalsFor = 0, goalsAgainst = 0;
+        for (const g of teamGames) {
+          const isHome = g.homeTeamId === team.id;
+          const gf = isHome ? (g.homeScore || 0) : (g.awayScore || 0);
+          const ga = isHome ? (g.awayScore || 0) : (g.homeScore || 0);
+          goalsFor += gf;
+          goalsAgainst += ga;
+          if (gf > ga) wins++;
+          else if (gf === ga) draws++;
+          else losses++;
+        }
+
+        return {
+          teamId: team.id,
+          name: team.placeholder || team.name,
+          abbreviation: team.abbreviation,
+          flagEmoji: team.flagEmoji,
+          played: wins + draws + losses,
+          wins,
+          draws,
+          losses,
+          goalsFor,
+          goalsAgainst,
+          goalDifference: goalsFor - goalsAgainst,
+          points: wins * 3 + draws,
+          advanced: advancedTeamIds.has(team.id),
+        };
+      });
+
+      standings.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+      });
+
+      result[group] = standings;
+    }
+
+    return result;
+  }
+
+  async getWorldCupBracket(): Promise<Record<string, { homeTeamId: string; awayTeamId: string; homeScore: number | null; awayScore: number | null; status: string; gameDate: Date }[]>> {
+    const allGames = await this.getWorldCupGames();
+    const bracketRounds = ["round_of_32", "round_of_16", "quarterfinal", "semifinal", "third_place", "final"];
+    const result: Record<string, any[]> = {};
+
+    for (const round of bracketRounds) {
+      const roundGames = allGames.filter((g) => g.wcRound === round);
+      result[round] = roundGames.map((g) => ({
+        homeTeamId: g.homeTeamId,
+        awayTeamId: g.awayTeamId,
+        homeScore: g.homeScore,
+        awayScore: g.awayScore,
+        status: g.status,
+        gameDate: g.gameDate,
+      }));
+    }
+
+    return result;
+  }
+
+  async calculateWorldCupPlayerPoints(): Promise<void> {
+    try {
+      const allLeagues = await db.select().from(leagues).where(eq(leagues.sport, "WORLD_CUP"));
+      const allGames = await this.getWorldCupGames();
+
+      for (const league of allLeagues) {
+        const members = await this.getLeagueMembers(league.id);
+
+        for (const member of members) {
+          if (!member.userId) continue;
+          const picks = await this.getUserDraftPicks(league.id, member.userId);
+          const teamIds = picks.map((p) => p.teamId!);
+
+          let points = 0;
+
+          for (const teamId of teamIds) {
+            const teamGames = allGames.filter(
+              (g) => g.homeTeamId === teamId || g.awayTeamId === teamId
+            );
+
+            for (const g of teamGames) {
+              if (g.status !== "completed") continue;
+              const isHome = g.homeTeamId === teamId;
+              const gf = isHome ? (g.homeScore || 0) : (g.awayScore || 0);
+              const ga = isHome ? (g.awayScore || 0) : (g.homeScore || 0);
+
+              if (g.wcRound === "group_stage") {
+                if (gf > ga) points += 2;
+                else if (gf === ga) points += 1;
+              } else if (g.wcRound && g.wcRound !== "third_place") {
+                if (gf > ga) points += 1 + 2;
+                else if (g.wcRound === "round_of_32" || g.wcRound === "round_of_16" || g.wcRound === "quarterfinal" || g.wcRound === "semifinal" || g.wcRound === "final") {
+                  points += 1;
+                }
+              }
+            }
+          }
+
+          await db
+            .update(leagueMembers)
+            .set({ totalWins: points })
+            .where(and(eq(leagueMembers.leagueId, league.id), eq(leagueMembers.userId, member.userId)));
+        }
+      }
+    } catch (error) {
+      console.error("Error calculating World Cup player points:", error);
+    }
+  }
+
+  async getWorldCupPlayerStandings(leagueId: string): Promise<WCPlayerStanding[]> {
+    const members = await db
+      .select({ member: leagueMembers, user: users })
+      .from(leagueMembers)
+      .innerJoin(users, eq(leagueMembers.userId, users.id))
+      .where(eq(leagueMembers.leagueId, leagueId));
+
+    const allGames = await this.getWorldCupGames();
+    const completedGames = allGames.filter((g) => g.status === "completed");
+    const knockoutGames = completedGames.filter((g) => g.wcRound && g.wcRound !== "group_stage" && g.wcRound !== "third_place");
+
+    const standings: WCPlayerStanding[] = [];
+
+    for (const { member, user } of members) {
+      const picks = await this.getUserDraftPicks(leagueId, user.id);
+      const teamIds = picks.map((p) => p.teamId!);
+
+      const teams = await Promise.all(teamIds.map((id) => this.getWorldCupTeam(id)));
+      const validTeams = teams.filter((t): t is WorldCupTeam => !!t);
+
+      let fantasyPoints = 0;
+      let goalsFor = 0;
+      let goalsAgainst = 0;
+      let knockoutGoalsFor = 0;
+      let knockoutGoalsAgainst = 0;
+
+      for (const teamId of teamIds) {
+        const teamGames = completedGames.filter(
+          (g) => g.homeTeamId === teamId || g.awayTeamId === teamId
+        );
+
+        for (const g of teamGames) {
+          const isHome = g.homeTeamId === teamId;
+          const gf = isHome ? (g.homeScore || 0) : (g.awayScore || 0);
+          const ga = isHome ? (g.awayScore || 0) : (g.homeScore || 0);
+
+          goalsFor += gf;
+          goalsAgainst += ga;
+
+          const isKnockout = g.wcRound && g.wcRound !== "group_stage";
+          if (isKnockout) {
+            knockoutGoalsFor += gf;
+            knockoutGoalsAgainst += ga;
+          }
+
+          if (g.wcRound === "group_stage") {
+            if (gf > ga) fantasyPoints += 2;
+            else if (gf === ga) fantasyPoints += 1;
+          } else if (g.wcRound && g.wcRound !== "third_place") {
+            fantasyPoints += 1;
+            if (gf > ga) fantasyPoints += 2;
+          }
+        }
+      }
+
+      standings.push({
+        userId: user.id,
+        displayName: user.displayName,
+        fantasyPoints,
+        teams: validTeams,
+        rank: 0,
+        goalsFor,
+        goalsAgainst,
+        knockoutGoalsFor,
+        knockoutGoalsAgainst,
+      });
+    }
+
+    standings.sort((a, b) => {
+      if (b.fantasyPoints !== a.fantasyPoints) return b.fantasyPoints - a.fantasyPoints;
+      if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+      if (b.knockoutGoalsFor !== a.knockoutGoalsFor) return b.knockoutGoalsFor - a.knockoutGoalsFor;
+      if (a.goalsAgainst !== b.goalsAgainst) return a.goalsAgainst - b.goalsAgainst;
+      return a.knockoutGoalsAgainst - b.knockoutGoalsAgainst;
+    });
+
+    standings.forEach((s, i) => (s.rank = i + 1));
+
+    return standings;
   }
 
   async getUpcomingGamesWithOwners(leagueId: string, limit: number, localDate?: string, tzOffset: number = 0): Promise<any[]> {

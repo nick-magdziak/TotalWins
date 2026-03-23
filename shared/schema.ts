@@ -3,6 +3,18 @@ import { pgTable, text, varchar, integer, boolean, timestamp, jsonb } from "driz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const worldCupTeams = pgTable("world_cup_teams", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  abbreviation: text("abbreviation").notNull(),
+  group: text("group").notNull(), // A-L
+  confederation: text("confederation").notNull(), // UEFA, CONMEBOL, CONCACAF, CAF, AFC, OFC
+  qualified: boolean("qualified").default(true),
+  placeholder: text("placeholder"), // e.g., "UEFA Path D Winner" if not yet qualified
+  fifaRanking: integer("fifa_ranking"),
+  flagEmoji: text("flag_emoji"),
+});
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
@@ -92,8 +104,8 @@ export const draftPicks = pgTable("draft_picks", {
 
 export const games = pgTable("games", {
   id: varchar("id").primaryKey(),
-  sport: text("sport").default("NFL"), // NFL, MLB, NBA
-  week: integer("week"), // For NFL, null for MLB/NBA
+  sport: text("sport").default("NFL"), // NFL, MLB, NBA, WORLD_CUP
+  week: integer("week"), // For NFL, null for MLB/NBA/WORLD_CUP
   season: text("season").notNull(),
   homeTeamId: varchar("home_team_id").notNull(),
   awayTeamId: varchar("away_team_id").notNull(),
@@ -103,6 +115,8 @@ export const games = pgTable("games", {
   gameDate: timestamp("game_date").notNull(),
   completedAt: timestamp("completed_at"),
   period: text("period"), // e.g., "Top 9", "Q4 2:45", "Bottom 7"
+  wcRound: text("wc_round"), // group_stage, round_of_32, round_of_16, quarterfinal, semifinal, third_place, final
+  wcGroup: text("wc_group"), // A-L for group stage games
 });
 
 // Insert schemas
@@ -145,6 +159,8 @@ export const insertDraftPickSchema = createInsertSchema(draftPicks).omit({
 
 export const insertGameSchema = createInsertSchema(games);
 
+export const insertWorldCupTeamSchema = createInsertSchema(worldCupTeams);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -155,10 +171,45 @@ export type InsertLeagueMember = z.infer<typeof insertLeagueMemberSchema>;
 export type NFLTeam = typeof nflTeams.$inferSelect;
 export type MLBTeam = typeof mlbTeams.$inferSelect;
 export type NBATeam = typeof nbaTeams.$inferSelect;
+export type WorldCupTeam = typeof worldCupTeams.$inferSelect;
+export type InsertWorldCupTeam = z.infer<typeof insertWorldCupTeamSchema>;
 export type DraftPick = typeof draftPicks.$inferSelect;
 export type InsertDraftPick = z.infer<typeof insertDraftPickSchema>;
 export type Game = typeof games.$inferSelect;
 export type InsertGame = z.infer<typeof insertGameSchema>;
+
+// World Cup round type
+export type WCRound = "group_stage" | "round_of_32" | "round_of_16" | "quarterfinal" | "semifinal" | "third_place" | "final";
+
+// World Cup group standing for a team
+export type WCGroupStanding = {
+  teamId: string;
+  name: string;
+  abbreviation: string;
+  flagEmoji: string | null;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  advanced: boolean;
+};
+
+// World Cup player standing with tiebreaker data
+export type WCPlayerStanding = {
+  userId: string;
+  displayName: string;
+  fantasyPoints: number;
+  teams: WorldCupTeam[];
+  rank: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  knockoutGoalsFor: number;
+  knockoutGoalsAgainst: number;
+};
 
 // Extended types for frontend
 export type PlayerStanding = {

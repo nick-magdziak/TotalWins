@@ -289,6 +289,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'NBA':
             team = await storage.getNBATeam(pick.teamId!);
             break;
+          case 'WORLD_CUP':
+            team = await storage.getWorldCupTeam(pick.teamId!);
+            break;
           default:
             team = await storage.getNFLTeam(pick.teamId!);
             break;
@@ -387,6 +390,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           case 'NBA':
             team = await storage.getNBATeam(pick.teamId!);
+            break;
+          case 'WORLD_CUP':
+            team = await storage.getWorldCupTeam(pick.teamId!);
             break;
           default:
             team = await storage.getNFLTeam(pick.teamId!);
@@ -812,6 +818,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/nba/teams", async (req, res) => {
     const teams = await storage.getAllNBATeams();
     res.json(teams);
+  });
+
+  // World Cup endpoints
+  app.get("/api/world-cup/teams", async (req, res) => {
+    try {
+      const teams = await storage.getAllWorldCupTeams();
+      res.json(teams);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get World Cup teams" });
+    }
+  });
+
+  app.get("/api/world_cup/teams", async (req, res) => {
+    try {
+      const teams = await storage.getAllWorldCupTeams();
+      res.json(teams);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get World Cup teams" });
+    }
+  });
+
+  app.get("/api/world-cup/groups", async (req, res) => {
+    try {
+      const groups = await storage.getWorldCupGroups();
+      res.json(groups);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get World Cup groups" });
+    }
+  });
+
+  app.get("/api/world-cup/bracket", async (req, res) => {
+    try {
+      const bracket = await storage.getWorldCupBracket();
+      res.json(bracket);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get World Cup bracket" });
+    }
+  });
+
+  app.get("/api/world-cup/games", async (req, res) => {
+    try {
+      const games = await storage.getWorldCupGames();
+      res.json(games);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get World Cup games" });
+    }
+  });
+
+  app.get("/api/leagues/:leagueId/world-cup/standings", async (req, res) => {
+    try {
+      const standings = await storage.getWorldCupPlayerStandings(req.params.leagueId);
+      res.json(standings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get World Cup standings" });
+    }
+  });
+
+  app.post("/api/admin/sync-world-cup", async (req, res) => {
+    try {
+      const { worldCupDataService } = await import("./services/worldCupService");
+      await worldCupDataService.syncWorldCupGames();
+      res.json({ message: "World Cup games synced successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to sync World Cup games" });
+    }
   });
 
   // ESPN API integration endpoints
