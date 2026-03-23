@@ -1078,17 +1078,10 @@ export class DatabaseStorage implements IStorage {
     let recentGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get today's games in UTC: from 6 AM local time to 6 AM next day local time
+      // Get today's games in user's local timezone (6 AM to 6 AM next day)
       const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000; // Convert minutes to ms
-      
-      // Calculate 6 AM local time in UTC
-      const todayAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0);
-      const todayStart = new Date(todayAt6Local.getTime() + offset); // Convert to UTC
-      
-      // Calculate 6 AM next day local time in UTC
-      const tomorrowAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
-      const tomorrowEnd = new Date(tomorrowAt6Local.getTime() + offset); // Convert to UTC
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0);
+      const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
       
       recentGames = await db
         .select()
@@ -1158,17 +1151,10 @@ export class DatabaseStorage implements IStorage {
     let upcomingGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get tomorrow's games in UTC: from 6 AM local time to 6 AM day after local time
+      // Get tomorrow's games in user's local timezone (6 AM to 6 AM day after)
       const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000; // Convert minutes to ms
-      
-      // Calculate 6 AM tomorrow local time in UTC
-      const tomorrowAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
-      const tomorrowStart = new Date(tomorrowAt6Local.getTime() + offset); // Convert to UTC
-      
-      // Calculate 6 AM day after local time in UTC
-      const dayAfterAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 6, 0, 0);
-      const dayAfterEnd = new Date(dayAfterAt6Local.getTime() + offset); // Convert to UTC
+      const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
+      const dayAfterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 6, 0, 0);
       
       upcomingGames = await db
         .select()
