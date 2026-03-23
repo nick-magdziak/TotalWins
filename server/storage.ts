@@ -1185,8 +1185,8 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeWorldCupTeams() {
     try {
-      const existing = await db.select().from(worldCupTeams).limit(1);
-      if (existing.length > 0) return;
+      // Always re-seed to keep groups accurate (official draw can be updated here)
+      await db.delete(worldCupTeams);
 
       const wcTeams: InsertWorldCupTeam[] = [
         // Group A — Opening match: Mexico vs South Africa, June 11 at Estadio Azteca

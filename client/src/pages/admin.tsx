@@ -672,7 +672,7 @@ export default function Admin() {
               {currentLeague?.name || "TOTAL WINS"}
             </h2>
             <p className="text-white text-sm sm:text-base md:text-lg font-bold">
-              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2024-25"} • ADMIN
+              {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2024-25"} • ADMIN
             </p>
           </div>
         </div>
@@ -772,7 +772,7 @@ export default function Admin() {
                 <div>
                   <Label className="block text-retro-charcoal font-bold mb-2">Sport</Label>
                   <Input 
-                    value={currentLeague?.sport || "NFL"}
+                    value={currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")}
                     className="w-full p-3 border-2 border-retro-pink rounded-lg focus:border-retro-purple focus:outline-none"
                     disabled
                   />
