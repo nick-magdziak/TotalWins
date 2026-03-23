@@ -1078,7 +1078,7 @@ export class DatabaseStorage implements IStorage {
     let recentGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get today's games (games happening today in UTC)
+      // Get today's games that are scheduled or in progress (not completed)
       const now = new Date();
       const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
       const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59));
@@ -1089,7 +1089,8 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(games.sport, league.sport),
           gte(games.gameDate, todayStart),
-          lte(games.gameDate, todayEnd)
+          lte(games.gameDate, todayEnd),
+          sql`${games.status} != 'completed'`
         ))
         .orderBy(games.gameDate)
         .limit(limit);
