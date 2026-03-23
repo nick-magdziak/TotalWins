@@ -329,6 +329,33 @@ export default function Admin() {
     },
   });
 
+  const resendInviteMutation = useMutation({
+    mutationFn: async ({ email, name }: { email: string; name: string }) => {
+      const response = await fetch("/api/email/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, leagueId }),
+      });
+      if (!response.ok) throw new Error("Failed to send invite");
+      return response.json();
+    },
+    onSuccess: (_, { name }) => {
+      toast({
+        title: "Invite sent!",
+        description: `Invitation email sent to ${name}.`,
+      });
+      setShowPrivilegeDialog(false);
+      setSelectedMember(null);
+    },
+    onError: () => {
+      toast({
+        title: "Invite failed",
+        description: "Could not send the invitation email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addPlayerNoInviteMutation = useMutation({
     mutationFn: async ({ email, name }: { email: string; name: string }) => {
       const response = await fetch("/api/admin/add-player-no-invite", {
@@ -1226,6 +1253,23 @@ export default function Admin() {
                   <User className="w-4 h-4 mr-2" />
                   SET AS PLAYER
                 </Button>
+
+                {(() => {
+                  const memberData = membersWithUserData?.find(m => m.id === selectedMember.id);
+                  const email = memberData?.user?.email;
+                  const name = memberData?.user?.displayName;
+                  if (!email || !name) return null;
+                  return (
+                    <Button
+                      onClick={() => resendInviteMutation.mutate({ email, name })}
+                      disabled={resendInviteMutation.isPending || updatePrivilegesMutation.isPending || removePlayerMutation.isPending}
+                      className="w-full bg-retro-yellow text-retro-charcoal hover:bg-retro-lime font-bold py-3 rounded-lg retro-font"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      {resendInviteMutation.isPending ? "SENDING..." : "RESEND INVITE"}
+                    </Button>
+                  );
+                })()}
 
                 <div className="border-t border-retro-teal pt-3 mt-4">
                   <Button
