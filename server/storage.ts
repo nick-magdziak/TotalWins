@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, lt } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lt, lte } from "drizzle-orm";
 import { db } from "./db";
 import {
   type User,
@@ -1078,20 +1078,18 @@ export class DatabaseStorage implements IStorage {
     let recentGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get today's games in user's local timezone (6 AM to 6 AM next day)
+      // Get games from past 3 days (handles different timezones and late night games)
       const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0);
-      const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
       
       recentGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.sport, league.sport),
-          gte(games.gameDate, todayStart),
-          lt(games.gameDate, tomorrowEnd)
+          gte(games.gameDate, threeDaysAgo)
         ))
-        .orderBy(games.gameDate)
+        .orderBy(desc(games.gameDate))
         .limit(limit);
     } else {
       // For NFL, get current week's completed games only
@@ -1151,18 +1149,17 @@ export class DatabaseStorage implements IStorage {
     let upcomingGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get tomorrow's games in user's local timezone (6 AM to 6 AM day after)
+      // Get upcoming games from next 7 days (handles different timezones)
       const now = new Date();
-      const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
-      const dayAfterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 6, 0, 0);
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       
       upcomingGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.sport, league.sport),
-          gte(games.gameDate, tomorrowStart),
-          lt(games.gameDate, dayAfterEnd)
+          gte(games.gameDate, now),
+          lte(games.gameDate, nextWeek)
         ))
         .orderBy(games.gameDate)
         .limit(limit);
