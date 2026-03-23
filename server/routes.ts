@@ -483,6 +483,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email routes
   app.post("/api/email/invite", sendLeagueInvite);
   app.post("/api/email/draft-notification", sendDraftNotification);
+
+  // Add player without sending invite email
+  app.post("/api/admin/add-player-no-invite", async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        name: z.string().min(1),
+        leagueId: z.string(),
+      });
+      const { email, name, leagueId } = schema.parse(req.body);
+
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+
+      // Check if user already exists
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Create placeholder user account (no real password — they'll set one when they join)
+        const nameParts = name.trim().split(" ");
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(" ") || nameParts[0];
+        user = await storage.createUser({
+          email,
+          password: "__pending__",
+          firstName,
+          lastName,
+          displayName: name.trim(),
+          isAdmin: false,
+        });
+      }
+
+      // Check if already a member
+      const existingMember = await storage.getLeagueMember(leagueId, user.id);
+      if (existingMember) {
+        return res.status(409).json({ message: "Player is already in this league" });
+      }
+
+      // Add to league with pending status
+      await storage.addLeagueMember({
+        leagueId,
+        userId: user.id,
+        draftPosition: null,
+        totalWins: 0,
+        draftNotifications: true,
+        gameNotifications: false,
+        invitationStatus: "pending",
+      });
+
+      res.json({ message: "Player added successfully", userId: user.id });
+    } catch (error) {
+      console.error("Add player no invite error:", error);
+      res.status(400).json({ message: "Failed to add player" });
+    }
+  });
   // League-specific notification preferences
   app.get("/api/leagues/:leagueId/members/:userId/notification-preferences", async (req, res) => {
     try {

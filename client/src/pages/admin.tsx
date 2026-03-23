@@ -329,6 +329,38 @@ export default function Admin() {
     },
   });
 
+  const addPlayerNoInviteMutation = useMutation({
+    mutationFn: async ({ email, name }: { email: string; name: string }) => {
+      const response = await fetch("/api/admin/add-player-no-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, leagueId }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to add player");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Player added!",
+        description: `${inviteName} has been added. You can send their invite later.`,
+      });
+      setInviteEmail("");
+      setInviteName("");
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members-with-users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to add player",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updatePrivilegesMutation = useMutation({
     mutationFn: async ({ userId, isAdmin }: { userId: string; isAdmin: boolean }) => {
       return apiRequest("POST", "/api/admin/update-privileges", { 
@@ -809,7 +841,9 @@ export default function Admin() {
                         <Badge className={`${memberData.user?.isAdmin ? 'bg-retro-purple text-white' : 'bg-retro-lime text-retro-charcoal'}`}>
                           {memberData.user?.isAdmin ? 'ADMIN' : 'PLAYER'}
                         </Badge>
-                        <Badge className="bg-retro-teal text-white">ACTIVE</Badge>
+                        <Badge className={memberData.invitationStatus === "pending" ? "bg-orange-500 text-white" : "bg-retro-teal text-white"}>
+                          {memberData.invitationStatus === "pending" ? "PENDING" : "ACTIVE"}
+                        </Badge>
                       </div>
                     </div>
                   ))
@@ -838,11 +872,24 @@ export default function Admin() {
                   />
                   <Button
                     type="submit"
-                    disabled={invitePlayerMutation.isPending || !inviteEmail.trim() || !inviteName.trim()}
+                    disabled={invitePlayerMutation.isPending || addPlayerNoInviteMutation.isPending || !inviteEmail.trim() || !inviteName.trim()}
                     className="w-full bg-retro-yellow text-retro-charcoal px-4 py-3 rounded-lg font-bold hover:scale-105 transform transition-all duration-200 retro-font hover:bg-retro-lime"
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
                     {invitePlayerMutation.isPending ? "SENDING..." : "INVITE PLAYER"}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (inviteEmail.trim() && inviteName.trim()) {
+                        addPlayerNoInviteMutation.mutate({ email: inviteEmail.trim(), name: inviteName.trim() });
+                      }
+                    }}
+                    disabled={addPlayerNoInviteMutation.isPending || invitePlayerMutation.isPending || !inviteEmail.trim() || !inviteName.trim()}
+                    className="w-full bg-retro-purple text-white px-4 py-3 rounded-lg font-bold hover:scale-105 transform transition-all duration-200 retro-font hover:opacity-90"
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {addPlayerNoInviteMutation.isPending ? "ADDING..." : "ADD & INVITE LATER"}
                   </Button>
                 </form>
               </div>

@@ -54,6 +54,7 @@ export const leagueMembers = pgTable("league_members", {
   totalWins: integer("total_wins").default(0),
   draftNotifications: boolean("draft_notifications").default(true),
   gameNotifications: boolean("game_notifications").default(false),
+  invitationStatus: text("invitation_status").notNull().default("active"), // active, pending
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
