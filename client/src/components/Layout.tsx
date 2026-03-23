@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus } from "lucide-react";
-import { getCurrentUser, isAdmin, logout } from "@/lib/auth";
+import { getCurrentUser, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
@@ -18,7 +18,6 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [currentLeagueId, setCurrentLeagueId] = useState<string>("demo-league-1");
-  const isUserAdmin = isAdmin();
 
   // Listen for auth state changes
   useEffect(() => {
@@ -82,11 +81,15 @@ export default function Layout({ children }: LayoutProps) {
     }
   }, [userLeagues, currentLeague]);
 
+  // Show Admin for global admins OR league creators (anyone who created the current league)
+  const isLeagueAdmin = currentUser?.isAdmin || 
+                        currentLeague?.createdBy === currentUser?.id;
+
   // League-specific navigation items with current league context
   const leagueNavItems = [
     { path: `/standings?league=${currentLeagueId}`, label: "STANDINGS", icon: Trophy },
     { path: `/draft?league=${currentLeagueId}`, label: "DRAFT", icon: Users },
-    ...(isUserAdmin || currentUser?.displayName === "NickPapageorgio" ? [{ path: `/admin?league=${currentLeagueId}`, label: "ADMIN", icon: Settings }] : []),
+    ...(isLeagueAdmin ? [{ path: `/admin?league=${currentLeagueId}`, label: "ADMIN", icon: Settings }] : []),
   ];
 
   // General navigation items (not league-specific)
