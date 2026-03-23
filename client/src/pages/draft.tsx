@@ -219,7 +219,11 @@ export default function Draft() {
                         (() => {
                           const lastPick = draftPicks[draftPicks.length - 1];
                           const lastTeam = teams?.find(t => t.id === lastPick.teamId);
-                          return lastTeam ? `${lastTeam.city} ${lastTeam.name}` : "none";
+                          return lastTeam
+                            ? (currentLeague?.sport === 'WORLD_CUP'
+                                ? lastTeam.name
+                                : `${lastTeam.city} ${lastTeam.name}`)
+                            : "none";
                         })()
                       ) : (
                         "none"
