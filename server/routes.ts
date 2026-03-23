@@ -537,6 +537,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Failed to add player" });
     }
   });
+
+  app.post("/api/admin/save-draft-order", async (req, res) => {
+    try {
+      const schema = z.object({
+        leagueId: z.string(),
+        orderedUserIds: z.array(z.string()).min(1),
+      });
+      const { leagueId, orderedUserIds } = schema.parse(req.body);
+      await storage.saveDraftOrder(leagueId, orderedUserIds);
+      res.json({ message: "Draft order saved successfully" });
+    } catch (error) {
+      console.error("Save draft order error:", error);
+      res.status(400).json({ message: "Failed to save draft order" });
+    }
+  });
+
   // League-specific notification preferences
   app.get("/api/leagues/:leagueId/members/:userId/notification-preferences", async (req, res) => {
     try {

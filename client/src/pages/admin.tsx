@@ -138,7 +138,10 @@ export default function Admin() {
       const round = Math.ceil(nextPickNumber / membersWithUserData.length);
       
       // Calculate whose turn it is based on snake draft
-      const playersInOrder = [...membersWithUserData].sort((a, b) => a.draftPosition - b.draftPosition);
+      // Use a large fallback for null positions so unpositioned players sort last
+      const playersInOrder = [...membersWithUserData].sort(
+        (a, b) => (a.draftPosition ?? 9999) - (b.draftPosition ?? 9999)
+      );
       const isOddRound = round % 2 === 1;
       const positionInRound = ((nextPickNumber - 1) % membersWithUserData.length) + 1;
       
@@ -205,6 +208,28 @@ export default function Admin() {
       toast({
         title: "Manual pick failed",
         description: error.message || "Failed to record draft pick. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveDraftOrderMutation = useMutation({
+    mutationFn: async (orderedUserIds: string[]) => {
+      return apiRequest("POST", "/api/admin/save-draft-order", { leagueId, orderedUserIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members-with-users"] });
+      setShowDraftOrderDialog(false);
+      toast({
+        title: "Draft order saved!",
+        description: "Player draft order has been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to save draft order",
+        description: "Please try again.",
         variant: "destructive",
       });
     },
@@ -478,7 +503,9 @@ export default function Admin() {
   const handleDraftOrder = () => {
     // Initialize draft order with current league members sorted by draft position
     if (membersWithUserData) {
-      const sortedMembers = [...membersWithUserData].sort((a, b) => a.draftPosition - b.draftPosition);
+      const sortedMembers = [...membersWithUserData].sort(
+        (a, b) => (a.draftPosition ?? 9999) - (b.draftPosition ?? 9999)
+      );
       const currentOrder = sortedMembers.map(member => member.userId);
       setDraftOrder(currentOrder);
     }
@@ -1541,17 +1568,14 @@ export default function Admin() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setShowDraftOrderDialog(false);
-                toast({
-                  title: "Draft order saved!",
-                  description: "Player draft order has been updated.",
-                });
+                saveDraftOrderMutation.mutate(draftOrder);
               }}
+              disabled={saveDraftOrderMutation.isPending}
               className="flex-1 bg-retro-teal hover:bg-retro-lime text-white font-bold retro-font"
               type="button"
             >
               <Save className="w-4 h-4 mr-2" />
-              SAVE ORDER
+              {saveDraftOrderMutation.isPending ? "SAVING..." : "SAVE ORDER"}
             </Button>
           </DialogFooter>
         </DialogContent>

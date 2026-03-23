@@ -51,6 +51,7 @@ export interface IStorage {
   addLeagueMember(member: InsertLeagueMember): Promise<LeagueMember>;
   removeLeagueMember(leagueId: string, userId: string): Promise<boolean>;
   updateLeagueMemberPreferences(leagueId: string, userId: string, preferences: { draftNotifications?: boolean; gameNotifications?: boolean; }): Promise<boolean>;
+  saveDraftOrder(leagueId: string, orderedUserIds: string[]): Promise<boolean>;
   getPlayerStandings(leagueId: string): Promise<PlayerStanding[]>;
 
   // NFL Teams
@@ -805,6 +806,18 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
     
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async saveDraftOrder(leagueId: string, orderedUserIds: string[]): Promise<boolean> {
+    await Promise.all(
+      orderedUserIds.map((userId, index) =>
+        db
+          .update(leagueMembers)
+          .set({ draftPosition: index + 1 })
+          .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))
+      )
+    );
+    return true;
   }
 
   async getPlayerStandings(leagueId: string): Promise<PlayerStanding[]> {
