@@ -184,7 +184,7 @@ export default function Layout({ children }: LayoutProps) {
                           {league.name}
                         </div>
                         <div className="text-sm text-retro-charcoal/70">
-                          {league.sport} • {league.season}
+                          {league.sport === 'WORLD_CUP' ? 'WORLD CUP' : league.sport} • {league.season}
                         </div>
                         {league.id === currentLeagueId && (
                           <div className="text-xs text-retro-teal font-bold mt-1">

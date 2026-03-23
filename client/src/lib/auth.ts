@@ -13,6 +13,19 @@ try {
   const stored = localStorage.getItem(AUTH_STORAGE_KEY);
   if (stored) {
     currentUser = JSON.parse(stored);
+    // Refresh user data from server in the background to pick up any changes (e.g. isAdmin flag)
+    if (currentUser?.id) {
+      fetch(`/api/auth/me/${currentUser.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(freshUser => {
+          if (freshUser) {
+            currentUser = freshUser;
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(freshUser));
+            window.dispatchEvent(new CustomEvent('authStateChanged'));
+          }
+        })
+        .catch(() => {}); // silently ignore if offline
+    }
   }
 } catch (error) {
   console.warn("Failed to load user from localStorage:", error);

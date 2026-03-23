@@ -45,6 +45,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auth refresh — returns fresh user data by ID (for stale localStorage sessions)
+  app.get("/api/auth/me/:id", async (req, res) => {
+    const user = await storage.getUser(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ ...user, password: undefined });
+  });
+
   // Users
   app.get("/api/users/:id", async (req, res) => {
     const user = await storage.getUser(req.params.id);
