@@ -656,7 +656,7 @@ export class DatabaseStorage implements IStorage {
 
         // NBA Player 3 - Sarah D
         { leagueId: "demo-league-3", userId: "player-3", teamId: "CLE-NBA", sport: "NBA", pickNumber: 3, round: 1 },
-        { leagueId: "demo-league-3", userId: "player-3", teamId: "DAL", sport: "NBA", pickNumber: 14, round: 2 },
+        { leagueId: "demo-league-3", userId: "player-3", teamId: "DAL-NBA", sport: "NBA", pickNumber: 14, round: 2 },
         { leagueId: "demo-league-3", userId: "player-3", teamId: "MEM", sport: "NBA", pickNumber: 19, round: 3 },
         { leagueId: "demo-league-3", userId: "player-3", teamId: "MIA-NBA", sport: "NBA", pickNumber: 30, round: 4 },
 
@@ -1078,10 +1078,17 @@ export class DatabaseStorage implements IStorage {
     let recentGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get today's games including late night games that extend into early morning
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 6, 0, 0); // Start at 6 AM to exclude late night games from previous day
-      const tomorrowEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 6, 0, 0); // End at 6 AM next day
+      // Get today's games in UTC: from 6 AM local time to 6 AM next day local time
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000; // Convert minutes to ms
+      
+      // Calculate 6 AM local time in UTC
+      const todayAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0);
+      const todayStart = new Date(todayAt6Local.getTime() + offset); // Convert to UTC
+      
+      // Calculate 6 AM next day local time in UTC
+      const tomorrowAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
+      const tomorrowEnd = new Date(tomorrowAt6Local.getTime() + offset); // Convert to UTC
       
       recentGames = await db
         .select()
@@ -1151,10 +1158,17 @@ export class DatabaseStorage implements IStorage {
     let upcomingGames;
     
     if (league.sport === 'MLB' || league.sport === 'NBA') {
-      // Get tomorrow's games using same 6 AM cutoff logic as today's games
-      const today = new Date();
-      const tomorrowStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 6, 0, 0); // Start at 6 AM tomorrow
-      const dayAfterEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 6, 0, 0); // End at 6 AM day after
+      // Get tomorrow's games in UTC: from 6 AM local time to 6 AM day after local time
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000; // Convert minutes to ms
+      
+      // Calculate 6 AM tomorrow local time in UTC
+      const tomorrowAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 6, 0, 0);
+      const tomorrowStart = new Date(tomorrowAt6Local.getTime() + offset); // Convert to UTC
+      
+      // Calculate 6 AM day after local time in UTC
+      const dayAfterAt6Local = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 6, 0, 0);
+      const dayAfterEnd = new Date(dayAfterAt6Local.getTime() + offset); // Convert to UTC
       
       upcomingGames = await db
         .select()
