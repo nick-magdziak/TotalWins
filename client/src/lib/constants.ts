@@ -129,17 +129,17 @@ export const MLB_TEAM_COLORS = {
 // World Cup 2026 Groups
 export const WC_GROUPS = {
   "Group A": ["wc-MEX", "wc-RSA", "wc-KOR", "wc-A4"],
-  "Group B": ["wc-CAN", "wc-HON", "wc-MAR", "wc-CRO"],
-  "Group C": ["wc-ARG", "wc-CHI", "wc-ALB", "wc-C4"],
-  "Group D": ["wc-USA", "wc-PAN", "wc-SRB", "wc-ECU"],
-  "Group E": ["wc-ESP", "wc-EGY", "wc-UZB", "wc-KSA"],
-  "Group F": ["wc-POR", "wc-BRA", "wc-TZA", "wc-F4"],
-  "Group G": ["wc-FRA", "wc-CMR", "wc-MEX2", "wc-JPN"],
-  "Group H": ["wc-GER", "wc-COL", "wc-COD", "wc-NZL"],
-  "Group I": ["wc-ENG", "wc-URU", "wc-IRQ", "wc-I4"],
-  "Group J": ["wc-NED", "wc-SEN", "wc-AUS", "wc-J4"],
-  "Group K": ["wc-ITA", "wc-MEX3", "wc-VEN", "wc-K4"],
-  "Group L": ["wc-POR2", "wc-NGR", "wc-QAT", "wc-L4"],
+  "Group B": ["wc-CAN", "wc-SUI", "wc-QAT", "wc-B4"],
+  "Group C": ["wc-BRA", "wc-MAR", "wc-SCO", "wc-HAI"],
+  "Group D": ["wc-USA", "wc-PAR", "wc-AUS", "wc-D4"],
+  "Group E": ["wc-GER", "wc-ECU", "wc-CIV", "wc-CUW"],
+  "Group F": ["wc-NED", "wc-JPN", "wc-TUN", "wc-F4"],
+  "Group G": ["wc-BEL", "wc-IRN", "wc-EGY", "wc-NZL"],
+  "Group H": ["wc-ESP", "wc-URU", "wc-KSA", "wc-CPV"],
+  "Group I": ["wc-FRA", "wc-SEN", "wc-NOR", "wc-I4"],
+  "Group J": ["wc-ARG", "wc-AUT", "wc-ALG", "wc-JOR"],
+  "Group K": ["wc-POR", "wc-COL", "wc-UZB", "wc-K4"],
+  "Group L": ["wc-ENG", "wc-CRO", "wc-GHA", "wc-PAN"],
 } as const;
 
 // World Cup team colors by confederation
