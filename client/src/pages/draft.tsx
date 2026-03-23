@@ -276,7 +276,11 @@ export default function Draft() {
                           <div className="flex justify-between items-center">
                             <div className="flex-1">
                               <div className="font-bold retro-font text-lg">
-                                {team ? `${team.city} ${team.name}` : `Team ${pick.teamId}`}
+                                {team
+                                  ? (currentLeague?.sport === 'WORLD_CUP'
+                                      ? team.name
+                                      : `${team.city} ${team.name}`)
+                                  : `Team ${pick.teamId}`}
                               </div>
                               <div className="text-sm font-semibold opacity-75">
                                 Pick #{pick.pickNumber} • Round {pick.round}
@@ -284,7 +288,11 @@ export default function Draft() {
                             </div>
                             <div className="text-sm text-right">
                               <div className="font-bold">{user?.displayName || "Player"}</div>
-                              <div className="opacity-75">{team?.division || "Division"}</div>
+                              <div className="opacity-75">
+                                {currentLeague?.sport === 'WORLD_CUP'
+                                  ? (team?.group ? `Group ${team.group}` : '')
+                                  : (team?.division || '')}
+                              </div>
                             </div>
                           </div>
                         </div>
