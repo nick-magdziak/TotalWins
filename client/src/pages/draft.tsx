@@ -8,6 +8,7 @@ import { Users, ListOrdered, Volleyball } from "lucide-react";
 import TeamCard from "@/components/TeamCard";
 import { type NFLTeam, type MLBTeam, type NBATeam, type WorldCupTeam, type DraftPick, type DraftStatus } from "@shared/schema";
 import { NFL_DIVISIONS, MLB_DIVISIONS, NBA_DIVISIONS, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_GROUPS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
+import { FlagImage } from "@/lib/flagUtils";
 
 // Helper function to check if team belongs to division
 const isTeamInDivision = (teamAbbr: string, divisionTeams: readonly string[]): boolean => {
@@ -367,7 +368,7 @@ export default function Draft() {
                                 }}
                               >
                                 <div className="flex items-center gap-2">
-                                  <span className="text-lg">{team.flagEmoji || "🏳️"}</span>
+                                  <FlagImage teamId={team.id} name={team.name} size={22} />
                                   <div className="flex-1 min-w-0">
                                     <div className="retro-font text-sm truncate">{team.placeholder || team.name}</div>
                                     <div className="text-xs opacity-75">{team.confederation}{team.fifaRanking ? ` • #${team.fifaRanking}` : ""}</div>

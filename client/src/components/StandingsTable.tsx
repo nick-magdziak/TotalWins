@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { type PlayerStanding, type League, type WorldCupTeam } from "@shared/schema";
 import { NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
+import { FlagImage } from "@/lib/flagUtils";
 
 interface StandingsTableProps {
   leagueId: string;
@@ -109,7 +110,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                                 color: confColors.font
                               }}
                             >
-                              {wcTeam.flagEmoji || "🏳️"} {wcTeam.abbreviation}
+                              <FlagImage teamId={wcTeam.id} name={wcTeam.name} size={16} className="mr-1" />{wcTeam.abbreviation}
                             </Badge>
                           </div>
                         );

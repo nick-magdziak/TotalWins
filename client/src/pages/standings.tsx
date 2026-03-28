@@ -6,6 +6,7 @@ import StandingsTable from "@/components/StandingsTable";
 import { type Game, type League, type WCGroupStanding, type WCPlayerStanding } from "@shared/schema";
 import { CURRENT_SEASON, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
+import { FlagImage } from "@/lib/flagUtils";
 
 export default function Standings() {
   const currentUser = getCurrentUser();
@@ -303,7 +304,7 @@ export default function Standings() {
                           <tr key={si} className={`border-b border-gray-100 ${si < 2 ? 'bg-green-50' : ''}`}>
                             <td className="py-1">
                               <div className="flex items-center gap-1">
-                                <span className="text-sm">{standing.flagEmoji || "🏳️"}</span>
+                                <FlagImage teamId={standing.teamId} name={standing.name} size={18} />
                                 <span className="font-bold truncate" title={standing.name}>{standing.abbreviation || standing.name}</span>
                               </div>
                             </td>
