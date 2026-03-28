@@ -304,7 +304,7 @@ export default function Standings() {
                           <tr key={si} className={`border-b border-gray-100 ${si < 2 ? 'bg-green-50' : ''}`}>
                             <td className="py-1">
                               <div className="flex items-center gap-1">
-                                <FlagImage teamId={standing.teamId} name={standing.name} size={18} />
+                                <FlagImage teamId={standing.teamId} emoji={standing.flagEmoji} name={standing.name} size={18} />
                                 <span className="font-bold truncate" title={standing.name}>{standing.abbreviation || standing.name}</span>
                               </div>
                             </td>

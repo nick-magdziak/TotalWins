@@ -110,7 +110,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                                 color: confColors.font
                               }}
                             >
-                              <FlagImage teamId={wcTeam.id} name={wcTeam.name} size={16} className="mr-1" />{wcTeam.abbreviation}
+                              <FlagImage teamId={wcTeam.id} emoji={wcTeam.flagEmoji} name={wcTeam.name} size={16} className="mr-1" />{wcTeam.abbreviation}
                             </Badge>
                           </div>
                         );

@@ -1,3 +1,5 @@
+const isWindows = typeof navigator !== "undefined" && /Win/i.test(navigator.platform);
+
 const TEAM_FLAG_CODES: Record<string, string> = {
   "wc-MEX": "mx",
   "wc-RSA": "za",
@@ -43,7 +45,7 @@ const TEAM_FLAG_CODES: Record<string, string> = {
   "wc-PAN": "pa",
 };
 
-export function getFlagUrl(teamId: string | undefined): string | null {
+function getFlagUrl(teamId: string | undefined): string | null {
   if (!teamId) return null;
   const code = TEAM_FLAG_CODES[teamId];
   if (!code) return null;
@@ -52,15 +54,20 @@ export function getFlagUrl(teamId: string | undefined): string | null {
 
 interface FlagImageProps {
   teamId: string | undefined;
+  emoji?: string | null;
   name?: string;
   size?: number;
   className?: string;
 }
 
-export function FlagImage({ teamId, name, size = 20, className = "" }: FlagImageProps) {
+export function FlagImage({ teamId, emoji, name, size = 20, className = "" }: FlagImageProps) {
+  if (!isWindows && emoji) {
+    return <span className={`text-sm leading-none ${className}`}>{emoji}</span>;
+  }
+
   const url = getFlagUrl(teamId);
   if (!url) {
-    return <span className={`text-sm ${className}`}>🏳️</span>;
+    return <span className={`text-sm leading-none ${className}`}>🏳️</span>;
   }
   return (
     <img

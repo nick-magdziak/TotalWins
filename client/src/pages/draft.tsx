@@ -368,7 +368,7 @@ export default function Draft() {
                                 }}
                               >
                                 <div className="flex items-center gap-2">
-                                  <FlagImage teamId={team.id} name={team.name} size={22} />
+                                  <FlagImage teamId={team.id} emoji={team.flagEmoji} name={team.name} size={22} />
                                   <div className="flex-1 min-w-0">
                                     <div className="retro-font text-sm truncate">{team.placeholder || team.name}</div>
                                     <div className="text-xs opacity-75">{team.confederation}{team.fifaRanking ? ` • #${team.fifaRanking}` : ""}</div>
