@@ -7,12 +7,18 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViE
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'GUNtzxQlKZM6ynzA0mJl1v-lhm3_rCJgZoLyWV8JT_k';
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'admin@totalwins.app';
 
-// Configure web-push
-webpush.setVapidDetails(
-  `mailto:${VAPID_EMAIL}`,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+// Configure web-push — gracefully disable if keys are missing or invalid
+let pushEnabled = false;
+try {
+  webpush.setVapidDetails(
+    `mailto:${VAPID_EMAIL}`,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+  pushEnabled = true;
+} catch (err) {
+  console.warn('Push notifications disabled: VAPID key configuration is invalid. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables to enable.');
+}
 
 export interface PushSubscription {
   endpoint: string;
@@ -80,6 +86,7 @@ class PushNotificationService {
    * Send a push notification to a specific user
    */
   async sendNotificationToUser(userId: string, payload: NotificationPayload): Promise<void> {
+    if (!pushEnabled) return;
     try {
       const user = await storage.getUser(userId);
       if (!user?.pushSubscription) {

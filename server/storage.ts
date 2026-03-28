@@ -1018,7 +1018,34 @@ export class DatabaseStorage implements IStorage {
     const isSnakeRound = round % 2 === 0;
     const draftPosition = isSnakeRound ? members.length - positionInRound + 1 : positionInRound;
 
-    const currentMember = members.find(m => m.draftPosition === draftPosition);
+    let currentMember = members.find(m => m.draftPosition === draftPosition);
+
+    // Fallback: if explicit positions aren't set, infer order from round-1 pick history
+    if (!currentMember) {
+      // Build an inferred draft order from the first N picks (round 1)
+      const roundOnePicks = picks
+        .filter(p => p.pickNumber <= members.length)
+        .sort((a, b) => a.pickNumber - b.pickNumber);
+
+      if (roundOnePicks.length >= draftPosition) {
+        // We've seen this position's pick before — infer the player
+        const inferredUserId = roundOnePicks[draftPosition - 1]?.userId;
+        if (inferredUserId) {
+          currentMember = members.find(m => m.userId === inferredUserId);
+        }
+      } else {
+        // Not enough round-1 data — fall back to stable member ordering
+        // Sort: explicit positions first, then nulls in DB return order
+        const sorted = [...members].sort((a, b) => {
+          if (a.draftPosition != null && b.draftPosition != null) return a.draftPosition - b.draftPosition;
+          if (a.draftPosition != null) return -1;
+          if (b.draftPosition != null) return 1;
+          return 0;
+        });
+        currentMember = sorted[draftPosition - 1];
+      }
+    }
+
     const currentUser = currentMember ? await this.getUser(currentMember.userId!) : null;
 
     return {

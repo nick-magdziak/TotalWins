@@ -198,7 +198,7 @@ export default function Draft() {
                   <div className={`p-3 rounded-lg ${isCurrentUserTurn ? "bg-gradient-to-r from-retro-yellow to-retro-orange" : "bg-retro-cream"}`}>
                     <div className="text-sm text-retro-charcoal opacity-75">Current Player</div>
                     <div className="text-lg font-bold text-retro-charcoal retro-font">
-                      {draftStatus.currentPlayer}
+                      {draftStatus.currentPlayer || "—"}
                       {isCurrentUserTurn && (
                         <Badge className="ml-2 bg-retro-purple text-white animate-pulse">
                           YOUR TURN
