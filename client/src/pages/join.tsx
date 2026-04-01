@@ -69,6 +69,11 @@ export default function Join() {
       }, 800);
     },
     onError: (error: any) => {
+      // Session may have expired while the user appeared logged in via local state
+      if (error.message?.includes("logged in")) {
+        window.location.href = `/login?redirect=${encodeURIComponent(`/join?code=${activeCode}`)}`;
+        return;
+      }
       toast({
         title: "Could not join league",
         description: error.message || "Something went wrong.",
