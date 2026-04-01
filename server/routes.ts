@@ -78,6 +78,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forgot password — generates a reset token and emails it
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const user = await storage.getUserByEmail(email);
+      // Always return 200 to avoid leaking whether an email is registered
+      if (!user) return res.json({ message: "If that email is registered, a reset link has been sent." });
+
+      const crypto = await import("crypto");
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await storage.updateUser(user.id, { resetToken: token, resetTokenExpiresAt: expiresAt });
+
+      const resetUrl = `${process.env.APP_URL || "https://totalwins.app"}/reset-password?token=${token}`;
+      const { EmailService } = await import("./services/emailService.js");
+      const emailService = new EmailService();
+      await emailService.sendPasswordResetEmail(user.email, user.displayName, resetUrl);
+
+      res.json({ message: "If that email is registered, a reset link has been sent." });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Reset password — validates token and sets new password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = z.object({
+        token: z.string().min(1),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+      }).parse(req.body);
+
+      const user = await storage.getUserByResetToken(token);
+      if (!user) return res.status(400).json({ message: "Invalid or expired reset link." });
+      if (!user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
+        await storage.updateUser(user.id, { resetToken: null, resetTokenExpiresAt: null });
+        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
+      }
+
+      await storage.updateUser(user.id, { password, resetToken: null, resetTokenExpiresAt: null });
+      res.json({ message: "Password updated successfully. You can now log in." });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
   // Auth refresh — returns fresh user data by ID (for stale localStorage sessions)
   app.get("/api/auth/me/:id", async (req, res) => {
     const user = await storage.getUser(req.params.id);

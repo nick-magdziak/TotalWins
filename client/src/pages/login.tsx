@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LogIn, Eye, EyeOff, Volleyball } from "lucide-react";
+import { Link } from "wouter";
 import { login } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -165,13 +166,16 @@ export default function Login() {
                     </Label>
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-retro-purple hover:text-retro-pink text-sm"
-                  >
-                    Forgot password?
-                  </Button>
+                  <Link href="/forgot-password">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-retro-purple hover:text-retro-pink text-sm"
+                    >
+                      Forgot password?
+                    </Button>
+                  </Link>
                 </div>
                 
                 <Button

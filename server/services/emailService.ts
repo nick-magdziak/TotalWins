@@ -363,6 +363,85 @@ Manage your notification preferences in your profile settings.
     });
   }
 
+  async sendPasswordResetEmail(
+    email: string,
+    playerName: string,
+    resetUrl: string
+  ): Promise<boolean> {
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset Your Password</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
+          .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+          .header { background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%); color: white; text-align: center; padding: 32px 24px; }
+          .header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px; }
+          .header p { margin: 8px 0 0; font-size: 15px; opacity: 0.9; }
+          .content { padding: 28px 32px; }
+          .info-box { background: #f8f9fa; border-left: 4px solid #20b2aa; border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: #555; }
+          .cta-button { display: inline-block; background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
+          .footer { background: #f8f9fa; padding: 18px 24px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>RESET YOUR PASSWORD</h1>
+            <p>Total Wins</p>
+          </div>
+          <div class="content">
+            <p style="font-size:16px;">Hi ${playerName},</p>
+            <p style="font-size:15px; color:#444;">We received a request to reset the password for your Total Wins account. Click the button below to choose a new password.</p>
+
+            <div style="text-align:center; margin: 24px 0;">
+              <a href="${resetUrl}" class="cta-button">Reset My Password</a>
+            </div>
+
+            <div class="info-box">
+              This link expires in <strong>1 hour</strong>. If you did not request a password reset, you can safely ignore this email — your password will not change.
+            </div>
+
+            <p style="font-size:13px; color:#888; word-break:break-all;">
+              If the button above does not work, copy and paste this link into your browser:<br>
+              <a href="${resetUrl}" style="color:#20b2aa;">${resetUrl}</a>
+            </p>
+          </div>
+          <div class="footer">
+            <p>Total Wins &mdash; Password Reset<br>
+            If you did not request this, no action is needed.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textBody = `
+RESET YOUR PASSWORD
+Total Wins
+
+Hi ${playerName},
+
+We received a request to reset the password for your Total Wins account.
+
+Reset your password here: ${resetUrl}
+
+This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.
+
+Total Wins - Password Reset
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: `Reset your Total Wins password`,
+      htmlBody,
+      textBody,
+    });
+  }
+
   async sendGameUpdateNotification(
     email: string,
     playerName: string,

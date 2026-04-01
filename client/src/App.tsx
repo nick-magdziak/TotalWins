@@ -10,6 +10,8 @@ import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import Signup from "@/pages/signup";
 import Login from "@/pages/login";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import CreateLeague from "@/pages/create-league";
 import NotFound from "@/pages/not-found";
 
@@ -24,6 +26,8 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={NotFound} />
     </Switch>
   );

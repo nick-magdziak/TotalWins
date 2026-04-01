@@ -228,6 +228,18 @@ The application is designed to be easily deployable on platforms like Replit, wi
   - Eliminates duplicate key errors that were occurring with NFL game re-syncing
 - ✅ **Fantasy Friends League**: Now shows live 2025-26 NBA standings and today's/tomorrow's NBA games
 
+### Forgot / Reset Password Implementation (April 1, 2026)
+- ✅ **Database**: Added `reset_token` and `reset_token_expires_at` columns to users table
+- ✅ **Storage**: Added `getUserByResetToken()` method to storage interface and implementation
+- ✅ **Email**: Added `sendPasswordResetEmail()` to EmailService — clean, no emojis, includes 1-hour expiry notice and plain-text fallback link
+- ✅ **Backend routes**:
+  - `POST /api/auth/forgot-password` — looks up user, generates 32-byte hex token, sets 1-hour expiry, sends reset email (always returns 200 to avoid leaking registered emails)
+  - `POST /api/auth/reset-password` — validates token, checks expiry, updates password, clears token
+- ✅ **Frontend**:
+  - `/forgot-password` — email entry form with success confirmation state
+  - `/reset-password?token=...` — new password form with show/hide, validation, auto-redirect to login on success; handles missing/invalid token gracefully
+  - "Forgot password?" button on login page now navigates to `/forgot-password`
+
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
 2. ✅ **Real Draft Functionality** - COMPLETED

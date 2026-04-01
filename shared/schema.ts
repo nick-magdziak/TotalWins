@@ -27,6 +27,8 @@ export const users = pgTable("users", {
   draftNotifications: boolean("draft_notifications").default(true),
   standingsNotifications: boolean("standings_notifications").default(true),
   pushSubscription: jsonb("push_subscription"), // Store push subscription data
+  resetToken: text("reset_token"),
+  resetTokenExpiresAt: timestamp("reset_token_expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
