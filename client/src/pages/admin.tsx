@@ -748,6 +748,64 @@ export default function Admin() {
     );
   }
 
+  const getSeasonPeriodLabel = (sport?: string) => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    switch(sport) {
+      case 'WORLD_CUP': {
+        if (year < 2026 || (year === 2026 && month < 6)) return 'STARTS JUNE 11, 2026';
+        if (year === 2026 && month >= 6 && month <= 7) return 'TOURNAMENT LIVE';
+        return 'TOURNAMENT COMPLETE';
+      }
+      case 'NFL': {
+        const seasonStartYear = month >= 9 ? year : year - 1;
+        const seasonStart = new Date(seasonStartYear, 8, 4);
+        while (seasonStart.getDay() !== 4) seasonStart.setDate(seasonStart.getDate() + 1);
+        const seasonEnd = new Date(seasonStart);
+        seasonEnd.setDate(seasonEnd.getDate() + 18 * 7);
+        if (now < seasonStart) {
+          const nextStart = new Date(year, 8, 4);
+          while (nextStart.getDay() !== 4) nextStart.setDate(nextStart.getDate() + 1);
+          const mo = nextStart.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+          return `STARTS ${mo} ${nextStart.getDate()}, ${year}`;
+        }
+        if (now > seasonEnd) return 'SEASON COMPLETE';
+        const diffDays = Math.ceil((now.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
+        const currentWeek = Math.min(Math.max(1, Math.ceil(diffDays / 7)), 18);
+        return `WEEK ${currentWeek} LIVE`;
+      }
+      case 'MLB': {
+        const mlbStart = new Date(year, 2, 27);
+        const mlbEnd = new Date(year, 8, 28);
+        if (now < mlbStart) return `STARTS MAR 27, ${year}`;
+        if (now > mlbEnd) return 'SEASON COMPLETE';
+        return 'SEASON ACTIVE';
+      }
+      case 'NBA': {
+        const nbaSeasonYear = month >= 10 ? year : year - 1;
+        const nbaStart = new Date(nbaSeasonYear, 9, 23);
+        const nbaEnd = new Date(nbaSeasonYear + 1, 3, 13);
+        if (now < nbaStart) return `STARTS OCT 23, ${nbaSeasonYear}`;
+        if (now > nbaEnd) return 'SEASON COMPLETE';
+        return 'SEASON ACTIVE';
+      }
+      default: return 'SEASON ACTIVE';
+    }
+  };
+
+  const getDraftStatusLabel = (status?: string) => {
+    if (status === 'active') return 'DRAFT IN PROGRESS';
+    if (status === 'completed') return 'LIVE';
+    return 'DRAFT NOT STARTED';
+  };
+
+  const getDraftStatusClass = (status?: string) => {
+    if (status === 'active') return 'bg-orange-500 text-white animate-pulse';
+    if (status === 'completed') return 'bg-retro-lime text-retro-charcoal';
+    return 'bg-gray-500 text-white';
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -760,6 +818,14 @@ export default function Admin() {
             <p className="text-white text-sm sm:text-base md:text-lg font-bold">
               {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2024-25"} • ADMIN
             </p>
+            <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
+              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(currentLeague?.draftStatus)}`}>
+                {getDraftStatusLabel(currentLeague?.draftStatus)}
+              </Badge>
+              <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
+                {getSeasonPeriodLabel(currentLeague?.sport)}
+              </Badge>
+            </div>
           </div>
         </div>
       </section>
