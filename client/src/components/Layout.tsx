@@ -103,7 +103,9 @@ export default function Layout({ children }: LayoutProps) {
     window.location.href = "/login";
   };
 
-  if (!currentUser && location !== "/signup" && location !== "/login") {
+  const publicRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
+  const locationPath = location.split("?")[0];
+  if (!currentUser && !publicRoutes.includes(locationPath)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -130,7 +132,7 @@ export default function Layout({ children }: LayoutProps) {
     );
   }
 
-  if (location === "/signup" || location === "/login") {
+  if (publicRoutes.includes(locationPath)) {
     return <>{children}</>;
   }
 
