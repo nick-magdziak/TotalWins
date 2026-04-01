@@ -8,6 +8,24 @@ const sesClient = new SESClient({
 const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
+const LOGO_HTML = `
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#12122a;">
+    <tr>
+      <td align="center" style="padding: 20px 20px 16px;">
+        <table cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #ff1493; border-radius: 10px; overflow: hidden;">
+          <tr>
+            <td bgcolor="#12122a" style="padding: 12px 32px 14px; text-align: center; border-radius: 8px;">
+              <div style="font-size: 11px; color: #20b2aa; font-weight: bold; letter-spacing: 4px; font-family: Arial, sans-serif; margin-bottom: 4px;">&#9733; &nbsp; &#9733; &nbsp; &#9733;</div>
+              <div style="font-size: 26px; font-weight: 900; color: #FFD700; letter-spacing: 5px; font-family: Arial Black, Arial, sans-serif; line-height: 1;">TOTAL WINS</div>
+              <div style="font-size: 10px; color: #20b2aa; font-weight: bold; letter-spacing: 3px; font-family: Arial, sans-serif; margin-top: 4px;">WINS POOL CHAMPIONSHIP</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+`;
+
 class EmailService {
   async sendEmail(params: {
     to: string;
@@ -162,8 +180,9 @@ class EmailService {
       </head>
       <body>
         <div class="container">
+          ${LOGO_HTML}
           <div class="header">
-            <h1>TOTAL WINS INVITATION</h1>
+            <h1>YOU'RE INVITED</h1>
           </div>
           <div class="content">
             <h2>Hey ${playerName}!</h2>
@@ -283,6 +302,7 @@ class EmailService {
       </head>
       <body>
         <div class="container">
+          ${LOGO_HTML}
           <div class="header">
             <h1>YOUR TURN TO DRAFT</h1>
             <p>${leagueName}</p>
@@ -389,9 +409,9 @@ Manage your notification preferences in your profile settings.
       </head>
       <body>
         <div class="container">
+          ${LOGO_HTML}
           <div class="header">
             <h1>RESET YOUR PASSWORD</h1>
-            <p>Total Wins</p>
           </div>
           <div class="content">
             <p style="font-size:16px;">Hi ${playerName},</p>
@@ -529,6 +549,7 @@ Total Wins - Password Reset
       </head>
       <body>
         <div class="container">
+          ${LOGO_HTML}
           <div class="header">
             <h1>GAME UPDATE</h1>
           </div>
