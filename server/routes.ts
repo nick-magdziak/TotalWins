@@ -5,6 +5,7 @@ import { sportsApi } from "./services/sportsApi";
 import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues } from "@shared/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { hashPassword, comparePassword } from "./lib/auth.js";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -56,7 +57,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User already exists" });
       }
       
-      const user = await storage.createUser(userData);
+      const hashedPassword = await hashPassword(userData.password);
+      const user = await storage.createUser({ ...userData, password: hashedPassword });
       res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       res.status(400).json({ message: "Invalid user data" });
@@ -68,7 +70,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = loginSchema.parse(req.body);
       
       const user = await storage.getUserByEmail(email);
-      if (!user || user.password !== password) {
+      if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+      let valid = false;
+      if (user.password.startsWith("$2")) {
+        // Modern bcrypt hash
+        valid = await comparePassword(password, user.password);
+      } else {
+        // Legacy plain-text password — compare directly and upgrade on success
+        valid = password === user.password;
+        if (valid) {
+          const upgraded = await hashPassword(password);
+          await storage.updateUser(user.id, { password: upgraded });
+        }
+      }
+
+      if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
@@ -118,7 +135,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
       }
 
-      await storage.updateUser(user.id, { password, resetToken: null, resetTokenExpiresAt: null });
+      const hashed = await hashPassword(password);
+      await storage.updateUser(user.id, { password: hashed, resetToken: null, resetTokenExpiresAt: null });
       res.json({ message: "Password updated successfully. You can now log in." });
     } catch (error) {
       res.status(400).json({ message: "Invalid request" });
@@ -179,13 +197,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Verify current password
-      if (user.password !== currentPassword) {
+      // Verify current password (handle legacy plain-text passwords)
+      let passwordValid = false;
+      if (user.password.startsWith("$2")) {
+        passwordValid = await comparePassword(currentPassword, user.password);
+      } else {
+        passwordValid = currentPassword === user.password;
+      }
+      if (!passwordValid) {
         return res.status(400).json({ message: "Current password is incorrect" });
       }
       
       // Update password
-      const updatedUser = await storage.updateUser(req.params.id, { password: newPassword });
+      const newPasswordHash = await hashPassword(newPassword);
+      const updatedUser = await storage.updateUser(req.params.id, { password: newPasswordHash });
       if (!updatedUser) {
         return res.status(500).json({ message: "Failed to update password" });
       }
@@ -207,8 +232,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Verify current password for security
-      if (user.password !== currentPassword) {
+      // Verify current password for security (handle legacy plain-text passwords)
+      let emailPasswordValid = false;
+      if (user.password.startsWith("$2")) {
+        emailPasswordValid = await comparePassword(currentPassword, user.password);
+      } else {
+        emailPasswordValid = currentPassword === user.password;
+      }
+      if (!emailPasswordValid) {
         return res.status(400).json({ message: "Current password is incorrect" });
       }
       

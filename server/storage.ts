@@ -1,5 +1,6 @@
 import { eq, desc, and, sql, gte, lt, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
+import { hashPassword } from "./lib/auth.js";
 import {
   type User,
   type InsertUser,
@@ -550,25 +551,28 @@ export class DatabaseStorage implements IStorage {
       await db.insert(leagueMembers).values(demoMemberships);
 
       // Add more demo players to make the league full
+      const demoPasswordHash = await hashPassword("demo");
       const additionalPlayers = [
-        { id: "player-2", email: "mike@demo.com", password: "demo", firstName: "Mike", lastName: "Johnson", displayName: "Mike J" },
-        { id: "player-3", email: "sarah@demo.com", password: "demo", firstName: "Sarah", lastName: "Davis", displayName: "Sarah D" },
-        { id: "player-4", email: "tom@demo.com", password: "demo", firstName: "Tom", lastName: "Wilson", displayName: "Tom W" },
-        { id: "player-5", email: "lisa@demo.com", password: "demo", firstName: "Lisa", lastName: "Brown", displayName: "Lisa B" },
-        { id: "player-6", email: "james@demo.com", password: "demo", firstName: "James", lastName: "Miller", displayName: "James M" },
-        { id: "player-7", email: "amy@demo.com", password: "demo", firstName: "Amy", lastName: "Garcia", displayName: "Amy G" },
-        { id: "player-8", email: "steve@demo.com", password: "demo", firstName: "Steve", lastName: "Rodriguez", displayName: "Steve R" },
-        { id: "player-9", email: "rachel@demo.com", password: "demo", firstName: "Rachel", lastName: "Johnson", displayName: "Rachel J" },
-        { id: "player-10", email: "david@demo.com", password: "demo", firstName: "David", lastName: "Brown", displayName: "David B" },
-        { id: "player-11", email: "jessica@demo.com", password: "demo", firstName: "Jessica", lastName: "Taylor", displayName: "Jessica T" },
-        { id: "player-12", email: "kevin@demo.com", password: "demo", firstName: "Kevin", lastName: "Anderson", displayName: "Kevin A" }
+        { id: "player-2", email: "mike@demo.com", password: demoPasswordHash, firstName: "Mike", lastName: "Johnson", displayName: "Mike J" },
+        { id: "player-3", email: "sarah@demo.com", password: demoPasswordHash, firstName: "Sarah", lastName: "Davis", displayName: "Sarah D" },
+        { id: "player-4", email: "tom@demo.com", password: demoPasswordHash, firstName: "Tom", lastName: "Wilson", displayName: "Tom W" },
+        { id: "player-5", email: "lisa@demo.com", password: demoPasswordHash, firstName: "Lisa", lastName: "Brown", displayName: "Lisa B" },
+        { id: "player-6", email: "james@demo.com", password: demoPasswordHash, firstName: "James", lastName: "Miller", displayName: "James M" },
+        { id: "player-7", email: "amy@demo.com", password: demoPasswordHash, firstName: "Amy", lastName: "Garcia", displayName: "Amy G" },
+        { id: "player-8", email: "steve@demo.com", password: demoPasswordHash, firstName: "Steve", lastName: "Rodriguez", displayName: "Steve R" },
+        { id: "player-9", email: "rachel@demo.com", password: demoPasswordHash, firstName: "Rachel", lastName: "Johnson", displayName: "Rachel J" },
+        { id: "player-10", email: "david@demo.com", password: demoPasswordHash, firstName: "David", lastName: "Brown", displayName: "David B" },
+        { id: "player-11", email: "jessica@demo.com", password: demoPasswordHash, firstName: "Jessica", lastName: "Taylor", displayName: "Jessica T" },
+        { id: "player-12", email: "kevin@demo.com", password: demoPasswordHash, firstName: "Kevin", lastName: "Anderson", displayName: "Kevin A" }
       ];
 
-      // Only insert users that don't already exist
+      // Insert new users or upgrade plain-text passwords to bcrypt hashes
       for (const player of additionalPlayers) {
-        const existingUser = await db.select().from(users).where(eq(users.id, player.id)).limit(1);
-        if (existingUser.length === 0) {
+        const [existingUser] = await db.select().from(users).where(eq(users.id, player.id)).limit(1);
+        if (!existingUser) {
           await db.insert(users).values(player);
+        } else if (!existingUser.password?.startsWith("$2")) {
+          await db.update(users).set({ password: demoPasswordHash }).where(eq(users.id, player.id));
         }
       }
 
