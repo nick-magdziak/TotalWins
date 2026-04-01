@@ -1,4 +1,17 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+
+// Pre-load the logo as a base64 data URI so it renders without any external URL
+let LOGO_DATA_URI = "";
+try {
+  const logoPath = resolve("server/assets/logo_email.png");
+  const b64 = readFileSync(logoPath).toString("base64");
+  LOGO_DATA_URI = `data:image/png;base64,${b64}`;
+} catch {
+  // If the asset is missing fall back to an empty src; the alt text still shows
+  LOGO_DATA_URI = "";
+}
 
 // Initialize SES client
 const sesClient = new SESClient({
@@ -8,32 +21,26 @@ const sesClient = new SESClient({
 const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
+// Built after LOGO_DATA_URI is ready so the template literal picks it up
 const LOGO_HTML = `
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #d5179e;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#d5179e;">
     <tr>
-      <td style="background: linear-gradient(to right, #FF1493 0%, #8A2BE2 55%, #20B2AA 100%); padding: 16px 24px 14px;" bgcolor="#d5179e">
+      <td style="background:linear-gradient(to right,#FF1493 0%,#8A2BE2 55%,#20B2AA 100%);padding:14px 22px 12px;" bgcolor="#d5179e">
         <table cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td valign="middle" style="padding-right: 14px;">
-              <!-- W icon: gold shield shape -->
-              <table cellpadding="0" cellspacing="0" border="0" style="background: #FFD700; border-radius: 8px; width: 48px; height: 48px;">
-                <tr>
-                  <td align="center" valign="middle" style="width: 48px; height: 48px; text-align: center; vertical-align: middle;">
-                    <span style="font-family: Arial Black, Arial, sans-serif; font-size: 30px; font-weight: 900; color: #1a0a2e; line-height: 1; display: block; padding: 6px 0 0 0;">W</span>
-                  </td>
-                </tr>
-              </table>
+            <td valign="middle" style="padding-right:14px;">
+              <img src="${LOGO_DATA_URI}" alt="W" width="54" height="54" style="display:block;border:0;" />
             </td>
             <td valign="middle">
-              <div style="font-family: Arial Black, Arial, sans-serif; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: 3px; line-height: 1;">TOTAL WINS</div>
-              <div style="font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.85); letter-spacing: 2px; margin-top: 4px;">WINS POOL CHAMPIONSHIP</div>
+              <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:28px;font-weight:900;color:#ffffff;letter-spacing:3px;line-height:1;">TOTAL WINS</div>
+              <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:11px;font-weight:bold;color:rgba(255,255,255,0.85);letter-spacing:2px;margin-top:4px;">WINS POOL CHAMPIONSHIP</div>
             </td>
           </tr>
         </table>
       </td>
     </tr>
     <tr>
-      <td height="6" style="background-color: #c0166e; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 8px, transparent 8px, transparent 16px); font-size: 0; line-height: 0;">&nbsp;</td>
+      <td height="6" style="background-color:#c0166e;font-size:0;line-height:0;">&nbsp;</td>
     </tr>
   </table>
 `;
@@ -104,6 +111,7 @@ class EmailService {
         <meta name="format-detection" content="telephone=no">
         <meta name="x-apple-disable-message-reformatting">
         <title>You're Invited to Join ${leagueName}!</title>
+        <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" type="text/css">
         <style>
           body { 
             font-family: 'Arial', sans-serif; 
@@ -293,6 +301,7 @@ class EmailService {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Your Turn to Draft</title>
+        <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" type="text/css">
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
           .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
@@ -407,6 +416,7 @@ Manage your notification preferences in your profile settings.
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Reset Your Password</title>
+        <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" type="text/css">
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
           .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
@@ -494,6 +504,7 @@ Total Wins - Password Reset
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Game Update: ${teamCity} ${teamName}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" type="text/css">
         <style>
           body { 
             font-family: 'Arial', sans-serif; 

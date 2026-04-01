@@ -1,52 +1,41 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Email Preview</title></head>
-<body style="background:#f0f0f0; margin:0; padding:20px; font-family:Arial,sans-serif;">
-<p style="text-align:center; color:#666; font-size:13px;">Email header preview — this is how it will look in recipients' inboxes</p>
+<head><meta charset="utf-8"><title>Email Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+</head>
+<body style="background:#f0f0f0; margin:0; padding:20px;">
+<p style="text-align:center; color:#666; font-size:13px;">Email header preview</p>
 <div style="max-width:600px; margin:0 auto; background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.1);">
-
-  <!-- LOGO HEADER -->
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #d5179e;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#d5179e;">
     <tr>
-      <td style="background: linear-gradient(to right, #FF1493 0%, #8A2BE2 55%, #20B2AA 100%); padding: 16px 24px 14px;" bgcolor="#d5179e">
+      <td style="background:linear-gradient(to right,#FF1493 0%,#8A2BE2 55%,#20B2AA 100%);padding:14px 22px 12px;" bgcolor="#d5179e">
         <table cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td valign="middle" style="padding-right: 14px;">
-              <table cellpadding="0" cellspacing="0" border="0" style="background: #FFD700; border-radius: 8px; width: 48px; height: 48px;">
-                <tr>
-                  <td align="center" valign="middle" style="width: 48px; height: 48px; text-align: center; vertical-align: middle;">
-                    <span style="font-family: Arial Black, Arial, sans-serif; font-size: 30px; font-weight: 900; color: #1a0a2e; line-height: 1; display: block; padding: 6px 0 0 0;">W</span>
-                  </td>
-                </tr>
-              </table>
+            <td valign="middle" style="padding-right:14px;">
+              <img src="data:image/png;base64,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" alt="W" width="54" height="54" style="display:block;border:0;" />
             </td>
             <td valign="middle">
-              <div style="font-family: Arial Black, Arial, sans-serif; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: 3px; line-height: 1;">TOTAL WINS</div>
-              <div style="font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.85); letter-spacing: 2px; margin-top: 4px;">WINS POOL CHAMPIONSHIP</div>
+              <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:28px;font-weight:900;color:#ffffff;letter-spacing:3px;line-height:1;">TOTAL WINS</div>
+              <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:11px;font-weight:bold;color:rgba(255,255,255,0.85);letter-spacing:2px;margin-top:4px;">WINS POOL CHAMPIONSHIP</div>
             </td>
           </tr>
         </table>
       </td>
     </tr>
-    <tr>
-      <td height="6" style="background-color: #c0166e; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 8px, transparent 8px, transparent 16px); font-size: 0; line-height: 0;">&nbsp;</td>
-    </tr>
+    <tr><td height="6" style="background-color:#c0166e;font-size:0;line-height:0;">&nbsp;</td></tr>
   </table>
-
-  <!-- Sample email body below logo -->
-  <div style="background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%); color:white; text-align:center; padding:28px 24px;">
-    <h1 style="margin:0; font-size:24px; font-weight:bold; letter-spacing:1px;">YOU'RE INVITED</h1>
+  <div style="background:linear-gradient(135deg,#ff1493 0%,#20b2aa 100%);color:white;text-align:center;padding:28px 24px;">
+    <h1 style="margin:0;font-family:'Russo One',Arial Black,sans-serif;font-size:24px;letter-spacing:1px;">YOU'RE INVITED</h1>
   </div>
-  <div style="padding:28px 32px; color:#333;">
-    <h2 style="margin:0 0 12px;">Hey Tom!</h2>
-    <p>You've been invited to join <strong>Champions League</strong> — an NFL league on Total Wins.</p>
-    <div style="text-align:center; margin:24px 0;">
-      <a href="#" style="display:inline-block; background:linear-gradient(135deg,#ff1493,#20b2aa); color:white; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:bold; font-size:16px;">Join League Now</a>
+  <div style="padding:28px 32px;color:#333;font-family:Arial,sans-serif;">
+    <h2>Hey Tom!</h2>
+    <p>You've been invited to join <strong>Champions League</strong>.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="#" style="display:inline-block;background:linear-gradient(135deg,#ff1493,#20b2aa);color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">Join League Now</a>
     </div>
   </div>
-  <div style="background:#f8f9fa; padding:18px 24px; text-align:center; color:#999; font-size:12px; border-top:1px solid #eee;">
-    Total Wins &bull; Wins Pool Championship &bull; <a href="https://totalwins.app" style="color:#20b2aa;">totalwins.app</a>
+  <div style="background:#f8f9fa;padding:18px 24px;text-align:center;color:#999;font-size:12px;border-top:1px solid #eee;">
+    Total Wins &bull; Wins Pool Championship
   </div>
 </div>
-</body>
-</html>
+</body></html>
