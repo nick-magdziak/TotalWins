@@ -43,6 +43,7 @@ export interface IStorage {
 
   // Leagues
   getLeague(id: string): Promise<League | undefined>;
+  getLeagueByInviteCode(code: string): Promise<League | undefined>;
   createLeague(league: InsertLeague): Promise<League>;
   updateLeague(id: string, updates: Partial<League>): Promise<League | undefined>;
   getUserLeagues(userId: string): Promise<League[]>;
@@ -756,6 +757,11 @@ export class DatabaseStorage implements IStorage {
   // League methods
   async getLeague(id: string): Promise<League | undefined> {
     const [league] = await db.select().from(leagues).where(eq(leagues.id, id));
+    return league || undefined;
+  }
+
+  async getLeagueByInviteCode(code: string): Promise<League | undefined> {
+    const [league] = await db.select().from(leagues).where(eq(leagues.inviteCode, code));
     return league || undefined;
   }
 

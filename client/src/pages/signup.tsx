@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,14 @@ export default function Signup() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+  const [inviteCode, setInviteCode] = useState<string>("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("invite") || "";
+    setInviteCode(code);
+  }, []);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -36,6 +43,7 @@ export default function Signup() {
       firstName: string;
       lastName: string;
       displayName: string;
+      inviteCode?: string;
     }) => {
       return signup(userData);
     },
@@ -116,6 +124,7 @@ export default function Signup() {
       firstName: formData.firstName,
       lastName: formData.lastName,
       displayName: formData.displayName,
+      ...(inviteCode ? { inviteCode } : {}),
     });
   };
 

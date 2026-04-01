@@ -49,7 +49,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      const { inviteCode, ...rawUserData } = req.body;
+      const userData = insertUserSchema.parse(rawUserData);
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
@@ -59,6 +60,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const hashedPassword = await hashPassword(userData.password);
       const user = await storage.createUser({ ...userData, password: hashedPassword });
+
+      // Auto-join league if invite code was provided
+      if (inviteCode) {
+        try {
+          const league = await storage.getLeagueByInviteCode(inviteCode);
+          if (league) {
+            const members = await storage.getLeagueMembers(league.id);
+            const alreadyMember = members.some(m => m.userId === user.id);
+            if (!alreadyMember && members.length < league.maxPlayers) {
+              await storage.addLeagueMember({
+                leagueId: league.id,
+                userId: user.id,
+                draftPosition: members.length + 1,
+                totalWins: 0,
+                invitationStatus: "active",
+              });
+            }
+          }
+        } catch (joinError) {
+          console.error("Failed to auto-join league after signup:", joinError);
+          // Don't fail signup if join fails
+        }
+      }
+
       res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       res.status(400).json({ message: "Invalid user data" });
@@ -270,6 +295,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ...updatedUser, password: undefined });
     } catch (error) {
       res.status(400).json({ message: "Invalid email change request" });
+    }
+  });
+
+  // League preview by invite code (public — no auth required)
+  app.get("/api/leagues/preview", async (req, res) => {
+    try {
+      const code = z.string().min(1).parse(req.query.code);
+      const league = await storage.getLeagueByInviteCode(code);
+      if (!league) {
+        return res.status(404).json({ message: "Invalid invite code" });
+      }
+      const members = await storage.getLeagueMembers(league.id);
+      res.json({
+        id: league.id,
+        name: league.name,
+        sport: league.sport,
+        maxPlayers: league.maxPlayers,
+        memberCount: members.length,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Join a league by invite code
+  app.post("/api/leagues/join", async (req, res) => {
+    try {
+      const { inviteCode, userId } = z.object({
+        inviteCode: z.string().min(1),
+        userId: z.string().min(1),
+      }).parse(req.body);
+
+      const league = await storage.getLeagueByInviteCode(inviteCode);
+      if (!league) {
+        return res.status(404).json({ message: "Invalid invite code" });
+      }
+
+      const members = await storage.getLeagueMembers(league.id);
+
+      const alreadyMember = members.some(m => m.userId === userId);
+      if (alreadyMember) {
+        return res.status(400).json({ message: "You are already a member of this league" });
+      }
+
+      if (members.length >= league.maxPlayers) {
+        return res.status(400).json({ message: "This league is full" });
+      }
+
+      const nextDraftPosition = members.length + 1;
+      const member = await storage.addLeagueMember({
+        leagueId: league.id,
+        userId,
+        draftPosition: nextDraftPosition,
+        totalWins: 0,
+        invitationStatus: "active",
+      });
+
+      res.json({ member, league });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
     }
   });
 

@@ -103,7 +103,7 @@ export default function Layout({ children }: LayoutProps) {
     window.location.href = "/login";
   };
 
-  const publicRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
+  const publicRoutes = ["/login", "/signup", "/forgot-password", "/reset-password", "/join"];
   const locationPath = location.split("?")[0];
   if (!currentUser && !publicRoutes.includes(locationPath)) {
     return (

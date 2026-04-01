@@ -31,9 +31,11 @@ export default function Login() {
         title: "Welcome back!",
         description: "Successfully signed in to your account.",
       });
-      // Force a page reload to ensure auth state is properly loaded
+      // Respect ?redirect= param (e.g. coming from /join?code=...)
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirect") || "/standings";
       setTimeout(() => {
-        window.location.href = "/standings";
+        window.location.href = redirect;
       }, 100);
     },
     onError: (error: any) => {

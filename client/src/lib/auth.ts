@@ -49,6 +49,7 @@ export async function signup(userData: {
   firstName: string;
   lastName: string;
   displayName: string;
+  inviteCode?: string;
 }): Promise<AuthUser> {
   const response = await apiRequest("POST", "/api/auth/signup", userData);
   const data = await response.json();
