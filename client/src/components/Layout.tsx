@@ -324,10 +324,9 @@ export default function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-retro-charcoal text-white p-8 mt-16">
+      <footer className="bg-black text-white py-6 mt-16">
         <div className="container mx-auto text-center">
-          <div className="checkered-bg h-4 mb-6 rounded-full opacity-50"></div>
-          {/* Reserved space for future features */}
+          {/* Reserved space for future links */}
         </div>
       </footer>
     </div>
