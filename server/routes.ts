@@ -93,6 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      req.session.userId = user.id;
       res.json({ user: { ...user, password: undefined }, joinedLeagueId, joinWarning });
     } catch (error) {
       res.status(400).json({ message: "Invalid user data" });
@@ -125,7 +126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
+      req.session.userId = user.id;
       res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       res.status(400).json({ message: "Invalid login data" });
@@ -328,19 +330,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Join a league by invite code
+  // Join a league by invite code — identity derived from server-side session
   app.post("/api/leagues/join", async (req, res) => {
     try {
-      const { inviteCode, userId } = z.object({
-        inviteCode: z.string().min(1),
-        userId: z.string().min(1),
-      }).parse(req.body);
-
-      // Validate the userId actually corresponds to a real user (prevents IDOR/fake-id injection)
-      const requestingUser = await storage.getUser(userId);
-      if (!requestingUser) {
-        return res.status(401).json({ message: "Unauthorized: user not found" });
+      // Require an authenticated session
+      const sessionUserId = req.session.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "You must be logged in to join a league" });
       }
+
+      const { inviteCode } = z.object({
+        inviteCode: z.string().min(1),
+      }).parse(req.body);
 
       const league = await storage.getLeagueByInviteCode(inviteCode);
       if (!league) {
@@ -349,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const members = await storage.getLeagueMembers(league.id);
 
-      const alreadyMember = members.some(m => m.userId === userId);
+      const alreadyMember = members.some(m => m.userId === sessionUserId);
       if (alreadyMember) {
         return res.status(400).json({ message: "You are already a member of this league" });
       }
@@ -361,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nextDraftPosition = members.length + 1;
       const member = await storage.addLeagueMember({
         leagueId: league.id,
-        userId,
+        userId: sessionUserId,
         draftPosition: nextDraftPosition,
         totalWins: 0,
         invitationStatus: "active",

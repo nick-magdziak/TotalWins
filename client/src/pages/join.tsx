@@ -51,7 +51,6 @@ export default function Join() {
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/leagues/join", {
         inviteCode: activeCode,
-        userId: currentUser!.id,
       });
       if (!res.ok) {
         const err = await res.json();
