@@ -94,7 +94,7 @@ class EmailService {
             color: #333; 
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
+            background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%);
           }
           .container { 
             max-width: 600px; 
@@ -105,7 +105,7 @@ class EmailService {
             overflow: hidden;
           }
           .header { 
-            background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%);
+            background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%);
             color: white; 
             text-align: center; 
             padding: 30px 20px;
@@ -125,11 +125,11 @@ class EmailService {
             border-radius: 8px;
             padding: 20px;
             margin: 20px 0;
-            border-left: 4px solid #20b2aa;
+            border-left: 4px solid #FF1493;
           }
           .cta-button { 
             display: inline-block; 
-            background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%);
+            background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%);
             color: white; 
             padding: 15px 30px; 
             text-decoration: none; 
@@ -138,10 +138,6 @@ class EmailService {
             font-size: 16px;
             margin: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-          }
-          .cta-button:hover {
-            transform: translateY(-2px);
           }
           .invite-code {
             background: #e9ecef;
@@ -163,7 +159,7 @@ class EmailService {
           }
           .sport-badge {
             display: inline-block;
-            background: #20b2aa;
+            background: #8A2BE2;
             color: white;
             padding: 5px 12px;
             border-radius: 20px;
@@ -280,16 +276,16 @@ class EmailService {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
           .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
-          .header { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; text-align: center; padding: 32px 24px; }
+          .header { background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%); color: white; text-align: center; padding: 32px 24px; }
           .header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px; }
           .header p { margin: 8px 0 0; font-size: 15px; opacity: 0.9; }
           .content { padding: 28px 32px; }
-          .draft-info { background: #fff7ed; border-left: 4px solid #f7931e; border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
+          .draft-info { background: #f8f9fa; border-left: 4px solid #FF1493; border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
           .draft-info table { width: 100%; border-collapse: collapse; }
           .draft-info td { padding: 4px 0; font-size: 14px; }
           .draft-info td:first-child { color: #888; width: 80px; }
           .draft-info td:last-child { font-weight: bold; color: #1a1a1a; }
-          .cta-button { display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
+          .cta-button { display: inline-block; background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
           .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 28px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
           .picks-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; }
           .picks-table th { background: #f8f9fa; padding: 8px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; }
@@ -395,12 +391,12 @@ Manage your notification preferences in your profile settings.
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
           .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
-          .header { background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%); color: white; text-align: center; padding: 32px 24px; }
+          .header { background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%); color: white; text-align: center; padding: 32px 24px; }
           .header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px; }
           .header p { margin: 8px 0 0; font-size: 15px; opacity: 0.9; }
           .content { padding: 28px 32px; }
-          .info-box { background: #f8f9fa; border-left: 4px solid #20b2aa; border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: #555; }
-          .cta-button { display: inline-block; background: linear-gradient(135deg, #ff1493 0%, #20b2aa 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
+          .info-box { background: #f8f9fa; border-left: 4px solid #FF1493; border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: #555; }
+          .cta-button { display: inline-block; background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
           .footer { background: #f8f9fa; padding: 18px 24px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee; }
         </style>
       </head>
@@ -424,7 +420,7 @@ Manage your notification preferences in your profile settings.
 
             <p style="font-size:13px; color:#888; word-break:break-all;">
               If the button above does not work, copy and paste this link into your browser:<br>
-              <a href="${resetUrl}" style="color:#20b2aa;">${resetUrl}</a>
+              <a href="${resetUrl}" style="color:#8A2BE2;">${resetUrl}</a>
             </p>
           </div>
           <div class="footer">
@@ -487,7 +483,7 @@ Total Wins - Password Reset
             color: #333; 
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
+            background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%);
           }
           .container { 
             max-width: 600px; 
@@ -522,7 +518,7 @@ Total Wins - Password Reset
           }
           .cta-button { 
             display: inline-block; 
-            background: linear-gradient(135deg, #6f42c1 0%, #20b2aa 100%);
+            background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%);
             color: white; 
             padding: 15px 30px; 
             text-decoration: none; 
