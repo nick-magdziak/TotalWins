@@ -164,8 +164,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/users/:id", async (req, res) => {
     try {
-      const updates = req.body;
-      const user = await storage.updateUser(req.params.id, updates);
+      // Strip all auth/security fields — these must only be updated via
+      // dedicated routes (/password, /email, forgot-password, etc.)
+      const { password, resetToken, resetTokenExpiresAt, isAdmin, ...safeUpdates } = req.body;
+      const user = await storage.updateUser(req.params.id, safeUpdates);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -178,8 +180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile
   app.put("/api/users/:id/profile", async (req, res) => {
     try {
-      const profileData = req.body;
-      const user = await storage.updateUser(req.params.id, profileData);
+      // Only allow safe profile fields — never password or auth fields
+      const { password, resetToken, resetTokenExpiresAt, isAdmin, ...safeProfile } = req.body;
+      const user = await storage.updateUser(req.params.id, safeProfile);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
