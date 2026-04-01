@@ -761,7 +761,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLeagueByInviteCode(code: string): Promise<League | undefined> {
-    const [league] = await db.select().from(leagues).where(eq(leagues.inviteCode, code));
+    const [league] = await db.select().from(leagues).where(eq(leagues.inviteCode, code.toUpperCase()));
     return league || undefined;
   }
 

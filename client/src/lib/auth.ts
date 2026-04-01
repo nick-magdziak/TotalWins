@@ -66,6 +66,8 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 
 export function logout(): void {
   setCurrentUser(null);
+  // Destroy the server-side session so the auth cookie can't be reused
+  fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
 }
 
 export function getCurrentUser(): AuthUser | null {

@@ -46,7 +46,7 @@ export async function sendLeagueInvite(req: Request, res: Response) {
     // Generate invite code if none exists
     let inviteCode = league.inviteCode;
     if (!inviteCode) {
-      inviteCode = nanoid(8);
+      inviteCode = nanoid(8).toUpperCase();
       await storage.updateLeague(leagueId, { inviteCode });
     }
 

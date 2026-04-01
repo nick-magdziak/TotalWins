@@ -22,15 +22,15 @@ export default function Join() {
   const { toast } = useToast();
   const currentUser = getCurrentUser();
 
-  // Initialise from URL ?code= if present
+  // Initialise from URL ?code= if present — always normalize to uppercase
   const [codeInput, setCodeInput] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("code") || "";
+    return (params.get("code") || "").toUpperCase();
   });
   // The code we actually use to query (only set when user wants to look up)
   const [activeCode, setActiveCode] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("code") || "";
+    return (params.get("code") || "").toUpperCase();
   });
 
   const { data: preview, isLoading, isError, error } = useQuery<LeaguePreview>({
