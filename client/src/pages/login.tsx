@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LogIn, Eye, EyeOff, Volleyball } from "lucide-react";
-import { Link } from "wouter";
 import { login } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
