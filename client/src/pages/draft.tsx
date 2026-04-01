@@ -159,7 +159,7 @@ export default function Draft() {
               {currentLeague?.name || "TOTAL WINS"}
             </h2>
             <p className="text-white text-sm sm:text-base md:text-lg font-bold">
-              {currentLeague?.sport || "NFL"} • {currentLeague?.season || "2025-26"} • DRAFT
+              {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2025-26"} • DRAFT
             </p>
             <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
               <Badge className="bg-retro-lime text-retro-charcoal px-3 py-1 rounded-full font-bold text-xs">
