@@ -47,14 +47,26 @@ export default function Signup() {
     }) => {
       return signup(userData);
     },
-    onSuccess: () => {
-      toast({
-        title: "Account created successfully!",
-        description: "Welcome to the Wins Pool Championship Series.",
-      });
-      // Force a page reload to ensure auth state is properly loaded
+    onSuccess: (result) => {
+      if (result.joinWarning) {
+        toast({
+          title: "Account created",
+          description: result.joinWarning,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Account created successfully!",
+          description: result.joinedLeagueId
+            ? "You've been added to your league. Welcome!"
+            : "Welcome to the Wins Pool Championship Series.",
+        });
+      }
+      const dest = result.joinedLeagueId
+        ? `/standings?league=${result.joinedLeagueId}`
+        : "/standings";
       setTimeout(() => {
-        window.location.href = "/standings";
+        window.location.href = dest;
       }, 100);
     },
     onError: (error: any) => {

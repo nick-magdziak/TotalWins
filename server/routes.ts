@@ -62,13 +62,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({ ...userData, password: hashedPassword });
 
       // Auto-join league if invite code was provided
+      let joinedLeagueId: string | null = null;
+      let joinWarning: string | null = null;
       if (inviteCode) {
         try {
           const league = await storage.getLeagueByInviteCode(inviteCode);
-          if (league) {
+          if (!league) {
+            joinWarning = "Invite code not found — you can join later from the invite link.";
+          } else {
             const members = await storage.getLeagueMembers(league.id);
             const alreadyMember = members.some(m => m.userId === user.id);
-            if (!alreadyMember && members.length < league.maxPlayers) {
+            if (alreadyMember) {
+              joinedLeagueId = league.id;
+            } else if (members.length >= league.maxPlayers) {
+              joinWarning = `${league.name} is full — contact the league admin.`;
+            } else {
               await storage.addLeagueMember({
                 leagueId: league.id,
                 userId: user.id,
@@ -76,15 +84,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 totalWins: 0,
                 invitationStatus: "active",
               });
+              joinedLeagueId = league.id;
             }
           }
         } catch (joinError) {
           console.error("Failed to auto-join league after signup:", joinError);
-          // Don't fail signup if join fails
+          joinWarning = "Could not auto-join the league — you can try again from the invite link.";
         }
       }
 
-      res.json({ user: { ...user, password: undefined } });
+      res.json({ user: { ...user, password: undefined }, joinedLeagueId, joinWarning });
     } catch (error) {
       res.status(400).json({ message: "Invalid user data" });
     }
@@ -326,6 +335,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inviteCode: z.string().min(1),
         userId: z.string().min(1),
       }).parse(req.body);
+
+      // Validate the userId actually corresponds to a real user (prevents IDOR/fake-id injection)
+      const requestingUser = await storage.getUser(userId);
+      if (!requestingUser) {
+        return res.status(401).json({ message: "Unauthorized: user not found" });
+      }
 
       const league = await storage.getLeagueByInviteCode(inviteCode);
       if (!league) {

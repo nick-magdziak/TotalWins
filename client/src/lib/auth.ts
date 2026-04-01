@@ -50,11 +50,11 @@ export async function signup(userData: {
   lastName: string;
   displayName: string;
   inviteCode?: string;
-}): Promise<AuthUser> {
+}): Promise<{ user: AuthUser; joinedLeagueId: string | null; joinWarning: string | null }> {
   const response = await apiRequest("POST", "/api/auth/signup", userData);
   const data = await response.json();
   setCurrentUser(data.user);
-  return data.user;
+  return { user: data.user, joinedLeagueId: data.joinedLeagueId ?? null, joinWarning: data.joinWarning ?? null };
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {
