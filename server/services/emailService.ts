@@ -9,19 +9,24 @@ const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
 const LOGO_HTML = `
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#12122a;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" style="padding: 20px 20px 16px;">
-        <table cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #ff1493; border-radius: 10px; overflow: hidden;">
+      <td style="background: linear-gradient(to right, #FF1493, #8A2BE2, #20B2AA); padding: 18px 24px 14px;">
+        <table cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td bgcolor="#12122a" style="padding: 12px 32px 14px; text-align: center; border-radius: 8px;">
-              <div style="font-size: 11px; color: #20b2aa; font-weight: bold; letter-spacing: 4px; font-family: Arial, sans-serif; margin-bottom: 4px;">&#9733; &nbsp; &#9733; &nbsp; &#9733;</div>
-              <div style="font-size: 26px; font-weight: 900; color: #FFD700; letter-spacing: 5px; font-family: Arial Black, Arial, sans-serif; line-height: 1;">TOTAL WINS</div>
-              <div style="font-size: 10px; color: #20b2aa; font-weight: bold; letter-spacing: 3px; font-family: Arial, sans-serif; margin-top: 4px;">WINS POOL CHAMPIONSHIP</div>
+            <td valign="middle" style="padding-right: 14px;">
+              <img src="${APP_URL}/logo.png" alt="Total Wins" width="52" height="52" style="display:block; border:0; border-radius:6px;" />
+            </td>
+            <td valign="middle">
+              <div style="font-family: Arial Black, Arial, sans-serif; font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: 3px; line-height: 1; text-shadow: 0 0 10px rgba(255,20,147,0.5);">TOTAL WINS</div>
+              <div style="font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.8); letter-spacing: 2px; margin-top: 3px;">WINS POOL CHAMPIONSHIP</div>
             </td>
           </tr>
         </table>
       </td>
+    </tr>
+    <tr>
+      <td style="height: 8px; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 8px, transparent 8px, transparent 16px); background-color: #8A2BE2;"></td>
     </tr>
   </table>
 `;
