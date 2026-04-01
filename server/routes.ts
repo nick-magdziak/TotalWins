@@ -5,7 +5,7 @@ import { sportsApi } from "./services/sportsApi";
 import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues } from "@shared/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { hashPassword, comparePassword } from "./lib/auth.js";
+import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -73,7 +73,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
       let valid = false;
-      if (user.password.startsWith("$2")) {
+      if (user.password === PENDING_PLACEHOLDER) {
+        // Invited user who has not yet set a real password — cannot log in
+        valid = false;
+      } else if (user.password.startsWith("$2")) {
         // Modern bcrypt hash
         valid = await comparePassword(password, user.password);
       } else {
