@@ -8,25 +8,14 @@ const sesClient = new SESClient({
 const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
+// Single pre-rendered header image — gradient + logo + Russo One text baked in.
+// Renders identically in every email client regardless of font/image blocking.
 const LOGO_HTML = `
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#d5179e;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FF1493;">
     <tr>
-      <td style="background:linear-gradient(to right,#FF1493 0%,#8A2BE2 55%,#20B2AA 100%);padding:14px 22px 12px;" bgcolor="#d5179e">
-        <table cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td valign="middle" style="padding-right:14px;">
-              <img src="${APP_URL}/logo.png" alt="Total Wins" width="54" height="54" style="display:block;border:0;" />
-            </td>
-            <td valign="middle">
-              <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:28px;font-weight:900;color:#ffffff;letter-spacing:3px;line-height:1;">TOTAL WINS</div>
-              <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:11px;font-weight:bold;color:rgba(255,255,255,0.85);letter-spacing:2px;margin-top:4px;">WINS POOL CHAMPIONSHIP</div>
-            </td>
-          </tr>
-        </table>
+      <td style="padding:0;font-size:0;line-height:0;">
+        <img src="${APP_URL}/email-header.png" alt="Total Wins — Wins Pool Championship" width="600" style="display:block;border:0;max-width:100%;height:auto;" />
       </td>
-    </tr>
-    <tr>
-      <td height="6" style="background-color:#c0166e;font-size:0;line-height:0;">&nbsp;</td>
     </tr>
   </table>
 `;
