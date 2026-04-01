@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const lastName = nameParts.slice(1).join(" ") || nameParts[0];
         user = await storage.createUser({
           email,
-          password: "__pending__",
+          password: PENDING_PLACEHOLDER,
           firstName,
           lastName,
           displayName: name.trim(),
