@@ -43,6 +43,12 @@ const TEAM_FLAG_CODES: Record<string, string> = {
   "wc-CRO": "hr",
   "wc-GHA": "gh",
   "wc-PAN": "pa",
+  // Resolved playoff winners
+  "wc-A4": "cz",  // Czech Republic (UEFA Playoff D)
+  "wc-B4": "ba",  // Bosnia and Herzegovina (UEFA Playoff A)
+  "wc-D4": "tr",  // Turkey (UEFA Playoff C)
+  "wc-F4": "se",  // Sweden (UEFA Playoff B)
+  "wc-K4": "cd",  // DR Congo (IC Playoff 1)
 };
 
 function getFlagUrl(teamId: string | undefined): string | null {
