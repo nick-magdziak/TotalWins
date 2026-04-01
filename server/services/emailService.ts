@@ -228,9 +228,32 @@ class EmailService {
     leagueName: string,
     round: number,
     pickNumber: number,
-    leagueId: string
+    leagueId: string,
+    draftedPicks: Array<{ pickNumber: number; teamName: string; teamAbbr: string; draftedBy: string }> = [],
+    availableTeams: Array<{ name: string; abbreviation: string }> = []
   ): Promise<boolean> {
     const draftUrl = `${APP_URL}/draft?league=${leagueId}`;
+
+    const draftedRowsHtml = draftedPicks.length > 0
+      ? draftedPicks.map(p => `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px 12px; color: #888; font-size: 13px;">#${p.pickNumber}</td>
+            <td style="padding: 8px 12px; font-weight: bold; font-size: 13px;">${p.teamName}</td>
+            <td style="padding: 8px 12px; color: #555; font-size: 13px;">${p.draftedBy}</td>
+          </tr>`).join('')
+      : `<tr><td colspan="3" style="padding: 12px; color: #888; text-align: center; font-size: 13px;">No picks yet — you have first pick!</td></tr>`;
+
+    const availableHtml = availableTeams.length > 0
+      ? availableTeams.map(t => `<span style="display:inline-block; background:#f0f4ff; border:1px solid #c7d2fe; border-radius:4px; padding:4px 10px; margin:3px; font-size:12px; font-weight:bold; color:#3730a3;">${t.name}</span>`).join('')
+      : `<p style="color:#888; font-size:13px;">All teams have been drafted.</p>`;
+
+    const draftedTextRows = draftedPicks.length > 0
+      ? draftedPicks.map(p => `  #${p.pickNumber}  ${p.teamAbbr.padEnd(5)}  ${p.teamName.padEnd(25)}  ${p.draftedBy}`).join('\n')
+      : '  No picks yet — you have first pick!';
+
+    const availableTextList = availableTeams.length > 0
+      ? availableTeams.map(t => `  - ${t.name}`).join('\n')
+      : '  All teams have been drafted.';
 
     const htmlBody = `
       <!DOCTYPE html>
@@ -238,107 +261,70 @@ class EmailService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Your Turn to Draft!</title>
+        <title>Your Turn to Draft</title>
         <style>
-          body { 
-            font-family: 'Arial', sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
-          }
-          .container { 
-            max-width: 600px; 
-            margin: 20px auto; 
-            background: white; 
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-          }
-          .header { 
-            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-            color: white; 
-            text-align: center; 
-            padding: 30px 20px;
-          }
-          .header h1 { 
-            margin: 0; 
-            font-size: 28px; 
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-          }
-          .content { 
-            padding: 30px; 
-            text-align: center;
-          }
-          .draft-info {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-          }
-          .cta-button { 
-            display: inline-block; 
-            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-            color: white; 
-            padding: 15px 30px; 
-            text-decoration: none; 
-            border-radius: 8px; 
-            font-weight: bold;
-            font-size: 18px;
-            margin: 15px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-          }
-          .cta-button:hover {
-            transform: translateY(-2px);
-          }
-          .footer { 
-            background: #f8f9fa; 
-            padding: 20px; 
-            text-align: center; 
-            color: #666;
-            font-size: 14px;
-          }
-          .urgent {
-            background: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            margin: 15px 0;
-          }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
+          .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+          .header { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; text-align: center; padding: 32px 24px; }
+          .header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px; }
+          .header p { margin: 8px 0 0; font-size: 15px; opacity: 0.9; }
+          .content { padding: 28px 32px; }
+          .draft-info { background: #fff7ed; border-left: 4px solid #f7931e; border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
+          .draft-info table { width: 100%; border-collapse: collapse; }
+          .draft-info td { padding: 4px 0; font-size: 14px; }
+          .draft-info td:first-child { color: #888; width: 80px; }
+          .draft-info td:last-child { font-weight: bold; color: #1a1a1a; }
+          .cta-button { display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
+          .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 28px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+          .picks-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; }
+          .picks-table th { background: #f8f9fa; padding: 8px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; }
+          .footer { background: #f8f9fa; padding: 18px 24px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎯 YOUR TURN TO DRAFT! 🎯</h1>
+            <h1>YOUR TURN TO DRAFT</h1>
+            <p>${leagueName}</p>
           </div>
           <div class="content">
-            <h2>Hey ${playerName}!</h2>
-            
-            <div class="urgent">
-              ⏰ It's your turn to make a pick!
-            </div>
+            <p style="font-size:16px;">Hi ${playerName},</p>
+            <p style="font-size:15px; color:#444;">It is your turn to make a selection in the ${leagueName} draft.</p>
 
             <div class="draft-info">
-              <h3>${leagueName}</h3>
-              <p><strong>Round:</strong> ${round}</p>
-              <p><strong>Pick:</strong> #${pickNumber}</p>
+              <table>
+                <tr><td>League</td><td>${leagueName}</td></tr>
+                <tr><td>Round</td><td>${round}</td></tr>
+                <tr><td>Pick</td><td>#${pickNumber}</td></tr>
+              </table>
             </div>
 
-            <p>Don't keep your league mates waiting! Head over to the draft room and make your selection.</p>
+            <div style="text-align:center; margin: 20px 0;">
+              <a href="${draftUrl}" class="cta-button">Make Your Pick</a>
+            </div>
 
-            <a href="${draftUrl}" class="cta-button">Make Your Pick Now</a>
+            <div class="section-title">Teams Drafted So Far</div>
+            <table class="picks-table">
+              <thead>
+                <tr>
+                  <th>Pick</th>
+                  <th>Team</th>
+                  <th>Drafted By</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${draftedRowsHtml}
+              </tbody>
+            </table>
 
-            <p><em>Remember: Choose wisely! Your team's success depends on picking the teams with the most wins this season.</em></p>
+            <div class="section-title">Still Available (${availableTeams.length})</div>
+            <div style="line-height: 2;">
+              ${availableHtml}
+            </div>
           </div>
           <div class="footer">
-            <p>This draft notification was sent from Total Wins.<br>
-            You can manage your notification preferences in your profile settings.</p>
+            <p>Total Wins &mdash; Draft Notification<br>
+            Manage your notification preferences in your profile settings.</p>
           </div>
         </div>
       </body>
@@ -346,25 +332,32 @@ class EmailService {
     `;
 
     const textBody = `
-      🎯 YOUR TURN TO DRAFT! 🎯
+YOUR TURN TO DRAFT
+${leagueName}
 
-      Hey ${playerName}!
+Hi ${playerName},
 
-      ⏰ It's your turn to make a pick in ${leagueName}!
+It is your turn to make a selection in the ${leagueName} draft.
 
-      Round: ${round}
-      Pick: #${pickNumber}
+  League: ${leagueName}
+  Round:  ${round}
+  Pick:   #${pickNumber}
 
-      Don't keep your league mates waiting! Make your selection here: ${draftUrl}
+Make your pick here: ${draftUrl}
 
-      Remember: Choose wisely! Your team's success depends on picking the teams with the most wins this season.
+--- TEAMS DRAFTED SO FAR ---
+${draftedTextRows}
 
-      This draft notification was sent from Total Wins.
+--- STILL AVAILABLE (${availableTeams.length}) ---
+${availableTextList}
+
+Total Wins - Draft Notification
+Manage your notification preferences in your profile settings.
     `;
 
     return this.sendEmail({
       to: email,
-      subject: `🎯 Your turn to draft in ${leagueName}! (Round ${round}, Pick #${pickNumber})`,
+      subject: `Your turn to draft in ${leagueName} (Round ${round}, Pick #${pickNumber})`,
       htmlBody,
       textBody,
     });

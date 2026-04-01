@@ -11,6 +11,39 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+async function buildDraftEmailData(leagueId: string, sport: string) {
+  const picks = await storage.getDraftPicks(leagueId);
+
+  let allTeams: Array<{ id: string; name: string; abbreviation: string }> = [];
+  switch (sport) {
+    case 'MLB': allTeams = await storage.getAllMLBTeams(); break;
+    case 'NBA': allTeams = await storage.getAllNBATeams(); break;
+    case 'WORLD_CUP': allTeams = (await storage.getAllWorldCupTeams()).filter(t => t.qualified); break;
+    default: allTeams = await storage.getAllNFLTeams(); break;
+  }
+
+  const draftedTeamIds = new Set(picks.map(p => p.teamId));
+
+  const draftedPicks = await Promise.all(
+    picks.map(async (p) => {
+      const user = await storage.getUser(p.userId!);
+      const team = allTeams.find(t => t.id === p.teamId);
+      return {
+        pickNumber: p.pickNumber!,
+        teamName: team?.name || p.teamId || 'Unknown',
+        teamAbbr: team?.abbreviation || '???',
+        draftedBy: user?.displayName || 'Unknown',
+      };
+    })
+  );
+
+  const availableTeams = allTeams
+    .filter(t => !draftedTeamIds.has(t.id))
+    .map(t => ({ name: t.name, abbreviation: t.abbreviation }));
+
+  return { draftedPicks, availableTeams };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication
   app.post("/api/auth/signup", async (req, res) => {
@@ -347,13 +380,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Send email notification
               const { EmailService } = await import('./services/emailService.js');
               const emailService = new EmailService();
+              const emailData = await buildDraftEmailData(req.params.leagueId, league?.sport || 'NFL');
               await emailService.sendDraftNotification(
                 currentUser.email!,
                 currentUser.displayName!,
                 league?.name || 'League',
                 draftStatus.currentPick,
                 draftStatus.round,
-                req.params.leagueId
+                req.params.leagueId,
+                emailData.draftedPicks,
+                emailData.availableTeams
               );
 
               // Send push notification
@@ -719,13 +755,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Send email notification
               const { EmailService } = await import('./services/emailService.js');
               const emailService = new EmailService();
+              const emailData = await buildDraftEmailData(leagueId, league?.sport || 'NFL');
               await emailService.sendDraftNotification(
                 currentUser.email!,
                 currentUser.displayName!,
                 league?.name || 'League',
                 draftStatus.currentPick,
                 draftStatus.round,
-                leagueId
+                leagueId,
+                emailData.draftedPicks,
+                emailData.availableTeams
               );
 
               // Send push notification
@@ -793,13 +832,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Send email notification
               const { EmailService } = await import('./services/emailService.js');
               const emailService = new EmailService();
+              const emailData = await buildDraftEmailData(leagueId, league?.sport || 'NFL');
               await emailService.sendDraftNotification(
                 currentUser.email!,
                 currentUser.displayName!,
                 league?.name || 'League',
                 draftStatus.currentPick,
                 draftStatus.round,
-                leagueId
+                leagueId,
+                emailData.draftedPicks,
+                emailData.availableTeams
               );
 
               // Send push notification
