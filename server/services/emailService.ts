@@ -9,24 +9,31 @@ const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
 const LOGO_HTML = `
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #d5179e;">
     <tr>
-      <td style="background: linear-gradient(to right, #FF1493, #8A2BE2, #20B2AA); padding: 18px 24px 14px;">
+      <td style="background: linear-gradient(to right, #FF1493 0%, #8A2BE2 55%, #20B2AA 100%); padding: 16px 24px 14px;" bgcolor="#d5179e">
         <table cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td valign="middle" style="padding-right: 14px;">
-              <img src="${APP_URL}/logo.png" alt="Total Wins" width="52" height="52" style="display:block; border:0; border-radius:6px;" />
+              <!-- W icon: gold shield shape -->
+              <table cellpadding="0" cellspacing="0" border="0" style="background: #FFD700; border-radius: 8px; width: 48px; height: 48px;">
+                <tr>
+                  <td align="center" valign="middle" style="width: 48px; height: 48px; text-align: center; vertical-align: middle;">
+                    <span style="font-family: Arial Black, Arial, sans-serif; font-size: 30px; font-weight: 900; color: #1a0a2e; line-height: 1; display: block; padding: 6px 0 0 0;">W</span>
+                  </td>
+                </tr>
+              </table>
             </td>
             <td valign="middle">
-              <div style="font-family: Arial Black, Arial, sans-serif; font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: 3px; line-height: 1; text-shadow: 0 0 10px rgba(255,20,147,0.5);">TOTAL WINS</div>
-              <div style="font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.8); letter-spacing: 2px; margin-top: 3px;">WINS POOL CHAMPIONSHIP</div>
+              <div style="font-family: Arial Black, Arial, sans-serif; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: 3px; line-height: 1;">TOTAL WINS</div>
+              <div style="font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.85); letter-spacing: 2px; margin-top: 4px;">WINS POOL CHAMPIONSHIP</div>
             </td>
           </tr>
         </table>
       </td>
     </tr>
     <tr>
-      <td style="height: 8px; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 8px, transparent 8px, transparent 16px); background-color: #8A2BE2;"></td>
+      <td height="6" style="background-color: #c0166e; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 8px, transparent 8px, transparent 16px); font-size: 0; line-height: 0;">&nbsp;</td>
     </tr>
   </table>
 `;
