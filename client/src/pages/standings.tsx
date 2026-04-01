@@ -263,7 +263,7 @@ export default function Standings() {
             <p className="text-white text-sm sm:text-base md:text-lg font-bold">
               {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2025-26"} • STANDINGS
             </p>
-            <div className="mt-3 flex justify-center space-x-2 flex-wrap gap-2">
+            <div className="mt-3 flex flex-row items-center justify-center gap-3">
               <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(currentLeague?.draftStatus)}`}>
                 {getDraftStatusLabel(currentLeague?.draftStatus)}
               </Badge>
