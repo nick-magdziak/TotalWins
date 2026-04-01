@@ -31,9 +31,11 @@ export default function Login() {
         title: "Welcome back!",
         description: "Successfully signed in to your account.",
       });
-      // Respect ?redirect= param (e.g. coming from /join?code=...)
+      // Respect ?redirect= param but only allow internal relative paths
       const params = new URLSearchParams(window.location.search);
-      const redirect = params.get("redirect") || "/standings";
+      const raw = params.get("redirect") || "";
+      // Accept only paths that start with "/" and contain no protocol/host (no open-redirect)
+      const redirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/standings";
       setTimeout(() => {
         window.location.href = redirect;
       }, 100);
