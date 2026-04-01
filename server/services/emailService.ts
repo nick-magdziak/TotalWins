@@ -1,17 +1,4 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
-import { readFileSync } from "fs";
-import { resolve } from "path";
-
-// Pre-load the logo as a base64 data URI so it renders without any external URL
-let LOGO_DATA_URI = "";
-try {
-  const logoPath = resolve("server/assets/logo_email.png");
-  const b64 = readFileSync(logoPath).toString("base64");
-  LOGO_DATA_URI = `data:image/png;base64,${b64}`;
-} catch {
-  // If the asset is missing fall back to an empty src; the alt text still shows
-  LOGO_DATA_URI = "";
-}
 
 // Initialize SES client
 const sesClient = new SESClient({
@@ -21,7 +8,6 @@ const sesClient = new SESClient({
 const FROM_EMAIL = process.env.FROM_EMAIL || "Total Wins <admin@totalwins.app>";
 const APP_URL = process.env.APP_URL || "https://totalwins.app";
 
-// Built after LOGO_DATA_URI is ready so the template literal picks it up
 const LOGO_HTML = `
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#d5179e;">
     <tr>
@@ -29,7 +15,7 @@ const LOGO_HTML = `
         <table cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td valign="middle" style="padding-right:14px;">
-              <img src="${LOGO_DATA_URI}" alt="W" width="54" height="54" style="display:block;border:0;" />
+              <img src="${APP_URL}/logo.png" alt="Total Wins" width="54" height="54" style="display:block;border:0;" />
             </td>
             <td valign="middle">
               <div style="font-family:'Russo One',Arial Black,Arial,sans-serif;font-size:28px;font-weight:900;color:#ffffff;letter-spacing:3px;line-height:1;">TOTAL WINS</div>
