@@ -99,7 +99,7 @@ class EmailService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="format-detection" content="telephone=no">
         <meta name="x-apple-disable-message-reformatting">
-        <title>You're Invited to Join ${leagueName}!</title>
+        <title>You're Invited to Join ${safeLeagueName}!</title>
         <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" type="text/css">
         <style>
           body { 

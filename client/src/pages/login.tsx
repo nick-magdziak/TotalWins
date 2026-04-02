@@ -31,11 +31,21 @@ export default function Login() {
         title: "Welcome back!",
         description: "Successfully signed in to your account.",
       });
-      // Respect ?redirect= param but only allow internal relative paths
+      // Respect ?redirect= param but only allow same-origin relative paths
       const params = new URLSearchParams(window.location.search);
       const raw = params.get("redirect") || "";
-      // Accept only paths that start with "/" and contain no protocol/host (no open-redirect)
-      const redirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/standings";
+      let redirect = "/standings";
+      if (raw) {
+        try {
+          // Validate by resolving against current origin — rejects external URLs
+          const resolved = new URL(raw, window.location.origin);
+          if (resolved.origin === window.location.origin) {
+            redirect = resolved.pathname + resolved.search + resolved.hash;
+          }
+        } catch {
+          // Malformed URL — fall back to default
+        }
+      }
       setTimeout(() => {
         window.location.href = redirect;
       }, 100);

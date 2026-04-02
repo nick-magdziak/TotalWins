@@ -241,12 +241,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/users/:id", requireAuth, async (req, res) => {
     try {
-      const sessionUserId = req.session.userId!;
-      if (sessionUserId !== req.params.id) {
-        const sessionUser = await storage.getUser(sessionUserId);
-        if (!sessionUser?.isAdmin) {
-          return res.status(403).json({ message: "Access denied" });
-        }
+      if (req.session.userId !== req.params.id) {
+        return res.status(403).json({ message: "Access denied" });
       }
       // Strip all auth/security fields — these must only be updated via
       // dedicated routes (/password, /email, forgot-password, etc.)
@@ -264,12 +260,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile
   app.put("/api/users/:id/profile", requireAuth, async (req, res) => {
     try {
-      const sessionUserId = req.session.userId!;
-      if (sessionUserId !== req.params.id) {
-        const sessionUser = await storage.getUser(sessionUserId);
-        if (!sessionUser?.isAdmin) {
-          return res.status(403).json({ message: "Access denied" });
-        }
+      if (req.session.userId !== req.params.id) {
+        return res.status(403).json({ message: "Access denied" });
       }
       // Only allow safe profile fields — never password or auth fields
       const { password, resetToken, resetTokenExpiresAt, isAdmin, ...safeProfile } = req.body;
@@ -286,12 +278,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Change password
   app.put("/api/users/:id/password", requireAuth, async (req, res) => {
     try {
-      const sessionUserId = req.session.userId!;
-      if (sessionUserId !== req.params.id) {
-        const sessionUser = await storage.getUser(sessionUserId);
-        if (!sessionUser?.isAdmin) {
-          return res.status(403).json({ message: "Access denied" });
-        }
+      if (req.session.userId !== req.params.id) {
+        return res.status(403).json({ message: "Access denied" });
       }
       const { currentPassword, newPassword } = req.body;
       
@@ -328,12 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Change email
   app.put("/api/users/:id/email", requireAuth, async (req, res) => {
     try {
-      const sessionUserId = req.session.userId!;
-      if (sessionUserId !== req.params.id) {
-        const sessionUser = await storage.getUser(sessionUserId);
-        if (!sessionUser?.isAdmin) {
-          return res.status(403).json({ message: "Access denied" });
-        }
+      if (req.session.userId !== req.params.id) {
+        return res.status(403).json({ message: "Access denied" });
       }
       const { currentPassword, newEmail } = req.body;
       
