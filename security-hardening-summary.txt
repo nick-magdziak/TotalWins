@@ -1,0 +1,87 @@
+TOTAL WINS — SECURITY HARDENING SUMMARY
+Task #6 — Completed April 2, 2026
+========================================
+
+WHAT WAS DONE
+-------------
+
+1. ADMIN ENDPOINT AUTHENTICATION
+   All /api/admin/* routes are now protected by admin-only middleware.
+   Any request without an active admin session returns HTTP 401 or 403.
+   Affected endpoints include:
+     - /api/admin/update-privileges
+     - /api/admin/remove-player
+     - /api/admin/reset-draft
+     - /api/admin/start-draft
+     - /api/admin/stop-draft
+     - /api/admin/undo-last-pick
+     - /api/admin/sync-live-scores
+     - /api/admin/sync-world-cup
+     - /api/admin/update-mlb-standings
+     - /api/admin/test-email
+     - /api/admin/add-player-no-invite
+     - /api/leagues/:leagueId/draft/start
+
+2. IDOR (INSECURE DIRECT OBJECT REFERENCE) FIXES
+   Users can no longer modify another user's data by guessing a user ID in the URL.
+   The following routes now enforce that only the account owner can make changes:
+     - PATCH  /api/users/:id
+     - PUT    /api/users/:id/profile
+     - PUT    /api/users/:id/password
+     - PUT    /api/users/:id/email
+   Any mismatch between the session user and the URL user ID returns HTTP 403.
+
+3. EMAIL HTML INJECTION (XSS) PREVENTION
+   Added an escapeHtml() function in the email service.
+   All user-supplied values (names, league names, team names, game results, etc.)
+   are now HTML-escaped before being inserted into email templates.
+   Applies to all four email templates:
+     - League invitation
+     - Draft notification
+     - Password reset
+     - Game update
+   URL parameters (invite codes, league IDs) are also encoded with encodeURIComponent().
+
+4. OPEN REDIRECT HARDENING (LOGIN PAGE)
+   The ?redirect= query parameter on the login page now uses a URL origin check
+   to ensure only same-origin paths are accepted. External URLs are rejected
+   and the user is sent to /standings instead. This prevents phishing via
+   crafted login links.
+
+5. PII LOGGING CLEANUP
+   Removed plaintext email addresses from server console logs in:
+     - routes.ts (3 instances that logged recipient email before sending)
+     - emailService.ts (1 instance that logged recipient on success)
+
+6. DEPENDENCY VULNERABILITY FIXES
+   Ran npm audit fix to update vulnerable transitive packages:
+     - axios            → 1.14.0  (DoS vulnerability fixed)
+     - fast-xml-parser  → 5.5.8   (ReDoS vulnerability fixed)
+     - path-to-regexp   → 0.1.13  (ReDoS vulnerability fixed)
+     - jws              → 4.0.1   (vulnerability fixed)
+     - minimatch        → 9.0.9   (ReDoS vulnerability fixed)
+     - rollup           → 4.60.1  (vulnerability fixed)
+     - glob             → 10.5.0  (vulnerability fixed)
+     - picomatch        → 2.3.2   (vulnerability fixed)
+   Remaining moderate issues are esbuild dev-tool related (not in production builds).
+
+7. DUPLICATE ROUTE CLEANUP
+   Removed a redundant duplicate of /api/leagues/:leagueId/draft/start
+   that was dead code (never reached by Express routing).
+
+
+FILES CHANGED
+-------------
+  server/routes.ts                   — middleware, IDOR fixes, log cleanup
+  server/services/emailService.ts    — escapeHtml(), log cleanup
+  client/src/pages/login.tsx         — open redirect hardening
+  package-lock.json                  — updated by npm audit fix
+
+
+VERIFICATION
+------------
+  - Unauthenticated POST to /api/admin/* → HTTP 401
+  - Unauthenticated PATCH to /api/users/:id → HTTP 401
+  - Authenticated but wrong user PATCH to /api/users/:id → HTTP 403
+  - Login ?redirect=https://evil.com → redirects to /standings (safe)
+  - npm audit: all auto-fixable CVEs resolved
