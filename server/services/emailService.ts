@@ -1,5 +1,15 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
+// Escape user-supplied strings before inserting into HTML email templates
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 // Initialize SES client
 const sesClient = new SESClient({
   region: process.env.AWS_REGION || "us-east-1",
@@ -58,7 +68,7 @@ class EmailService {
       });
 
       await sesClient.send(command);
-      console.log(`Email sent successfully to ${params.to}`);
+      console.log(`Email sent successfully`);
       return true;
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -74,8 +84,12 @@ class EmailService {
     inviteCode: string,
     sport: string
   ): Promise<boolean> {
-    const signupUrl = `${APP_URL}/signup?invite=${inviteCode}`;
-    const joinUrl = `${APP_URL}/join?code=${inviteCode}`;
+    const safePlayerName = escapeHtml(playerName);
+    const safeLeagueName = escapeHtml(leagueName);
+    const safeAdminName = escapeHtml(adminName);
+    const safeSport = escapeHtml(sport);
+    const signupUrl = `${APP_URL}/signup?invite=${encodeURIComponent(inviteCode)}`;
+    const joinUrl = `${APP_URL}/join?code=${encodeURIComponent(inviteCode)}`;
 
     const htmlBody = `
       <!DOCTYPE html>
@@ -176,17 +190,17 @@ class EmailService {
             <h1>YOU'RE INVITED</h1>
           </div>
           <div class="content">
-            <h2>Hey ${playerName}!</h2>
-            <p><strong>${adminName}</strong> has invited you to join their Total Wins league:</p>
+            <h2>Hey ${safePlayerName}!</h2>
+            <p><strong>${safeAdminName}</strong> has invited you to join their Total Wins league:</p>
             
             <div class="league-info">
-              <h3>${leagueName}</h3>
-              <span class="sport-badge">${sport} League</span>
-              <p>${sport === 'MLB' ? 'The baseball diamond awaits...' : sport === 'NFL' ? 'The gridiron awaits...' : sport === 'NBA' ? 'The hardwood awaits...' : 'The season awaits...'}</p>
+              <h3>${safeLeagueName}</h3>
+              <span class="sport-badge">${safeSport} League</span>
+              <p>${safeSport === 'MLB' ? 'The baseball diamond awaits...' : safeSport === 'NFL' ? 'The gridiron awaits...' : safeSport === 'NBA' ? 'The hardwood awaits...' : 'The season awaits...'}</p>
             </div>
 
             <p>Use this invite code to join:</p>
-            <div class="invite-code">${inviteCode}</div>
+            <div class="invite-code">${escapeHtml(inviteCode)}</div>
 
             <p><strong>New to Total Wins?</strong></p>
             <a href="${signupUrl}" class="cta-button">Sign Up & Join League</a>
@@ -197,7 +211,7 @@ class EmailService {
             <p>Total Wins is the ultimate wins pool league system with live scoring, real-time standings and quick drafting. Join your friends, compete to draft the best roster of teams and dominate your league in Total Wins.</p>
           </div>
           <div class="footer">
-            <p>This invitation was sent by ${adminName} through Total Wins.<br>
+            <p>This invitation was sent by ${safeAdminName} through Total Wins.<br>
             If you didn't expect this invitation, you can safely ignore this email.</p>
           </div>
         </div>
@@ -242,19 +256,21 @@ class EmailService {
     draftedPicks: Array<{ pickNumber: number; teamName: string; teamAbbr: string; draftedBy: string }> = [],
     availableTeams: Array<{ name: string; abbreviation: string }> = []
   ): Promise<boolean> {
-    const draftUrl = `${APP_URL}/draft?league=${leagueId}`;
+    const safePlayerName = escapeHtml(playerName);
+    const safeLeagueName = escapeHtml(leagueName);
+    const draftUrl = `${APP_URL}/draft?league=${encodeURIComponent(leagueId)}`;
 
     const draftedRowsHtml = draftedPicks.length > 0
       ? draftedPicks.map(p => `
           <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 8px 12px; color: #888; font-size: 13px;">#${p.pickNumber}</td>
-            <td style="padding: 8px 12px; font-weight: bold; font-size: 13px;">${p.teamName}</td>
-            <td style="padding: 8px 12px; color: #555; font-size: 13px;">${p.draftedBy}</td>
+            <td style="padding: 8px 12px; font-weight: bold; font-size: 13px;">${escapeHtml(p.teamName)}</td>
+            <td style="padding: 8px 12px; color: #555; font-size: 13px;">${escapeHtml(p.draftedBy)}</td>
           </tr>`).join('')
       : `<tr><td colspan="3" style="padding: 12px; color: #888; text-align: center; font-size: 13px;">No picks yet — you have first pick!</td></tr>`;
 
     const availableHtml = availableTeams.length > 0
-      ? availableTeams.map(t => `<span style="display:inline-block; background:#f0f4ff; border:1px solid #c7d2fe; border-radius:4px; padding:4px 10px; margin:3px; font-size:12px; font-weight:bold; color:#3730a3;">${t.name}</span>`).join('')
+      ? availableTeams.map(t => `<span style="display:inline-block; background:#f0f4ff; border:1px solid #c7d2fe; border-radius:4px; padding:4px 10px; margin:3px; font-size:12px; font-weight:bold; color:#3730a3;">${escapeHtml(t.name)}</span>`).join('')
       : `<p style="color:#888; font-size:13px;">All teams have been drafted.</p>`;
 
     const draftedTextRows = draftedPicks.length > 0
@@ -297,15 +313,15 @@ class EmailService {
           ${LOGO_HTML}
           <div class="header">
             <h1>YOUR TURN TO DRAFT</h1>
-            <p>${leagueName}</p>
+            <p>${safeLeagueName}</p>
           </div>
           <div class="content">
-            <p style="font-size:16px;">Hi ${playerName},</p>
-            <p style="font-size:15px; color:#444;">It is your turn to make a selection in the ${leagueName} draft.</p>
+            <p style="font-size:16px;">Hi ${safePlayerName},</p>
+            <p style="font-size:15px; color:#444;">It is your turn to make a selection in the ${safeLeagueName} draft.</p>
 
             <div class="draft-info">
               <table>
-                <tr><td>League</td><td>${leagueName}</td></tr>
+                <tr><td>League</td><td>${safeLeagueName}</td></tr>
                 <tr><td>Round</td><td>${round}</td></tr>
                 <tr><td>Pick</td><td>#${pickNumber}</td></tr>
               </table>
@@ -380,6 +396,7 @@ Manage your notification preferences in your profile settings.
     playerName: string,
     resetUrl: string
   ): Promise<boolean> {
+    const safePlayerName = escapeHtml(playerName);
     const htmlBody = `
       <!DOCTYPE html>
       <html>
@@ -407,7 +424,7 @@ Manage your notification preferences in your profile settings.
             <h1>RESET YOUR PASSWORD</h1>
           </div>
           <div class="content">
-            <p style="font-size:16px;">Hi ${playerName},</p>
+            <p style="font-size:16px;">Hi ${safePlayerName},</p>
             <p style="font-size:15px; color:#444;">We received a request to reset the password for your Total Wins account. Click the button below to choose a new password.</p>
 
             <div style="text-align:center; margin: 24px 0;">
@@ -465,7 +482,11 @@ Total Wins - Password Reset
     opponent: string,
     leagueId: string
   ): Promise<boolean> {
-    const standingsUrl = `${APP_URL}/standings?league=${leagueId}`;
+    const safePlayerName = escapeHtml(playerName);
+    const safeTeamName = escapeHtml(teamName);
+    const safeTeamCity = escapeHtml(teamCity);
+    const safeGameResult = escapeHtml(gameResult);
+    const standingsUrl = `${APP_URL}/standings?league=${encodeURIComponent(leagueId)}`;
     const result = isWin ? "WON" : "LOST";
 
     const htmlBody = `
@@ -474,7 +495,7 @@ Total Wins - Password Reset
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Game Update: ${teamCity} ${teamName}</title>
+        <title>Game Update: ${safeTeamCity} ${safeTeamName}</title>
         <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" type="text/css">
         <style>
           body { 
@@ -548,14 +569,14 @@ Total Wins - Password Reset
             <h1>GAME UPDATE</h1>
           </div>
           <div class="content">
-            <h2>Hey ${playerName}!</h2>
+            <h2>Hey ${safePlayerName}!</h2>
             
             <p>Your team has a game update:</p>
 
             <div class="game-result">
-              <h3>${teamCity} ${teamName}</h3>
+              <h3>${safeTeamCity} ${safeTeamName}</h3>
               <h2 style="color: ${isWin ? '#28a745' : '#dc3545'}; margin: 10px 0;">${result}!</h2>
-              <p><strong>${gameResult}</strong></p>
+              <p><strong>${safeGameResult}</strong></p>
             </div>
 
             ${isWin 

@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { sportsApi } from "./services/sportsApi";
@@ -11,6 +11,34 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
 });
+
+// Middleware: require authenticated session
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}
+
+// Middleware: require authenticated admin session
+async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    const user = await storage.getUser(userId);
+    if (!user?.isAdmin) {
+      res.status(403).json({ error: "Admin access required" });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
 
 async function buildDraftEmailData(leagueId: string, sport: string) {
   const picks = await storage.getDraftPicks(leagueId);
@@ -46,6 +74,9 @@ async function buildDraftEmailData(leagueId: string, sport: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Protect all /api/admin/* endpoints with admin authentication
+  app.use("/api/admin", requireAdmin);
+
   // Authentication
   app.post("/api/auth/signup", async (req, res) => {
     try {
@@ -208,8 +239,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...user, password: undefined });
   });
 
-  app.patch("/api/users/:id", async (req, res) => {
+  app.patch("/api/users/:id", requireAuth, async (req, res) => {
     try {
+      const sessionUserId = req.session.userId!;
+      if (sessionUserId !== req.params.id) {
+        const sessionUser = await storage.getUser(sessionUserId);
+        if (!sessionUser?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       // Strip all auth/security fields — these must only be updated via
       // dedicated routes (/password, /email, forgot-password, etc.)
       const { password, resetToken, resetTokenExpiresAt, isAdmin, ...safeUpdates } = req.body;
@@ -224,8 +262,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.put("/api/users/:id/profile", async (req, res) => {
+  app.put("/api/users/:id/profile", requireAuth, async (req, res) => {
     try {
+      const sessionUserId = req.session.userId!;
+      if (sessionUserId !== req.params.id) {
+        const sessionUser = await storage.getUser(sessionUserId);
+        if (!sessionUser?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       // Only allow safe profile fields — never password or auth fields
       const { password, resetToken, resetTokenExpiresAt, isAdmin, ...safeProfile } = req.body;
       const user = await storage.updateUser(req.params.id, safeProfile);
@@ -239,8 +284,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Change password
-  app.put("/api/users/:id/password", async (req, res) => {
+  app.put("/api/users/:id/password", requireAuth, async (req, res) => {
     try {
+      const sessionUserId = req.session.userId!;
+      if (sessionUserId !== req.params.id) {
+        const sessionUser = await storage.getUser(sessionUserId);
+        if (!sessionUser?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       const { currentPassword, newPassword } = req.body;
       
       // Get current user to verify password
@@ -274,8 +326,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Change email
-  app.put("/api/users/:id/email", async (req, res) => {
+  app.put("/api/users/:id/email", requireAuth, async (req, res) => {
     try {
+      const sessionUserId = req.session.userId!;
+      if (sessionUserId !== req.params.id) {
+        const sessionUser = await storage.getUser(sessionUserId);
+        if (!sessionUser?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       const { currentPassword, newEmail } = req.body;
       
       // Get current user to verify password
@@ -570,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (currentMember) {
             const currentUser = await storage.getUser(currentMember.userId!);
             if (currentUser && currentUser.draftNotifications) {
-              console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              console.log(`Sending draft notification for league ${league?.name}`);
               
               // Send email notification
               const { EmailService } = await import('./services/emailService.js');
@@ -907,8 +966,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // League-specific draft start endpoint (called by client)
-  app.post("/api/leagues/:leagueId/draft/start", async (req, res) => {
+  // League-specific draft start endpoint (called by client) — admin only
+  app.post("/api/leagues/:leagueId/draft/start", requireAdmin, async (req, res) => {
     try {
       const { leagueId } = req.params;
       
@@ -945,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (currentMember) {
             const currentUser = await storage.getUser(currentMember.userId!);
             if (currentUser && currentUser.draftNotifications) {
-              console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              console.log(`Sending draft notification for league ${league?.name}`);
               
               // Send email notification
               const { EmailService } = await import('./services/emailService.js');
@@ -1022,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (currentMember) {
             const currentUser = await storage.getUser(currentMember.userId!);
             if (currentUser && currentUser.draftNotifications) {
-              console.log(`Sending draft notification to ${currentUser.email} for league ${league?.name}`);
+              console.log(`Sending draft notification for league ${league?.name}`);
               
               // Send email notification
               const { EmailService } = await import('./services/emailService.js');
@@ -1099,8 +1158,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Draft start endpoint for draft page
-  app.post("/api/leagues/:leagueId/draft/start", async (req, res) => {
+  // Draft start endpoint for draft page — admin only
+  app.post("/api/leagues/:leagueId/draft/start", requireAdmin, async (req, res) => {
     try {
       const { leagueId } = req.params;
       
