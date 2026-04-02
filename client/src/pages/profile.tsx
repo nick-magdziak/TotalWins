@@ -300,6 +300,7 @@ export default function Profile() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           type,
           email: currentUser?.email,

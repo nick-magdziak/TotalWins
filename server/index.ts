@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import pg from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -13,7 +15,16 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Persist sessions in PostgreSQL so they survive server restarts
+const PgSession = connectPgSimple(session);
+const pgPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+
 app.use(session({
+  store: new PgSession({
+    pool: pgPool,
+    createTableIfMissing: true,
+    tableName: "session",
+  }),
   secret: process.env.SESSION_SECRET || "tw-dev-secret-change-in-prod",
   resave: false,
   saveUninitialized: false,
