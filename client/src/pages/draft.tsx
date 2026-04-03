@@ -55,7 +55,7 @@ export default function Draft() {
 
   const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "draft", "picks"],
-    refetchInterval: (draftStatus?.isActive || draftStatus?.isPaused) ? 3000 : 30000, // 3s when active or paused, 30s otherwise
+    refetchInterval: (draftStatus?.isActive || draftStatus?.isPaused) ? 3000 : 30000,
   });
 
   const { data: userPicks } = useQuery<DraftPick[]>({
@@ -154,6 +154,10 @@ export default function Draft() {
 
   const { drafted, draftedBy } = getDraftedTeams();
 
+  // Derive effective draft status: use real-time isPaused from polled draftStatus,
+  // otherwise fall back to currentLeague?.draftStatus
+  const effectiveDraftStatus = draftStatus?.isPaused ? 'paused' : currentLeague?.draftStatus;
+
 
 
   const isCurrentUserTurn = draftStatus?.currentPlayer === currentUser?.displayName;
@@ -231,8 +235,8 @@ export default function Draft() {
               {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2025-26"} • DRAFT
             </p>
             <div className="mt-3 flex flex-row items-center justify-center gap-3">
-              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(currentLeague?.draftStatus)}`}>
-                {getDraftStatusLabel(currentLeague?.draftStatus)}
+              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(effectiveDraftStatus)}`}>
+                {getDraftStatusLabel(effectiveDraftStatus)}
               </Badge>
               <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
                 {getSeasonPeriodLabel(currentLeague?.sport)}

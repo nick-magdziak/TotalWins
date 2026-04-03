@@ -675,6 +675,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
       toast({ title: "Draft Paused", description: "The draft is now paused. No picks can be made." });
     },
     onError: () => {
@@ -689,6 +690,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
       toast({ title: "Draft Resumed", description: "The draft is now active. Players can make picks!" });
     },
     onError: () => {
