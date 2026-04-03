@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { sportsApi } from "./services/sportsApi";
-import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues } from "@shared/schema";
+import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues, type NFLTeam, type MLBTeam, type NBATeam } from "@shared/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
@@ -484,8 +484,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const rows: string[] = ["Rank,Player,Teams,Total Wins"];
       for (const standing of standings) {
-        const teamsCell = standing.teams
-          .map((t: any) => `${t.city ? t.city + " " : ""}${t.name} (${t.wins ?? 0}W)`)
+        const teamsCell = (standing.teams as (NFLTeam | MLBTeam | NBATeam)[])
+          .map((t) => `${t.city ? t.city + " " : ""}${t.name} (${t.wins ?? 0}W)`)
           .join("; ");
         const escapedPlayer = `"${standing.displayName.replace(/"/g, '""')}"`;
         const escapedTeams = `"${teamsCell.replace(/"/g, '""')}"`;
