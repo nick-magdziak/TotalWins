@@ -1205,7 +1205,9 @@ export default function Admin() {
                     Draft Status
                   </Label>
                   <Input
-                    value={draftStatus?.isActive 
+                    value={draftStatus?.isPaused
+                      ? "Paused"
+                      : draftStatus?.isActive 
                       ? "In Progress" 
                       : currentLeague?.draftStatus === "completed" 
                         ? "Completed" 
