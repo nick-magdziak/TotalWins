@@ -1176,7 +1176,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/pause-draft", async (req, res) => {
+  // Note: requireAdmin middleware is applied via app.use("/api/admin", requireAdmin) at line 78
+  app.post("/api/admin/pause-draft", requireAdmin, async (req, res) => {
     try {
       const { leagueId } = req.body;
       if (!leagueId) return res.status(400).json({ error: "League ID required" });
@@ -1191,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/resume-draft", async (req, res) => {
+  app.post("/api/admin/resume-draft", requireAdmin, async (req, res) => {
     try {
       const { leagueId } = req.body;
       if (!leagueId) return res.status(400).json({ error: "League ID required" });

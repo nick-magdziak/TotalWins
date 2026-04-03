@@ -1258,7 +1258,7 @@ export default function Admin() {
                         <Play className="w-4 h-4 mr-2" />
                         {resumeDraftMutation.isPending ? "RESUMING..." : "RESUME DRAFT"}
                       </Button>
-                    ) : (
+                    ) : currentLeague?.draftStatus === "pending" ? (
                       <Button
                         onClick={() => startDraftMutation.mutate()}
                         disabled={startDraftMutation.isPending}
@@ -1266,6 +1266,15 @@ export default function Admin() {
                       >
                         <Play className="w-4 h-4 mr-2" />
                         {startDraftMutation.isPending ? "STARTING..." : "START DRAFT"}
+                      </Button>
+                    ) : (
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="border-gray-400 text-gray-400 font-bold py-2 rounded-lg retro-font opacity-50 cursor-not-allowed"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        DRAFT COMPLETE
                       </Button>
                     )}
                     
