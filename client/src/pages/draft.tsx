@@ -86,8 +86,8 @@ export default function Draft() {
         description: "Your pick has been recorded.",
       });
     },
-    onError: (error: any) => {
-      const msg = error?.message || "";
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : "";
       if (msg.includes("paused") || msg.includes("403")) {
         toast({
           title: "Draft is paused",
@@ -154,9 +154,13 @@ export default function Draft() {
 
   const { drafted, draftedBy } = getDraftedTeams();
 
-  // Derive effective draft status: use real-time isPaused from polled draftStatus,
-  // otherwise fall back to currentLeague?.draftStatus
-  const effectiveDraftStatus = draftStatus?.isPaused ? 'paused' : currentLeague?.draftStatus;
+  // Derive effective draft status from the polled draftStatus (updates every 3s),
+  // falling back to currentLeague?.draftStatus only when no live data is available yet.
+  const effectiveDraftStatus = draftStatus?.isPaused
+    ? 'paused'
+    : draftStatus?.isActive
+    ? 'active'
+    : currentLeague?.draftStatus;
 
 
 
