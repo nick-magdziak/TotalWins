@@ -670,7 +670,7 @@ export default function Admin() {
 
   const pauseDraftMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/pause-draft", { leagueId });
+      return apiRequest("POST", `/api/leagues/${leagueId}/draft/pause`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
@@ -685,7 +685,7 @@ export default function Admin() {
 
   const resumeDraftMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/resume-draft", { leagueId });
+      return apiRequest("POST", `/api/leagues/${leagueId}/draft/resume`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
