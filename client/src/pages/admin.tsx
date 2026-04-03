@@ -235,25 +235,6 @@ export default function Admin() {
     },
   });
 
-  const syncScoresMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/sync-scores", { week: 18, season: "2024" });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Scores synced!",
-        description: "All game scores have been updated from the sports API.",
-      });
-      queryClient.invalidateQueries();
-    },
-    onError: () => {
-      toast({
-        title: "Sync failed",
-        description: "Failed to sync scores. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   const updateRecordsMutation = useMutation({
     mutationFn: async () => {
@@ -805,9 +786,6 @@ export default function Admin() {
 
   const handleQuickAction = (action: string) => {
     switch (action) {
-      case "sync":
-        syncScoresMutation.mutate();
-        break;
       case "export":
         handleExportData();
         break;
@@ -1137,15 +1115,6 @@ export default function Admin() {
               </h3>
               
               <div className="grid grid-cols-1 gap-4">
-                <Button
-                  onClick={() => handleQuickAction("sync")}
-                  disabled={syncScoresMutation.isPending}
-                  className="bg-gradient-to-br from-retro-teal to-retro-lime text-white p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
-                >
-                  <RefreshCw className="w-6 h-6 mb-2 mx-auto block" />
-                  {syncScoresMutation.isPending ? "SYNCING..." : "SYNC SCORES"}
-                </Button>
-
                 <Button
                   onClick={() => syncLiveScoresMutation.mutate()}
                   disabled={syncLiveScoresMutation.isPending}
