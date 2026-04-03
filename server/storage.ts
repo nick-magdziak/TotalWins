@@ -1297,7 +1297,7 @@ export class DatabaseStorage implements IStorage {
         { id: "wc-FRA", name: "France", abbreviation: "FRA", group: "I", confederation: "UEFA", qualified: true, fifaRanking: 3, flagEmoji: "🇫🇷" },
         { id: "wc-SEN", name: "Senegal", abbreviation: "SEN", group: "I", confederation: "CAF", qualified: true, fifaRanking: 19, flagEmoji: "🇸🇳" },
         { id: "wc-NOR", name: "Norway", abbreviation: "NOR", group: "I", confederation: "UEFA", qualified: true, fifaRanking: 29, flagEmoji: "🇳🇴" },
-        { id: "wc-I4", name: "IC Playoff 2 Winner", abbreviation: "IC2", group: "I", confederation: "Playoff", qualified: false, placeholder: "Intercontinental Playoff 2 Winner (TBD)", fifaRanking: null, flagEmoji: "🏳️" },
+        { id: "wc-IRQ", name: "Iraq", abbreviation: "IRQ", group: "I", confederation: "AFC", qualified: true, fifaRanking: 66, flagEmoji: "🇮🇶" },
         // Group J
         { id: "wc-ARG", name: "Argentina", abbreviation: "ARG", group: "J", confederation: "CONMEBOL", qualified: true, fifaRanking: 2, flagEmoji: "🇦🇷" },
         { id: "wc-AUT", name: "Austria", abbreviation: "AUT", group: "J", confederation: "UEFA", qualified: true, fifaRanking: 24, flagEmoji: "🇦🇹" },
