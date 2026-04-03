@@ -1176,6 +1176,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/pause-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      if (!leagueId) return res.status(400).json({ error: "League ID required" });
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ error: "League not found" });
+      if (league.draftStatus !== "active") return res.status(400).json({ error: "Draft is not currently active" });
+      await storage.updateLeague(leagueId, { draftStatus: "paused" });
+      res.json({ success: true, message: "Draft paused successfully" });
+    } catch (error) {
+      console.error("Error pausing draft:", error);
+      res.status(500).json({ error: "Failed to pause draft" });
+    }
+  });
+
+  app.post("/api/admin/resume-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      if (!leagueId) return res.status(400).json({ error: "League ID required" });
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ error: "League not found" });
+      if (league.draftStatus !== "paused") return res.status(400).json({ error: "Draft is not currently paused" });
+      await storage.updateLeague(leagueId, { draftStatus: "active" });
+      res.json({ success: true, message: "Draft resumed successfully" });
+    } catch (error) {
+      console.error("Error resuming draft:", error);
+      res.status(500).json({ error: "Failed to resume draft" });
+    }
+  });
+
   app.post("/api/admin/undo-last-pick", async (req, res) => {
     try {
       const { leagueId } = req.body;

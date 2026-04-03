@@ -88,7 +88,7 @@ export default function Draft() {
     },
     onError: (error: unknown) => {
       const msg = error instanceof Error ? error.message : "";
-      if (msg.includes("paused") || msg.includes("403")) {
+      if (msg.toLowerCase().includes("paused")) {
         toast({
           title: "Draft is paused",
           description: "The draft is currently paused. Please wait for the commissioner to resume.",
