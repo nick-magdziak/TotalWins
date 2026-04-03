@@ -1253,22 +1253,18 @@ export default function Admin() {
                   <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
                     Draft Date/Time Start
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="datetime-local"
-                      value={draftDateTime}
-                      onChange={(e) => setDraftDateTime(e.target.value)}
-                      className="flex-1 border-2 border-retro-pink focus:border-retro-purple"
-                    />
-                    <Button
-                      onClick={() => saveDraftDateTimeMutation.mutate(draftDateTime)}
-                      disabled={saveDraftDateTimeMutation.isPending}
-                      className="bg-retro-teal hover:bg-retro-lime text-white font-bold px-4 rounded-lg retro-font whitespace-nowrap"
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      {saveDraftDateTimeMutation.isPending ? "SAVING..." : "SAVE"}
-                    </Button>
-                  </div>
+                  <Input
+                    type="datetime-local"
+                    value={draftDateTime}
+                    onChange={(e) => setDraftDateTime(e.target.value)}
+                    onBlur={(e) => {
+                      if (e.target.value) saveDraftDateTimeMutation.mutate(e.target.value);
+                    }}
+                    className="w-full border-2 border-retro-pink focus:border-retro-purple"
+                  />
+                  {saveDraftDateTimeMutation.isPending && (
+                    <p className="text-xs text-retro-teal mt-1 retro-font">Saving...</p>
+                  )}
                 </div>
 
                 {/* Draft Status */}
