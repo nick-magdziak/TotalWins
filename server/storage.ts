@@ -1009,8 +1009,10 @@ export class DatabaseStorage implements IStorage {
     const members = await this.getLeagueMembers(leagueId);
 
     const isPaused = league?.draftStatus === "paused";
+    const isRunning = league?.draftStatus === "active";
 
-    if (!league || (league.draftStatus !== "active" && !isPaused)) {
+    // Only compute turn info when the draft is active or paused
+    if (!league || (!isRunning && !isPaused)) {
       return {
         isActive: false,
         isPaused: false,
@@ -1020,24 +1022,7 @@ export class DatabaseStorage implements IStorage {
       };
     }
 
-    // For paused drafts: compute pick info (so UI shows whose turn it is) but mark inactive
-    if (isPaused) {
-      const picks = await this.getDraftPicks(leagueId);
-      const members = await this.getLeagueMembers(leagueId);
-      const totalPicks = members.length * league.teamsPerPlayer;
-      const currentPickNumber = picks.length + 1;
-      if (currentPickNumber > totalPicks) {
-        return { isActive: false, isPaused: true, currentPick: totalPicks, currentPlayer: "", round: Math.ceil(totalPicks / members.length) };
-      }
-      const round = Math.ceil(currentPickNumber / members.length);
-      const positionInRound = ((currentPickNumber - 1) % members.length) + 1;
-      const isSnakeRound = round % 2 === 0;
-      const draftPosition = isSnakeRound ? members.length - positionInRound + 1 : positionInRound;
-      const currentMember = members.find(m => m.draftPosition === draftPosition);
-      const currentUser = currentMember ? await this.getUser(currentMember.userId!) : null;
-      return { isActive: false, isPaused: true, currentPick: currentPickNumber, currentPlayer: currentUser?.displayName || "", round };
-    }
-
+    // Shared computation for both active and paused states
     const totalPicks = members.length * league.teamsPerPlayer;
     const currentPickNumber = picks.length + 1;
 
@@ -1087,7 +1072,7 @@ export class DatabaseStorage implements IStorage {
     const currentUser = currentMember ? await this.getUser(currentMember.userId!) : null;
 
     return {
-      isActive: true,
+      isActive: isRunning,
       isPaused,
       currentPick: currentPickNumber,
       currentPlayer: currentUser?.displayName || "",

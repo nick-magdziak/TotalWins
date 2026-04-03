@@ -1136,6 +1136,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!leagueId) {
         return res.status(400).json({ error: "League ID required" });
       }
+      const league = await storage.getLeague(leagueId);
+      if (!league) {
+        return res.status(404).json({ error: "League not found" });
+      }
+      const requestingUser = await storage.getUser(req.session.userId!);
+      const isLeagueAdmin = requestingUser?.isAdmin || league.createdBy === req.session.userId;
+      if (!isLeagueAdmin) {
+        return res.status(403).json({ error: "Only league admins can pause the draft" });
+      }
+      if (league.draftStatus !== "active") {
+        return res.status(400).json({ error: "Draft is not currently active" });
+      }
       await storage.updateLeague(leagueId, { draftStatus: "paused" });
       res.json({ success: true, message: "Draft paused successfully" });
     } catch (error) {
@@ -1149,6 +1161,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { leagueId } = req.body;
       if (!leagueId) {
         return res.status(400).json({ error: "League ID required" });
+      }
+      const league = await storage.getLeague(leagueId);
+      if (!league) {
+        return res.status(404).json({ error: "League not found" });
+      }
+      const requestingUser = await storage.getUser(req.session.userId!);
+      const isLeagueAdmin = requestingUser?.isAdmin || league.createdBy === req.session.userId;
+      if (!isLeagueAdmin) {
+        return res.status(403).json({ error: "Only league admins can resume the draft" });
+      }
+      if (league.draftStatus !== "paused") {
+        return res.status(400).json({ error: "Draft is not currently paused" });
       }
       await storage.updateLeague(leagueId, { draftStatus: "active" });
       res.json({ success: true, message: "Draft resumed successfully" });
