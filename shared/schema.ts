@@ -41,6 +41,7 @@ export const leagues = pgTable("leagues", {
   maxPlayers: integer("max_players").notNull().default(8),
   draftType: text("draft_type").notNull().default("snake"), // snake, linear, custom_10_30
   draftConfiguration: text("draft_configuration"), // e.g., "4_players_8_teams" for the new unified config
+  draftScheduledAt: timestamp("draft_scheduled_at"), // optional scheduled draft date/time
   draftStatus: text("draft_status").notNull().default("pending"), // pending, active, completed
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
   inviteCode: text("invite_code").unique(),

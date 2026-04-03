@@ -275,6 +275,29 @@ export default function Admin() {
     },
   });
 
+  const saveDraftDateTimeMutation = useMutation({
+    mutationFn: async (dateTimeStr: string) => {
+      return apiRequest("PATCH", `/api/leagues/${leagueId}`, {
+        draftScheduledAt: dateTimeStr ? new Date(dateTimeStr).toISOString() : null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      toast({
+        title: "Draft date saved!",
+        description: "The scheduled draft date/time has been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Save failed",
+        description: "Failed to save the draft date/time. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateDraftConfigMutation = useMutation({
     mutationFn: async (newDraftConfiguration: string) => {
       return apiRequest("PATCH", `/api/leagues/${leagueId}`, {
@@ -738,16 +761,55 @@ export default function Admin() {
     }
   }, [currentLeague?.name]);
 
+  // Pre-populate draft date/time from saved league value
+  useEffect(() => {
+    if (currentLeague?.draftScheduledAt) {
+      const d = new Date(currentLeague.draftScheduledAt);
+      // datetime-local expects "YYYY-MM-DDTHH:MM"
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      setDraftDateTime(local);
+    }
+  }, [currentLeague?.draftScheduledAt]);
+
+  const handleExportData = async () => {
+    try {
+      const response = await fetch(`/api/leagues/${leagueId}/export`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      a.download = match ? match[1] : "league_standings.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Export downloaded!",
+        description: "League standings have been exported as a CSV file.",
+      });
+    } catch {
+      toast({
+        title: "Export failed",
+        description: "Failed to export league data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "sync":
         syncScoresMutation.mutate();
         break;
       case "export":
-        toast({
-          title: "Export started",
-          description: "League data export is being prepared...",
-        });
+        handleExportData();
         break;
       case "updates":
         toast({
@@ -1191,12 +1253,22 @@ export default function Admin() {
                   <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
                     Draft Date/Time Start
                   </Label>
-                  <Input
-                    type="datetime-local"
-                    value={draftDateTime}
-                    onChange={(e) => setDraftDateTime(e.target.value)}
-                    className="w-full border-2 border-retro-pink focus:border-retro-purple"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      type="datetime-local"
+                      value={draftDateTime}
+                      onChange={(e) => setDraftDateTime(e.target.value)}
+                      className="flex-1 border-2 border-retro-pink focus:border-retro-purple"
+                    />
+                    <Button
+                      onClick={() => saveDraftDateTimeMutation.mutate(draftDateTime)}
+                      disabled={saveDraftDateTimeMutation.isPending}
+                      className="bg-retro-teal hover:bg-retro-lime text-white font-bold px-4 rounded-lg retro-font whitespace-nowrap"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      {saveDraftDateTimeMutation.isPending ? "SAVING..." : "SAVE"}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Draft Status */}

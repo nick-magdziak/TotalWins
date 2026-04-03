@@ -460,6 +460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/leagues/:id", async (req, res) => {
     try {
       const updates = req.body;
+      // Convert draftScheduledAt string to Date if provided
+      if (updates.draftScheduledAt && typeof updates.draftScheduledAt === "string") {
+        updates.draftScheduledAt = new Date(updates.draftScheduledAt);
+      }
       const league = await storage.updateLeague(req.params.id, updates);
       if (!league) {
         return res.status(404).json({ message: "League not found" });
@@ -467,6 +471,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(league);
     } catch (error) {
       res.status(400).json({ message: "Invalid update data" });
+    }
+  });
+
+  app.get("/api/leagues/:leagueId/export", async (req, res) => {
+    try {
+      const { leagueId } = req.params;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+
+      const standings = await storage.getPlayerStandings(leagueId);
+
+      const rows: string[] = ["Rank,Player,Teams,Total Wins"];
+      for (const standing of standings) {
+        const teamsCell = standing.teams
+          .map((t: any) => `${t.city ? t.city + " " : ""}${t.name} (${t.wins ?? 0}W)`)
+          .join("; ");
+        const escapedPlayer = `"${standing.displayName.replace(/"/g, '""')}"`;
+        const escapedTeams = `"${teamsCell.replace(/"/g, '""')}"`;
+        rows.push(`${standing.rank},${escapedPlayer},${escapedTeams},${standing.totalWins}`);
+      }
+
+      const csv = rows.join("\n");
+      const filename = `${league.name.replace(/[^a-z0-9]/gi, "_")}_standings.csv`;
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Error generating export:", error);
+      res.status(500).json({ message: "Failed to generate export" });
     }
   });
 
