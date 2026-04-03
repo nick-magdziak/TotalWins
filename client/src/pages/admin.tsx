@@ -668,6 +668,34 @@ export default function Admin() {
     },
   });
 
+  const pauseDraftMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/pause-draft", { leagueId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      toast({ title: "Draft Paused", description: "The draft is now paused. No picks can be made." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to pause draft.", variant: "destructive" });
+    },
+  });
+
+  const resumeDraftMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/resume-draft", { leagueId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      toast({ title: "Draft Resumed", description: "The draft is now active. Players can make picks!" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to resume draft.", variant: "destructive" });
+    },
+  });
+
   // League update mutation
   const updateLeagueMutation = useMutation({
     mutationFn: async (updates: { name?: string }) => {
@@ -1207,20 +1235,24 @@ export default function Admin() {
 
                   {/* Draft Control Buttons */}
                   <div className="grid grid-cols-2 gap-3">
-                    {draftStatus?.isActive ? (
+                    {currentLeague?.draftStatus === "active" ? (
                       <Button
-                        onClick={() => {
-                          // TODO: Add pause draft mutation
-                          toast({
-                            title: "Pause functionality",
-                            description: "Pause draft feature coming soon!",
-                          });
-                        }}
+                        onClick={() => pauseDraftMutation.mutate()}
+                        disabled={pauseDraftMutation.isPending}
                         variant="outline"
                         className="border-retro-orange text-retro-orange hover:bg-retro-orange hover:text-white font-bold py-2 rounded-lg retro-font"
                       >
                         <Pause className="w-4 h-4 mr-2" />
-                        PAUSE DRAFT
+                        {pauseDraftMutation.isPending ? "PAUSING..." : "PAUSE DRAFT"}
+                      </Button>
+                    ) : currentLeague?.draftStatus === "paused" ? (
+                      <Button
+                        onClick={() => resumeDraftMutation.mutate()}
+                        disabled={resumeDraftMutation.isPending}
+                        className="bg-retro-teal hover:bg-retro-lime text-white font-bold py-2 rounded-lg retro-font"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        {resumeDraftMutation.isPending ? "RESUMING..." : "RESUME DRAFT"}
                       </Button>
                     ) : (
                       <Button

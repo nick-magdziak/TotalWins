@@ -1008,9 +1008,12 @@ export class DatabaseStorage implements IStorage {
     const picks = await this.getDraftPicks(leagueId);
     const members = await this.getLeagueMembers(leagueId);
 
-    if (!league || league.draftStatus !== "active") {
+    const isPaused = league?.draftStatus === "paused";
+
+    if (!league || (league.draftStatus !== "active" && !isPaused)) {
       return {
         isActive: false,
+        isPaused: false,
         currentPick: 0,
         currentPlayer: "",
         round: 1,
@@ -1023,6 +1026,7 @@ export class DatabaseStorage implements IStorage {
     if (currentPickNumber > totalPicks) {
       return {
         isActive: false,
+        isPaused: false,
         currentPick: totalPicks,
         currentPlayer: "",
         round: Math.ceil(totalPicks / members.length),
@@ -1066,6 +1070,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       isActive: true,
+      isPaused,
       currentPick: currentPickNumber,
       currentPlayer: currentUser?.displayName || "",
       round,

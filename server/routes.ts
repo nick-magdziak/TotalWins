@@ -587,6 +587,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/leagues/:leagueId/draft/picks", async (req, res) => {
     try {
+      // Reject picks when draft is paused
+      const league = await storage.getLeague(req.params.leagueId);
+      if (!league) {
+        return res.status(404).json({ message: "League not found" });
+      }
+      if (league.draftStatus === "paused") {
+        return res.status(403).json({ message: "The draft is currently paused. Please wait for the commissioner to resume." });
+      }
+
       const pickData = insertDraftPickSchema.parse({
         ...req.body,
         leagueId: req.params.leagueId
@@ -1118,6 +1127,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error stopping draft:", error);
       res.status(500).json({ error: "Failed to stop draft" });
+    }
+  });
+
+  app.post("/api/admin/pause-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      if (!leagueId) {
+        return res.status(400).json({ error: "League ID required" });
+      }
+      await storage.updateLeague(leagueId, { draftStatus: "paused" });
+      res.json({ success: true, message: "Draft paused successfully" });
+    } catch (error) {
+      console.error("Error pausing draft:", error);
+      res.status(500).json({ error: "Failed to pause draft" });
+    }
+  });
+
+  app.post("/api/admin/resume-draft", async (req, res) => {
+    try {
+      const { leagueId } = req.body;
+      if (!leagueId) {
+        return res.status(400).json({ error: "League ID required" });
+      }
+      await storage.updateLeague(leagueId, { draftStatus: "active" });
+      res.json({ success: true, message: "Draft resumed successfully" });
+    } catch (error) {
+      console.error("Error resuming draft:", error);
+      res.status(500).json({ error: "Failed to resume draft" });
     }
   });
 

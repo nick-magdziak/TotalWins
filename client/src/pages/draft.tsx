@@ -55,7 +55,7 @@ export default function Draft() {
 
   const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "draft", "picks"],
-    refetchInterval: draftStatus?.isActive ? 3000 : 30000, // 3s when active, 30s when inactive
+    refetchInterval: (draftStatus?.isActive || draftStatus?.isPaused) ? 3000 : 30000, // 3s when active or paused, 30s otherwise
   });
 
   const { data: userPicks } = useQuery<DraftPick[]>({
@@ -86,12 +86,21 @@ export default function Draft() {
         description: "Your pick has been recorded.",
       });
     },
-    onError: () => {
-      toast({
-        title: "Draft failed",
-        description: "Failed to draft team. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      const msg = error?.message || "";
+      if (msg.includes("paused") || msg.includes("403")) {
+        toast({
+          title: "Draft is paused",
+          description: "The draft is currently paused. Please wait for the commissioner to resume.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Draft failed",
+          description: "Failed to draft team. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -197,12 +206,14 @@ export default function Draft() {
 
   const getDraftStatusLabel = (status?: string) => {
     if (status === 'active') return 'DRAFT IN PROGRESS';
+    if (status === 'paused') return 'DRAFT PAUSED';
     if (status === 'completed') return 'LIVE';
     return 'DRAFT NOT STARTED';
   };
 
   const getDraftStatusClass = (status?: string) => {
     if (status === 'active') return 'bg-orange-500 text-white animate-pulse';
+    if (status === 'paused') return 'bg-amber-400 text-amber-900';
     if (status === 'completed') return 'bg-retro-lime text-retro-charcoal';
     return 'bg-gray-500 text-white';
   };

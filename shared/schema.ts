@@ -225,6 +225,7 @@ export type PlayerStanding = {
 
 export type DraftStatus = {
   isActive: boolean;
+  isPaused: boolean;
   currentPick: number;
   currentPlayer: string;
   round: number;
