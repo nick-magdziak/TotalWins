@@ -126,16 +126,31 @@ export default function Standings() {
     }
   };
 
-  const getDraftStatusLabel = (status?: string) => {
+  const formatDraftDate = (draftScheduledAt?: string | Date | null) => {
+    if (!draftScheduledAt) return null;
+    const d = new Date(draftScheduledAt);
+    const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const day = d.getDate();
+    const time = d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `DRAFT ${month} ${day} · ${time}`;
+  };
+
+  const getDraftStatusLabel = (status?: string, sport?: string) => {
     if (status === 'active') return 'DRAFT IN PROGRESS';
-    if (status === 'completed') return 'LIVE';
+    if (status === 'completed') return getSeasonPeriodLabel(sport);
     return 'DRAFT NOT STARTED';
   };
 
   const getDraftStatusClass = (status?: string) => {
     if (status === 'active') return 'bg-orange-500 text-white animate-pulse';
-    if (status === 'completed') return 'bg-retro-lime text-retro-charcoal';
+    if (status === 'completed') return 'bg-retro-teal text-white';
     return 'bg-gray-500 text-white';
+  };
+
+  const getTealBadgeLabel = (status?: string, sport?: string, draftScheduledAt?: string | Date | null) => {
+    if (status === 'completed') return null;
+    if (status !== 'active' && draftScheduledAt) return formatDraftDate(draftScheduledAt);
+    return getSeasonPeriodLabel(sport);
   };
 
   const getRecentResultsTitle = () => {
@@ -265,11 +280,13 @@ export default function Standings() {
             </p>
             <div className="mt-3 flex flex-row items-center justify-center gap-3">
               <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(currentLeague?.draftStatus)}`}>
-                {getDraftStatusLabel(currentLeague?.draftStatus)}
+                {getDraftStatusLabel(currentLeague?.draftStatus, currentLeague?.sport)}
               </Badge>
-              <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
-                {getSeasonPeriodLabel(currentLeague?.sport)}
-              </Badge>
+              {getTealBadgeLabel(currentLeague?.draftStatus, currentLeague?.sport, currentLeague?.draftScheduledAt) && (
+                <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
+                  {getTealBadgeLabel(currentLeague?.draftStatus, currentLeague?.sport, currentLeague?.draftScheduledAt)}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
