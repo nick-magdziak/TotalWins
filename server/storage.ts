@@ -1445,27 +1445,37 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return { gamesProcessed: 0, totalGames: 0, players: [] };
 
-    // Normalize league.season to match the games table season format per sport.
-    // Leagues store seasons as "YYYY-YY" (NFL/NBA) or "YYYY" (MLB/WC).
-    // Games store NFL seasons as the start year ("2025-26" → "2025"),
-    // NBA seasons as the end calendar year ("2025-26" → "2026"),
-    // and MLB/WC as direct "YYYY" matches.
-    const normalizeSeason = (sport: string, season: string): string => {
-      const parts = season.split('-');
-      if (parts.length === 2 && parts[1].length === 2) {
-        if (sport === 'NFL') return parts[0];                          // "2025-26" → "2025"
-        if (sport === 'NBA') return parts[0].slice(0, 2) + parts[1];  // "2025-26" → "2026"
-      }
-      return season; // MLB, WORLD_CUP: already "YYYY"
-    };
-    const currentSeason = normalizeSeason(league.sport, league.season);
+    // --- Games Processed: derived from team records (always accurate regardless of games table completeness) ---
+    // Full season game counts: (teams × gamesPerTeam) / 2
+    const SEASON_TOTAL_GAMES: Record<string, number> = { NFL: 272, MLB: 2430, NBA: 1230 };
 
-    // Count completed vs total games scoped to this league's sport and season
-    const allGamesForSport = await db.select({ id: games.id, status: games.status })
-      .from(games)
-      .where(and(eq(games.sport, league.sport), eq(games.season, currentSeason)));
-    const totalGames = allGamesForSport.length;
-    const gamesProcessed = allGamesForSport.filter(g => g.status === 'completed').length;
+    let gamesProcessed = 0;
+    let totalGames = 0;
+
+    if (league.sport === 'WORLD_CUP') {
+      // WC: use the games table (it's fully seeded and accurate)
+      const wcSeasonStr = league.season; // e.g. "2026"
+      const allWCDbGames = await db.select({ id: games.id, status: games.status })
+        .from(games)
+        .where(and(eq(games.sport, 'WORLD_CUP'), eq(games.season, wcSeasonStr)));
+      totalGames = allWCDbGames.length;
+      gamesProcessed = allWCDbGames.filter(g => g.status === 'completed').length;
+    } else if (league.sport === 'NFL') {
+      const [row] = await db.select({ total: sql<number>`sum(wins + losses + ties)` }).from(nflTeams);
+      gamesProcessed = Math.floor((Number(row?.total) || 0) / 2);
+      totalGames = SEASON_TOTAL_GAMES['NFL'];
+    } else if (league.sport === 'MLB') {
+      const [row] = await db.select({ total: sql<number>`sum(wins + losses)` }).from(mlbTeams);
+      gamesProcessed = Math.floor((Number(row?.total) || 0) / 2);
+      totalGames = SEASON_TOTAL_GAMES['MLB'];
+    } else if (league.sport === 'NBA') {
+      const [row] = await db.select({ total: sql<number>`sum(wins + losses)` }).from(nbaTeams);
+      gamesProcessed = Math.floor((Number(row?.total) || 0) / 2);
+      totalGames = SEASON_TOTAL_GAMES['NBA'];
+    }
+
+    // Season is considered complete when ≥95% of games are processed
+    const seasonComplete = totalGames > 0 && gamesProcessed >= totalGames * 0.95;
 
     const members = await db.select({ member: leagueMembers, user: users })
       .from(leagueMembers)
@@ -1476,24 +1486,26 @@ export class DatabaseStorage implements IStorage {
 
     if (league.sport === 'WORLD_CUP') {
       const wcStandings = await this.getWorldCupPlayerStandings(leagueId);
-      const allWCGames = (await this.getWorldCupGames()).filter(g => g.season === currentSeason);
+      const allWCGames = (await this.getWorldCupGames()).filter(g => g.season === league.season);
 
       for (const s of wcStandings) {
         const picks = await this.getUserDraftPicks(leagueId, s.userId);
         const teamIds = picks.map(p => p.teamId!);
 
         let maxAdditional = 0;
-        for (const teamId of teamIds) {
-          const teamIncompleteGames = allWCGames.filter(
-            g => (g.homeTeamId === teamId || g.awayTeamId === teamId) && g.status !== 'completed'
-          );
-          for (const game of teamIncompleteGames) {
-            if (game.wcRound === 'group_stage') {
-              maxAdditional += 2; // max 2 pts for a group-stage win
-            } else if (game.wcRound === 'third_place') {
-              maxAdditional += 2; // third place: win = 2 pts, no advancement bonus
-            } else if (game.wcRound) {
-              maxAdditional += 3; // knockout: advance (1) + win (2) = 3 pts max
+        if (!seasonComplete) {
+          for (const teamId of teamIds) {
+            const teamIncompleteGames = allWCGames.filter(
+              g => (g.homeTeamId === teamId || g.awayTeamId === teamId) && g.status !== 'completed'
+            );
+            for (const game of teamIncompleteGames) {
+              if (game.wcRound === 'group_stage') {
+                maxAdditional += 2;
+              } else if (game.wcRound === 'third_place') {
+                maxAdditional += 2;
+              } else if (game.wcRound) {
+                maxAdditional += 3;
+              }
             }
           }
         }
@@ -1506,8 +1518,8 @@ export class DatabaseStorage implements IStorage {
         });
       }
     } else {
-      const totalSeasonGames: Record<string, number> = { NFL: 17, MLB: 162, NBA: 82 };
-      const seasonTotal = totalSeasonGames[league.sport] || 0;
+      const gamesPerTeam: Record<string, number> = { NFL: 17, MLB: 162, NBA: 82 };
+      const seasonTotal = gamesPerTeam[league.sport] || 0;
 
       for (const { user } of members) {
         const picks = await this.getUserDraftPicks(leagueId, user.id);
@@ -1517,11 +1529,18 @@ export class DatabaseStorage implements IStorage {
         const validTeams = teams.filter((t): t is NFLTeam | MLBTeam | NBATeam => Boolean(t));
 
         const currentWins = validTeams.reduce((sum, t) => sum + (t.wins || 0), 0);
-        const maxPossibleWins = validTeams.reduce((sum, t) => {
-          const gamesPlayed = (t.wins || 0) + (t.losses || 0) + ((t as NFLTeam).ties || 0);
-          const remaining = Math.max(0, seasonTotal - gamesPlayed);
-          return sum + (t.wins || 0) + remaining;
-        }, 0);
+
+        let maxPossibleWins: number;
+        if (seasonComplete) {
+          // Season is over: no more games remain, max = current wins
+          maxPossibleWins = currentWins;
+        } else {
+          maxPossibleWins = validTeams.reduce((sum, t) => {
+            const gamesPlayed = (t.wins || 0) + (t.losses || 0) + ((t as NFLTeam).ties || 0);
+            const remaining = Math.max(0, seasonTotal - gamesPlayed);
+            return sum + (t.wins || 0) + remaining;
+          }, 0);
+        }
 
         players.push({ userId: user.id, displayName: user.displayName, currentWins, maxPossibleWins });
       }
