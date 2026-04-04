@@ -54,6 +54,7 @@ export default function Admin() {
   const [draftConfiguration, setDraftConfiguration] = useState("");
   const [draftDateTime, setDraftDateTime] = useState("");
   const [updateMessage, setUpdateMessage] = useState("");
+  const [showSendUpdatesDialog, setShowSendUpdatesDialog] = useState(false);
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
@@ -342,6 +343,7 @@ export default function Admin() {
           : "No players with verified emails found.",
       });
       setUpdateMessage("");
+      setShowSendUpdatesDialog(false);
     },
     onError: (err: Error) => {
       toast({
@@ -819,9 +821,7 @@ export default function Admin() {
         handleExportData();
         break;
       case "updates":
-        if (leagueId) {
-          sendUpdatesMutation.mutate({ leagueId, message: updateMessage });
-        }
+        setShowSendUpdatesDialog(true);
         break;
       case "manual":
         toast({
@@ -1160,25 +1160,13 @@ export default function Admin() {
                   EXPORT DATA
                 </Button>
                 
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Include a message (optional)
-                  </Label>
-                  <Textarea
-                    value={updateMessage}
-                    onChange={(e) => setUpdateMessage(e.target.value)}
-                    placeholder="Add a note for your league players..."
-                    className="text-sm resize-none h-20 bg-gray-50 border-gray-200"
-                  />
-                  <Button
-                    onClick={() => handleQuickAction("updates")}
-                    disabled={sendUpdatesMutation.isPending}
-                    className="w-full bg-gradient-to-br from-retro-purple to-retro-pink text-white p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
-                  >
-                    <Bell className={`w-6 h-6 mb-2 mx-auto block ${sendUpdatesMutation.isPending ? 'animate-pulse' : ''}`} />
-                    {sendUpdatesMutation.isPending ? "SENDING..." : "SEND UPDATES"}
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => handleQuickAction("updates")}
+                  className="bg-gradient-to-br from-retro-purple to-retro-pink text-white p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
+                >
+                  <Bell className="w-6 h-6 mb-2 mx-auto block" />
+                  SEND UPDATES
+                </Button>
 
               </div>
             </CardContent>
@@ -1781,6 +1769,61 @@ export default function Admin() {
             >
               <Save className="w-4 h-4 mr-2" />
               {saveDraftOrderMutation.isPending ? "SAVING..." : "SAVE ORDER"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Updates Dialog */}
+      <Dialog open={showSendUpdatesDialog} onOpenChange={(open) => {
+        setShowSendUpdatesDialog(open);
+        if (!open) setUpdateMessage("");
+      }}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md" aria-describedby="send-updates-description">
+          <DialogHeader>
+            <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
+              SEND LEAGUE UPDATE
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2" id="send-updates-description">
+            <p className="text-sm text-gray-600">
+              This will email the current standings to all league members. You can include an optional message below.
+            </p>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Message (optional)
+              </Label>
+              <Textarea
+                value={updateMessage}
+                onChange={(e) => setUpdateMessage(e.target.value)}
+                placeholder="Add a note for your league players..."
+                className="resize-none h-28"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSendUpdatesDialog(false);
+                setUpdateMessage("");
+              }}
+              disabled={sendUpdatesMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (leagueId) {
+                  sendUpdatesMutation.mutate({ leagueId, message: updateMessage });
+                }
+              }}
+              disabled={sendUpdatesMutation.isPending}
+              className="bg-gradient-to-r from-retro-purple to-retro-pink text-white font-bold retro-font"
+            >
+              <Bell className={`w-4 h-4 mr-2 ${sendUpdatesMutation.isPending ? 'animate-pulse' : ''}`} />
+              {sendUpdatesMutation.isPending ? "SENDING..." : "SEND"}
             </Button>
           </DialogFooter>
         </DialogContent>
