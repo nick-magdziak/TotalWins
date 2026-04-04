@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,11 @@ export default function Standings() {
 
   // Selected season — default to current (null = use leagueId)
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
+
+  // Reset season selection whenever the active league changes (league switching without remount)
+  useEffect(() => {
+    setSelectedSeasonId(null);
+  }, [leagueId]);
 
   // The ID we actually pass to standings & game queries
   const activeLeagueId = selectedSeasonId ?? leagueId;
