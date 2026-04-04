@@ -327,6 +327,32 @@ export default function Profile() {
     },
   });
 
+  const testSendUpdatesMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedLeagueId) throw new Error("No league selected");
+      const response = await fetch(`/api/leagues/${selectedLeagueId}/send-updates/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to send test update");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Test Update Sent",
+        description: `A test standings update has been sent to ${currentUser?.email}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send test update email.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean) => {
     updatePreferencesMutation.mutate({ [key]: value });
   };
@@ -801,6 +827,15 @@ export default function Profile() {
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Test Game
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testSendUpdatesMutation.mutate()}
+                      disabled={testSendUpdatesMutation.isPending || !selectedLeagueId}
+                    >
+                      <Bell className="h-4 w-4 mr-2" />
+                      {testSendUpdatesMutation.isPending ? "Sending..." : "Test Updates"}
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500">

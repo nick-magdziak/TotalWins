@@ -626,6 +626,110 @@ Total Wins - Password Reset
       textBody,
     });
   }
+
+  async sendLeagueUpdate(
+    email: string,
+    playerName: string,
+    leagueName: string,
+    sport: string,
+    standings: Array<{ rank: number; displayName: string; totalWins: number }>,
+    customMessage: string | undefined,
+    leagueId: string,
+    isTest: boolean = false
+  ): Promise<boolean> {
+    const safePlayerName = escapeHtml(playerName);
+    const safeLeagueName = escapeHtml(leagueName);
+    const standingsUrl = `${APP_URL}/standings?league=${encodeURIComponent(leagueId)}`;
+    const sportLabel = sport === 'WORLD_CUP' ? 'World Cup' : sport;
+    const scoreLabel = sport === 'WORLD_CUP' ? 'Points' : 'Wins';
+
+    const standingsRows = standings
+      .map(s => `
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="padding:10px 12px;font-weight:bold;color:#8A2BE2;font-size:14px;">#${s.rank}</td>
+          <td style="padding:10px 12px;font-size:14px;font-weight:bold;">${escapeHtml(s.displayName)}</td>
+          <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:bold;color:#20B2AA;">${s.totalWins} ${scoreLabel}</td>
+        </tr>`)
+      .join('');
+
+    const customMessageBlock = customMessage && customMessage.trim()
+      ? `<div style="background:#f8f0ff;border-left:4px solid #8A2BE2;border-radius:6px;padding:16px 20px;margin:20px 0;font-size:14px;color:#333;line-height:1.6;">
+          <div style="font-weight:bold;color:#8A2BE2;margin-bottom:6px;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Message from your league admin</div>
+          ${escapeHtml(customMessage.trim()).replace(/\n/g, '<br>')}
+        </div>`
+      : '';
+
+    const testBanner = isTest
+      ? `<div style="background:#fff3cd;border:2px dashed #ffc107;border-radius:6px;padding:10px 16px;margin-bottom:16px;text-align:center;font-size:12px;font-weight:bold;color:#856404;">TEST EMAIL — This is a preview of the league update email</div>`
+      : '';
+
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${safeLeagueName} — Standings Update</title>
+      </head>
+      <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background:#f0f0f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f0f0;padding:20px 0;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
+              <tr><td>${LOGO_HTML}</td></tr>
+              <tr><td style="padding:28px 32px;">
+                ${testBanner}
+                <p style="font-size:16px;margin-top:0;">Hi ${safePlayerName},</p>
+                <p style="font-size:15px;color:#444;">Here's the latest standings update for your <strong>${safeLeagueName}</strong> (${sportLabel}) league.</p>
+                ${customMessageBlock}
+                <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#888;margin:24px 0 10px;border-bottom:1px solid #eee;padding-bottom:6px;">Current Standings</div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid #eee;border-radius:8px;overflow:hidden;">
+                  <thead>
+                    <tr style="background:#f8f9fa;">
+                      <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;">Rank</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;">Player</th>
+                      <th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;">${scoreLabel}</th>
+                    </tr>
+                  </thead>
+                  <tbody>${standingsRows}</tbody>
+                </table>
+                <div style="text-align:center;margin:28px 0 8px;">
+                  <a href="${standingsUrl}" style="display:inline-block;background:linear-gradient(to right,#FF1493 0%,#8A2BE2 50%,#20B2AA 100%);color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">VIEW FULL STANDINGS</a>
+                </div>
+              </td></tr>
+              <tr><td style="background:#f8f9fa;padding:18px 32px;text-align:center;color:#999;font-size:12px;border-top:1px solid #eee;">
+                Total Wins &mdash; ${safeLeagueName}
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const textRows = standings.map(s => `#${s.rank} ${s.displayName} — ${s.totalWins} ${scoreLabel}`).join('\n');
+    const textCustomMessage = customMessage ? `\nMessage from your league admin:\n${customMessage}\n` : '';
+    const textBody = `
+${isTest ? '[TEST EMAIL]\n' : ''}STANDINGS UPDATE — ${leagueName}
+
+Hi ${playerName},
+
+Here are the latest standings for your ${leagueName} (${sportLabel}) league.
+${textCustomMessage}
+CURRENT STANDINGS
+${textRows}
+
+View the full standings: ${standingsUrl}
+
+Total Wins
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: `${isTest ? '[TEST] ' : ''}${leagueName} Standings Update`,
+      htmlBody,
+      textBody,
+    });
+  }
 }
 
 export { EmailService };

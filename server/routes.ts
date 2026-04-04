@@ -503,6 +503,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/leagues/:leagueId/send-updates", requireAuth, async (req, res) => {
+    try {
+      const { leagueId } = req.params;
+      const { message } = req.body;
+
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+
+      const requestingUser = await storage.getUser(req.session.userId!);
+      const isLeagueAdmin = requestingUser?.isAdmin || league.createdBy === req.session.userId;
+      if (!isLeagueAdmin) return res.status(403).json({ message: "Admin access required" });
+
+      const { emailService } = await import("./services/emailService.js");
+      const standings = await storage.getPlayerStandings(leagueId);
+      const members = await storage.getLeagueMembers(leagueId);
+
+      let sent = 0;
+      for (const member of members) {
+        const user = await storage.getUser(member.userId);
+        if (!user || !user.email || user.password === "__pending__") continue;
+        const success = await emailService.sendLeagueUpdate(
+          user.email,
+          user.displayName,
+          league.name,
+          league.sport || "NFL",
+          standings,
+          message || undefined,
+          leagueId,
+          false
+        );
+        if (success) sent++;
+      }
+
+      res.json({ sent });
+    } catch (error) {
+      console.error("Error sending league updates:", error);
+      res.status(500).json({ message: "Failed to send updates" });
+    }
+  });
+
+  app.post("/api/leagues/:leagueId/send-updates/test", requireAuth, async (req, res) => {
+    try {
+      const { leagueId } = req.params;
+
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) return res.status(401).json({ message: "Not authenticated" });
+
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+
+      const { emailService } = await import("./services/emailService.js");
+      const standings = await storage.getPlayerStandings(leagueId);
+
+      const success = await emailService.sendLeagueUpdate(
+        user.email,
+        user.displayName,
+        league.name,
+        league.sport || "NFL",
+        standings,
+        undefined,
+        leagueId,
+        true
+      );
+
+      res.json({ sent: success ? 1 : 0 });
+    } catch (error) {
+      console.error("Error sending test update:", error);
+      res.status(500).json({ message: "Failed to send test update" });
+    }
+  });
+
   app.get("/api/users/:userId/leagues", async (req, res) => {
     const leagues = await storage.getUserLeagues(req.params.userId);
     res.json(leagues);

@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -52,6 +53,7 @@ export default function Admin() {
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [draftConfiguration, setDraftConfiguration] = useState("");
   const [draftDateTime, setDraftDateTime] = useState("");
+  const [updateMessage, setUpdateMessage] = useState("");
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
@@ -318,6 +320,29 @@ export default function Admin() {
       toast({
         title: "Sync failed",
         description: "Failed to sync live scores. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendUpdatesMutation = useMutation({
+    mutationFn: async ({ leagueId, message }: { leagueId: string; message: string }) => {
+      const response = await apiRequest("POST", `/api/leagues/${leagueId}/send-updates`, { message });
+      return response.json();
+    },
+    onSuccess: (data: { sent: number }) => {
+      toast({
+        title: "Updates sent!",
+        description: data.sent > 0
+          ? `League update emailed to ${data.sent} player${data.sent !== 1 ? 's' : ''}.`
+          : "No players with verified emails found.",
+      });
+      setUpdateMessage("");
+    },
+    onError: () => {
+      toast({
+        title: "Failed to send updates",
+        description: "An error occurred. Please try again.",
         variant: "destructive",
       });
     },
@@ -790,10 +815,9 @@ export default function Admin() {
         handleExportData();
         break;
       case "updates":
-        toast({
-          title: "Updates sent",
-          description: "League update notifications sent to all players.",
-        });
+        if (leagueId) {
+          sendUpdatesMutation.mutate({ leagueId, message: updateMessage });
+        }
         break;
       case "manual":
         toast({
@@ -1132,13 +1156,22 @@ export default function Admin() {
                   EXPORT DATA
                 </Button>
                 
-                <Button
-                  onClick={() => handleQuickAction("updates")}
-                  className="bg-gradient-to-br from-retro-purple to-retro-pink text-white p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
-                >
-                  <Bell className="w-6 h-6 mb-2 mx-auto block" />
-                  SEND UPDATES
-                </Button>
+                <div className="space-y-2">
+                  <Textarea
+                    value={updateMessage}
+                    onChange={(e) => setUpdateMessage(e.target.value)}
+                    placeholder="Add a note to include in this update (optional)..."
+                    className="text-sm resize-none h-20 bg-gray-50 border-gray-200"
+                  />
+                  <Button
+                    onClick={() => handleQuickAction("updates")}
+                    disabled={sendUpdatesMutation.isPending}
+                    className="w-full bg-gradient-to-br from-retro-purple to-retro-pink text-white p-4 rounded-xl font-bold text-center hover:scale-105 transform transition-all duration-200 retro-font"
+                  >
+                    <Bell className={`w-6 h-6 mb-2 mx-auto block ${sendUpdatesMutation.isPending ? 'animate-pulse' : ''}`} />
+                    {sendUpdatesMutation.isPending ? "SENDING..." : "SEND UPDATES"}
+                  </Button>
+                </div>
 
               </div>
             </CardContent>
