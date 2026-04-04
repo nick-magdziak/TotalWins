@@ -10,19 +10,32 @@ export class WorldCupDataService {
       console.log("⚽ Syncing World Cup games from ESPN API...");
       const games = await this.fetchWorldCupGames();
 
+      // Fetch all WC games once (seeded + previously synced)
+      const allExisting = await storage.getGames(undefined, this.SEASON);
+      const wcExisting = allExisting.filter((g) => g.sport === "WORLD_CUP");
+
       for (const game of games) {
-        const existingGames = await storage.getGames(undefined, this.SEASON);
-        const existing = existingGames.find((g) => g.id === game.id);
+        // Match by home+away team combination and round to avoid ID mismatch
+        // with pre-seeded fixtures (seeded IDs: wc-gs-A-md1-1, ESPN IDs: wc-{eventId})
+        const existing = wcExisting.find(
+          (g) =>
+            g.homeTeamId === game.homeTeamId &&
+            g.awayTeamId === game.awayTeamId &&
+            g.wcRound === game.wcRound
+        );
 
         if (existing) {
-          await storage.updateGame(game.id, {
+          // Update the seeded record in-place; preserve its stable ID
+          await storage.updateGame(existing.id, {
             homeScore: game.homeScore,
             awayScore: game.awayScore,
             status: game.status,
             completedAt: game.completedAt,
             period: game.period,
+            gameDate: game.gameDate, // update to exact ESPN kickoff time
           });
         } else {
+          // No matching seeded fixture — add as new record (e.g. knockout games)
           await storage.addGame(game);
         }
       }

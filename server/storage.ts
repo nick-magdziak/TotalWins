@@ -1350,10 +1350,6 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeWorldCupGames() {
     try {
-      // Only seed if our group stage fixtures haven't been inserted yet
-      const existing = await db.select({ id: games.id }).from(games).where(eq(games.id, "wc-gs-A-md1-1")).limit(1);
-      if (existing.length > 0) return;
-
       const season = "2026";
 
       const groupTeams: Record<string, [string, string, string, string]> = {

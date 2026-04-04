@@ -23,18 +23,26 @@ export default function Standings() {
   // Determine current league
   const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
 
+  // Resolve current league early so queries can be sport-aware
+  const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
+
   // Compute local date info from the browser's clock (not the server's UTC clock)
   const now = new Date();
   const tzOffset = now.getTimezoneOffset(); // minutes west of UTC (e.g. 240 for ET, 420 for PT)
   const toLocalDateStr = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = toLocalDateStr(now);
   const yesterdayStr = toLocalDateStr(new Date(now.getTime() - 24 * 60 * 60 * 1000));
   const tomorrowStr = toLocalDateStr(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
+  // WC uses a 2-day window (yesterday+today); other sports use a single-day window
+  const isWorldCup = currentLeague?.sport === 'WORLD_CUP';
+  const recentDateStr = isWorldCup ? yesterdayStr : todayStr;
+
   const { data: recentGames } = useQuery<any[]>({
-    queryKey: ["/api/leagues", leagueId, "games/recent", yesterdayStr],
+    queryKey: ["/api/leagues", leagueId, "games/recent", recentDateStr],
     queryFn: () =>
-      fetch(`/api/leagues/${leagueId}/games/recent?localDate=${yesterdayStr}&tzOffset=${tzOffset}`)
+      fetch(`/api/leagues/${leagueId}/games/recent?localDate=${recentDateStr}&tzOffset=${tzOffset}`)
         .then(r => r.json()),
     refetchInterval: 60000, // Poll every 1 minute for live game updates
   });
@@ -46,10 +54,6 @@ export default function Standings() {
         .then(r => r.json()),
     refetchInterval: 300000, // Poll every 5 minutes for upcoming games
   });
-  const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
-
-  // Sport-specific content functions
-  const isWorldCup = currentLeague?.sport === 'WORLD_CUP';
 
   const { data: wcGroups } = useQuery<Record<string, WCGroupStanding[]>>({
     queryKey: ["/api/world-cup/groups"],
