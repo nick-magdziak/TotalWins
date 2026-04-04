@@ -136,7 +136,7 @@ export const WC_GROUPS = {
   "Group F": ["wc-NED", "wc-JPN", "wc-TUN", "wc-F4"],
   "Group G": ["wc-BEL", "wc-IRN", "wc-EGY", "wc-NZL"],
   "Group H": ["wc-ESP", "wc-URU", "wc-KSA", "wc-CPV"],
-  "Group I": ["wc-FRA", "wc-SEN", "wc-NOR", "wc-I4"],
+  "Group I": ["wc-FRA", "wc-SEN", "wc-NOR", "wc-IRQ"],
   "Group J": ["wc-ARG", "wc-AUT", "wc-ALG", "wc-JOR"],
   "Group K": ["wc-POR", "wc-COL", "wc-UZB", "wc-K4"],
   "Group L": ["wc-ENG", "wc-CRO", "wc-GHA", "wc-PAN"],
