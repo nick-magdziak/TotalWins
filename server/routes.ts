@@ -457,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.patch("/api/leagues/:id", async (req, res) => {
+  app.patch("/api/leagues/:id", requireAdmin, async (req, res) => {
     try {
       const updates = req.body;
       // Convert draftScheduledAt string to Date if provided
@@ -598,7 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(membersWithUsers);
   });
 
-  app.post("/api/leagues/:leagueId/members", async (req, res) => {
+  app.post("/api/leagues/:leagueId/members", requireAdmin, async (req, res) => {
     try {
       const { userId } = req.body;
       const member = await storage.addLeagueMember({
@@ -612,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/leagues/:leagueId/members/:userId", async (req, res) => {
+  app.delete("/api/leagues/:leagueId/members/:userId", requireAdmin, async (req, res) => {
     try {
       // Check if league exists and get its draft status
       const league = await storage.getLeague(req.params.leagueId);
@@ -703,7 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(picksWithDetails);
   });
 
-  app.post("/api/leagues/:leagueId/draft/picks", async (req, res) => {
+  app.post("/api/leagues/:leagueId/draft/picks", requireAuth, async (req, res) => {
     try {
       // Reject picks when draft is paused
       const league = await storage.getLeague(req.params.leagueId);
@@ -1019,8 +1019,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/leagues/:leagueId/members/:userId/notification-preferences", async (req, res) => {
+  app.put("/api/leagues/:leagueId/members/:userId/notification-preferences", requireAuth, async (req, res) => {
     try {
+      if (req.session.userId !== req.params.userId) {
+        const caller = await storage.getUser(req.session.userId!);
+        if (!caller?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       const updates = req.body;
       const success = await storage.updateLeagueMemberPreferences(
         req.params.leagueId, 
@@ -1042,8 +1048,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:userId/notification-preferences", async (req, res) => {
+  app.put("/api/users/:userId/notification-preferences", requireAuth, async (req, res) => {
     try {
+      if (req.session.userId !== req.params.userId) {
+        const caller = await storage.getUser(req.session.userId!);
+        if (!caller?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       const { userId } = req.params;
       const preferences = req.body;
       

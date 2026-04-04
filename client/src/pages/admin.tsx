@@ -845,12 +845,6 @@ export default function Admin() {
       case "updates":
         setShowSendUpdatesDialog(true);
         break;
-      case "manual":
-        toast({
-          title: "Manual entry",
-          description: "Manual score entry interface would open here.",
-        });
-        break;
     }
   };
 

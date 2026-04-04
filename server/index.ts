@@ -25,7 +25,14 @@ app.use(session({
     createTableIfMissing: true,
     tableName: "session",
   }),
-  secret: process.env.SESSION_SECRET || "tw-dev-secret-change-in-prod",
+  secret: (() => {
+    if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SESSION_SECRET environment variable must be set in production");
+    }
+    console.warn("⚠️  SESSION_SECRET not set — using dev fallback. Set this in production.");
+    return "tw-dev-secret-change-in-prod";
+  })(),
   resave: false,
   saveUninitialized: false,
   cookie: {
