@@ -487,12 +487,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Roll over to a new season (admin only)
   app.post("/api/leagues/:id/rollover", requireAdmin, async (req, res) => {
     try {
-      const { newSeason } = z.object({ newSeason: z.string().min(1) }).parse(req.body);
+      const { newSeason, memberUserIds } = z.object({
+        newSeason: z.string().min(1),
+        memberUserIds: z.array(z.string()).optional(),
+      }).parse(req.body);
       const userId = req.session.userId!;
-      const newLeague = await storage.rolloverLeague(req.params.id, newSeason, userId);
+      const newLeague = await storage.rolloverLeague(req.params.id, newSeason, userId, memberUserIds);
       res.json(newLeague);
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || "Rollover failed" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Rollover failed";
+      res.status(400).json({ message });
     }
   });
 

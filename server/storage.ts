@@ -48,7 +48,7 @@ export interface IStorage {
   updateLeague(id: string, updates: Partial<League>): Promise<League | undefined>;
   getUserLeagues(userId: string): Promise<League[]>;
   getSeasonHistory(leagueId: string): Promise<League[]>;
-  rolloverLeague(leagueId: string, newSeason: string, createdBy: string): Promise<League>;
+  rolloverLeague(leagueId: string, newSeason: string, createdBy: string, memberUserIds?: string[]): Promise<League>;
 
   // League Members
   getLeagueMembers(leagueId: string): Promise<LeagueMember[]>;
@@ -821,7 +821,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async rolloverLeague(leagueId: string, newSeason: string, createdBy: string): Promise<League> {
+  async rolloverLeague(leagueId: string, newSeason: string, createdBy: string, memberUserIds?: string[]): Promise<League> {
     const source = await this.getLeague(leagueId);
     if (!source) throw new Error("League not found");
 
@@ -847,9 +847,18 @@ export class DatabaseStorage implements IStorage {
       parentLeagueId: rootId,
     }).returning();
 
-    // Copy all current members (reset wins; preserve draft positions)
-    const members = await this.getLeagueMembers(leagueId);
-    for (const m of members) {
+    // Mark the source season as completed
+    await db.update(leagues)
+      .set({ seasonStatus: "completed" })
+      .where(eq(leagues.id, leagueId));
+
+    // Carry over selected members (or all if no selection provided)
+    const allMembers = await this.getLeagueMembers(leagueId);
+    const membersToCarry = memberUserIds && memberUserIds.length > 0
+      ? allMembers.filter(m => m.userId && memberUserIds.includes(m.userId))
+      : allMembers;
+
+    for (const m of membersToCarry) {
       await this.addLeagueMember({
         leagueId: newLeague.id,
         userId: m.userId!,

@@ -341,19 +341,29 @@ export default function Standings() {
       <section className="mb-8 px-4">
         <h3 className="text-black text-xl sm:text-2xl font-bold mb-2 text-center retro-font">
           <Trophy className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
-          {selectedSeasonId && selectedSeasonId !== leagueId
-            ? `${seasonHistory?.find(s => s.id === selectedSeasonId)?.season || ""} STANDINGS`
-            : "STANDINGS"}
+          STANDINGS
         </h3>
+
+        {/* Past season banner */}
+        {selectedSeasonId && selectedSeasonId !== leagueId && (
+          <div className="flex justify-center mb-3">
+            <Badge className="bg-amber-500 text-white px-4 py-1 rounded-full font-bold text-xs tracking-wide">
+              PAST SEASON — {seasonHistory?.find(s => s.id === selectedSeasonId)?.season || ""}
+            </Badge>
+          </div>
+        )}
+
         <p className="text-xs text-gray-600 text-center mb-4">
-          Last updated: {new Date().toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZoneName: 'short'
-          })}
+          {selectedSeasonId && selectedSeasonId !== leagueId
+            ? "Final standings — this season is complete"
+            : `Last updated: ${new Date().toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZoneName: 'short'
+              })}`}
         </p>
         
         <StandingsTable leagueId={activeLeagueId} />

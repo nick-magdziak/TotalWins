@@ -61,6 +61,7 @@ export default function Admin() {
   const [draftOrder, setDraftOrder] = useState<string[]>([]);
   const [showRolloverDialog, setShowRolloverDialog] = useState(false);
   const [newSeasonLabel, setNewSeasonLabel] = useState("");
+  const [rolloverMemberIds, setRolloverMemberIds] = useState<string[]>([]);
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -525,22 +526,24 @@ export default function Admin() {
   });
 
   const rolloverMutation = useMutation({
-    mutationFn: async (newSeason: string) => {
-      const response = await apiRequest("POST", `/api/leagues/${leagueId}/rollover`, { newSeason });
+    mutationFn: async ({ newSeason, memberUserIds }: { newSeason: string; memberUserIds: string[] }) => {
+      const response = await apiRequest("POST", `/api/leagues/${leagueId}/rollover`, { newSeason, memberUserIds });
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error((err as any).message || "Rollover failed");
+        const err: { message?: string } = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Rollover failed");
       }
-      return response.json();
+      return response.json() as Promise<League>;
     },
-    onSuccess: (newLeague: any) => {
+    onSuccess: (newLeague: League) => {
       toast({
         title: "New season created!",
-        description: `${newLeague.name} — ${newLeague.season} is ready. All members have been carried over.`,
+        description: `${newLeague.name} — ${newLeague.season} is ready. ${rolloverMemberIds.length} member${rolloverMemberIds.length !== 1 ? 's' : ''} carried over.`,
       });
       setShowRolloverDialog(false);
       setNewSeasonLabel("");
-      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+      setRolloverMemberIds([]);
+      // Navigate to the new league's admin page
+      window.location.href = `/admin?league=${newLeague.id}`;
     },
     onError: (err: Error) => {
       toast({
@@ -1438,6 +1441,9 @@ export default function Admin() {
                         ? `${yr}-${String(yr + 1).slice(-2)}`
                         : String(yr + 1);
                       setNewSeasonLabel(defaultSeason);
+                      // Pre-check all current members
+                      const allIds = (membersWithUserData ?? []).map((m: LeagueMember & { user?: { id?: string } }) => m.userId ?? "").filter(Boolean);
+                      setRolloverMemberIds(allIds);
                       setShowRolloverDialog(true);
                     }}
                     variant="outline"
@@ -1885,7 +1891,7 @@ export default function Admin() {
       {/* Start New Season Dialog */}
       <Dialog open={showRolloverDialog} onOpenChange={(open) => {
         setShowRolloverDialog(open);
-        if (!open) setNewSeasonLabel("");
+        if (!open) { setNewSeasonLabel(""); setRolloverMemberIds([]); }
       }}>
         <DialogContent className="bg-white rounded-2xl retro-border max-w-md" aria-describedby="rollover-description">
           <DialogHeader>
@@ -1895,9 +1901,8 @@ export default function Admin() {
           </DialogHeader>
           <div className="space-y-4 py-2" id="rollover-description">
             <p className="text-sm text-gray-600">
-              This will create a fresh copy of <strong>{currentLeague?.name}</strong> for the new season.
-              All current members will be carried over with their draft positions reset and wins set to zero.
-              Your existing season data is preserved.
+              This creates a fresh <strong>{currentLeague?.name}</strong> season.
+              Existing season data is preserved. Wins reset to zero; draft positions reset.
             </p>
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -1911,6 +1916,49 @@ export default function Admin() {
                 autoFocus
               />
             </div>
+
+            {/* Member carryover checkboxes */}
+            {membersWithUserData && membersWithUserData.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Members to Carry Over
+                  </Label>
+                  <button
+                    type="button"
+                    className="text-xs text-retro-purple hover:underline"
+                    onClick={() => {
+                      const allIds = membersWithUserData.map((m: LeagueMember & { user?: { id?: string; displayName?: string } }) => m.userId ?? "").filter(Boolean);
+                      setRolloverMemberIds(rolloverMemberIds.length === allIds.length ? [] : allIds);
+                    }}
+                  >
+                    {rolloverMemberIds.length === membersWithUserData.length ? "Deselect all" : "Select all"}
+                  </button>
+                </div>
+                <div className="border rounded-lg divide-y max-h-40 overflow-y-auto">
+                  {membersWithUserData.map((m: LeagueMember & { user?: { displayName?: string } }) => {
+                    const uid = m.userId ?? "";
+                    const checked = rolloverMemberIds.includes(uid);
+                    return (
+                      <label key={uid} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setRolloverMemberIds(prev =>
+                              checked ? prev.filter(id => id !== uid) : [...prev, uid]
+                            );
+                          }}
+                          className="accent-retro-purple"
+                        />
+                        <span className="text-sm font-medium">{m.user?.displayName || uid}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-400">{rolloverMemberIds.length} of {membersWithUserData.length} members selected</p>
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2">
             <Button
@@ -1918,6 +1966,7 @@ export default function Admin() {
               onClick={() => {
                 setShowRolloverDialog(false);
                 setNewSeasonLabel("");
+                setRolloverMemberIds([]);
               }}
               disabled={rolloverMutation.isPending}
             >
@@ -1926,10 +1975,10 @@ export default function Admin() {
             <Button
               onClick={() => {
                 if (newSeasonLabel.trim()) {
-                  rolloverMutation.mutate(newSeasonLabel.trim());
+                  rolloverMutation.mutate({ newSeason: newSeasonLabel.trim(), memberUserIds: rolloverMemberIds });
                 }
               }}
-              disabled={rolloverMutation.isPending || !newSeasonLabel.trim()}
+              disabled={rolloverMutation.isPending || !newSeasonLabel.trim() || rolloverMemberIds.length === 0}
               className="bg-gradient-to-r from-retro-purple to-retro-pink text-white font-bold retro-font"
             >
               <Trophy className={`w-4 h-4 mr-2 ${rolloverMutation.isPending ? 'animate-pulse' : ''}`} />
