@@ -1445,21 +1445,25 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return { gamesProcessed: 0, totalGames: 0, players: [] };
 
-    // Determine the current season by finding the season of the most recently-dated
-    // game for this sport (handles format mismatches between league.season and games.season)
-    const latestSeasonRow = await db.select({ season: games.season })
-      .from(games)
-      .where(eq(games.sport, league.sport))
-      .orderBy(desc(games.gameDate))
-      .limit(1);
-    const currentSeason = latestSeasonRow[0]?.season;
+    // Normalize league.season to match the games table season format per sport.
+    // Leagues store seasons as "YYYY-YY" (NFL/NBA) or "YYYY" (MLB/WC).
+    // Games store NFL seasons as the start year ("2025-26" → "2025"),
+    // NBA seasons as the end calendar year ("2025-26" → "2026"),
+    // and MLB/WC as direct "YYYY" matches.
+    const normalizeSeason = (sport: string, season: string): string => {
+      const parts = season.split('-');
+      if (parts.length === 2 && parts[1].length === 2) {
+        if (sport === 'NFL') return parts[0];                          // "2025-26" → "2025"
+        if (sport === 'NBA') return parts[0].slice(0, 2) + parts[1];  // "2025-26" → "2026"
+      }
+      return season; // MLB, WORLD_CUP: already "YYYY"
+    };
+    const currentSeason = normalizeSeason(league.sport, league.season);
 
-    // Count completed vs total games for this sport in the current season
-    const allGamesForSport = currentSeason
-      ? await db.select({ id: games.id, status: games.status })
-          .from(games)
-          .where(and(eq(games.sport, league.sport), eq(games.season, currentSeason)))
-      : [];
+    // Count completed vs total games scoped to this league's sport and season
+    const allGamesForSport = await db.select({ id: games.id, status: games.status })
+      .from(games)
+      .where(and(eq(games.sport, league.sport), eq(games.season, currentSeason)));
     const totalGames = allGamesForSport.length;
     const gamesProcessed = allGamesForSport.filter(g => g.status === 'completed').length;
 
