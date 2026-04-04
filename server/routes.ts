@@ -892,7 +892,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoints
   app.post("/api/admin/sync-scores", async (req, res) => {
     try {
-      const { week = 18, season = "2024" } = req.body;
+      const now = new Date();
+      const currentSeason = (now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1).toString();
+      const { week = 18, season = currentSeason } = req.body;
       await sportsApi.syncGamesForWeek(week, season);
       res.json({ message: "Scores synced successfully" });
     } catch (error) {
