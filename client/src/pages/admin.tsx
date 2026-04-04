@@ -328,6 +328,10 @@ export default function Admin() {
   const sendUpdatesMutation = useMutation({
     mutationFn: async ({ leagueId, message }: { leagueId: string; message: string }) => {
       const response = await apiRequest("POST", `/api/leagues/${leagueId}/send-updates`, { message });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as any).message || "Failed to send updates");
+      }
       return response.json();
     },
     onSuccess: (data: { sent: number }) => {
@@ -339,10 +343,10 @@ export default function Admin() {
       });
       setUpdateMessage("");
     },
-    onError: () => {
+    onError: (err: Error) => {
       toast({
         title: "Failed to send updates",
-        description: "An error occurred. Please try again.",
+        description: err.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
     },
@@ -1157,10 +1161,13 @@ export default function Admin() {
                 </Button>
                 
                 <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Include a message (optional)
+                  </Label>
                   <Textarea
                     value={updateMessage}
                     onChange={(e) => setUpdateMessage(e.target.value)}
-                    placeholder="Add a note to include in this update (optional)..."
+                    placeholder="Add a note for your league players..."
                     className="text-sm resize-none h-20 bg-gray-50 border-gray-200"
                   />
                   <Button

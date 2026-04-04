@@ -338,11 +338,19 @@ export default function Profile() {
       if (!response.ok) throw new Error("Failed to send test update");
       return response.json();
     },
-    onSuccess: () => {
-      toast({
-        title: "Test Update Sent",
-        description: `A test standings update has been sent to ${currentUser?.email}`,
-      });
+    onSuccess: (data: { sent: number }) => {
+      if (data.sent === 0) {
+        toast({
+          title: "Email not delivered",
+          description: "The test email could not be sent. Check your email configuration.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Test Update Sent",
+          description: `A test standings update has been sent to ${currentUser?.email}`,
+        });
+      }
     },
     onError: () => {
       toast({
