@@ -88,6 +88,16 @@ export interface IStorage {
   getWorldCupPlayerStandings(leagueId: string): Promise<WCPlayerStanding[]>;
   calculateWorldCupPlayerPoints(): Promise<void>;
   getWorldCupGames(): Promise<Game[]>;
+  getLeagueAnalytics(leagueId: string): Promise<{
+    gamesProcessed: number;
+    totalGames: number;
+    players: Array<{
+      userId: string;
+      displayName: string;
+      currentWins: number;
+      maxPossibleWins: number;
+    }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1425,6 +1435,80 @@ export class DatabaseStorage implements IStorage {
 
   async getWorldCupGames(): Promise<Game[]> {
     return await db.select().from(games).where(eq(games.sport, "WORLD_CUP")).orderBy(games.gameDate);
+  }
+
+  async getLeagueAnalytics(leagueId: string): Promise<{
+    gamesProcessed: number;
+    totalGames: number;
+    players: Array<{ userId: string; displayName: string; currentWins: number; maxPossibleWins: number }>;
+  }> {
+    const league = await this.getLeague(leagueId);
+    if (!league) return { gamesProcessed: 0, totalGames: 0, players: [] };
+
+    // Count all games for this sport (across all seasons in DB)
+    const allGamesForSport = await db.select({ id: games.id, status: games.status })
+      .from(games)
+      .where(eq(games.sport, league.sport));
+    const totalGames = allGamesForSport.length;
+    const gamesProcessed = allGamesForSport.filter(g => g.status === 'completed').length;
+
+    const members = await db.select({ member: leagueMembers, user: users })
+      .from(leagueMembers)
+      .innerJoin(users, eq(leagueMembers.userId, users.id))
+      .where(eq(leagueMembers.leagueId, leagueId));
+
+    const players: Array<{ userId: string; displayName: string; currentWins: number; maxPossibleWins: number }> = [];
+
+    if (league.sport === 'WORLD_CUP') {
+      const wcStandings = await this.getWorldCupPlayerStandings(leagueId);
+      const allWCGames = await this.getWorldCupGames();
+
+      for (const s of wcStandings) {
+        const picks = await this.getUserDraftPicks(leagueId, s.userId);
+        const teamIds = picks.map(p => p.teamId!);
+
+        let maxAdditional = 0;
+        for (const teamId of teamIds) {
+          const teamGroupGames = allWCGames.filter(
+            g => g.wcRound === 'group_stage' && (g.homeTeamId === teamId || g.awayTeamId === teamId)
+          );
+          const completedGroupGames = teamGroupGames.filter(g => g.status === 'completed').length;
+          const remaining = Math.max(0, 3 - completedGroupGames);
+          maxAdditional += remaining * 2;
+        }
+
+        players.push({
+          userId: s.userId,
+          displayName: s.displayName,
+          currentWins: s.fantasyPoints,
+          maxPossibleWins: s.fantasyPoints + maxAdditional,
+        });
+      }
+    } else {
+      const totalSeasonGames: Record<string, number> = { NFL: 17, MLB: 162, NBA: 82 };
+      const seasonTotal = totalSeasonGames[league.sport] || 0;
+
+      for (const { user } of members) {
+        const picks = await this.getUserDraftPicks(leagueId, user.id);
+        const teams = await Promise.all(
+          picks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
+        );
+        const validTeams = teams.filter((t): t is NFLTeam | MLBTeam | NBATeam => Boolean(t));
+
+        const currentWins = validTeams.reduce((sum, t) => sum + (t.wins || 0), 0);
+        const maxPossibleWins = validTeams.reduce((sum, t) => {
+          const gamesPlayed = (t.wins || 0) + (t.losses || 0) + ((t as NFLTeam).ties || 0);
+          const remaining = Math.max(0, seasonTotal - gamesPlayed);
+          return sum + (t.wins || 0) + remaining;
+        }, 0);
+
+        players.push({ userId: user.id, displayName: user.displayName, currentWins, maxPossibleWins });
+      }
+
+      players.sort((a, b) => b.currentWins - a.currentWins);
+    }
+
+    return { gamesProcessed, totalGames, players };
   }
 
   async getWorldCupGroups(): Promise<Record<string, WCGroupStanding[]>> {

@@ -183,6 +183,18 @@ export default function Admin() {
     refetchInterval: draftStatus?.isActive ? 3000 : 30000, // 3s when active, 30s when inactive
   });
 
+  // League analytics
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<{
+    gamesProcessed: number;
+    totalGames: number;
+    players: Array<{ userId: string; displayName: string; currentWins: number; maxPossibleWins: number }>;
+  }>({
+    queryKey: ["/api/leagues", leagueId, "analytics"],
+    queryFn: () => fetch(`/api/leagues/${leagueId}/analytics`).then(r => r.json()),
+    enabled: !!leagueId,
+    refetchInterval: 60000,
+  });
+
   // Manual draft pick mutation
   const manualDraftPickMutation = useMutation({
     mutationFn: async ({ teamId, userId }: { teamId: string; userId: string }) => {
@@ -1401,32 +1413,68 @@ export default function Admin() {
               </h3>
               
               <div className="space-y-4">
+                {/* Games Processed Tile */}
                 <div className="bg-retro-cream p-4 rounded-lg retro-border">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-retro-charcoal retro-font">Games Processed</span>
-                    <span className="font-bold text-retro-purple retro-font">272/272</span>
+                    {analyticsLoading ? (
+                      <span className="font-bold text-retro-purple retro-font animate-pulse">—/—</span>
+                    ) : (
+                      <span className="font-bold text-retro-purple retro-font">
+                        {analytics?.gamesProcessed ?? 0}/{analytics?.totalGames ?? 0}
+                      </span>
+                    )}
                   </div>
                   <div className="w-full bg-retro-pink bg-opacity-20 rounded-full h-2">
-                    <div className="bg-retro-lime h-2 rounded-full w-full"></div>
+                    <div
+                      className="bg-retro-lime h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: analytics && analytics.totalGames > 0
+                          ? `${Math.round((analytics.gamesProcessed / analytics.totalGames) * 100)}%`
+                          : '0%'
+                      }}
+                    />
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center bg-retro-cream p-4 rounded-lg retro-border">
-                    <div className="text-2xl font-bold text-retro-lime retro-font">8</div>
-                    <div className="text-sm text-retro-charcoal retro-font">Active Players</div>
+
+                {/* Player Standings Tile */}
+                <div className="bg-retro-cream rounded-lg retro-border overflow-hidden">
+                  <div className="grid grid-cols-3 gap-0 px-4 py-2 border-b border-retro-purple/20">
+                    <span className="text-xs text-retro-charcoal/60 retro-font font-bold">PLAYER</span>
+                    <span className="text-xs text-retro-charcoal/60 retro-font font-bold text-center">
+                      {currentLeague?.sport === 'WORLD_CUP' ? 'PTS' : 'WINS'}
+                    </span>
+                    <span className="text-xs text-retro-charcoal/60 retro-font font-bold text-right">
+                      {currentLeague?.sport === 'WORLD_CUP' ? 'MAX PTS' : 'MAX'}
+                    </span>
                   </div>
-                  <div className="text-center bg-retro-cream p-4 rounded-lg retro-border">
-                    <div className="text-2xl font-bold text-retro-pink retro-font">235</div>
-                    <div className="text-sm text-retro-charcoal retro-font">Total Wins</div>
-                  </div>
-                </div>
-                
-                <div className="border-t border-retro-purple pt-4">
-                  <div className="text-center bg-retro-cream p-4 rounded-lg retro-border">
-                    <div className="text-lg font-bold text-retro-yellow retro-font">Season Complete!</div>
-                    <div className="text-sm text-retro-charcoal retro-font">Championship decided: Winner with 40 points</div>
-                  </div>
+                  {analyticsLoading ? (
+                    <div className="space-y-2 p-4">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-5 bg-retro-purple/10 rounded animate-pulse" />
+                      ))}
+                    </div>
+                  ) : analytics?.players && analytics.players.length > 0 ? (
+                    <div className="divide-y divide-retro-purple/10">
+                      {analytics.players.map((player, idx) => (
+                        <div key={player.userId} className="grid grid-cols-3 gap-0 px-4 py-2.5 items-center">
+                          <span className="text-sm text-retro-charcoal retro-font truncate pr-2">
+                            {player.displayName}
+                          </span>
+                          <span className="text-sm font-bold text-retro-purple retro-font text-center">
+                            {player.currentWins}
+                          </span>
+                          <span className="text-sm text-retro-charcoal/50 retro-font text-right">
+                            {player.maxPossibleWins}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-sm text-retro-charcoal/50 retro-font">
+                      No player data available
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

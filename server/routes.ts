@@ -643,6 +643,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(standings);
   });
 
+  app.get("/api/leagues/:leagueId/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getLeagueAnalytics(req.params.leagueId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching league analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
   // NFL Teams
   app.get("/api/teams", async (req, res) => {
     const teams = await storage.getAllNFLTeams();
