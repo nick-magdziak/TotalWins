@@ -850,7 +850,8 @@ export class DatabaseStorage implements IStorage {
         draftConfiguration: source.draftConfiguration,
         draftStatus: "pending",
         seasonStatus: "pre_season",
-        createdBy,
+        // Preserve original league ownership — don't transfer to the actor
+        createdBy: source.createdBy ?? createdBy,
         inviteCode,
         parentLeagueId: rootId,
       }).returning();

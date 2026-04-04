@@ -475,8 +475,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Season history — all seasons in a franchise chain
-  app.get("/api/leagues/:id/seasons", async (req, res) => {
+  // Requires auth; caller must be a member of the league or a global admin
+  app.get("/api/leagues/:id/seasons", requireAuth, async (req, res) => {
     try {
+      const userId = req.session.userId!;
+      const [user, league] = await Promise.all([
+        storage.getUser(userId),
+        storage.getLeague(req.params.id),
+      ]);
+      if (!league) return res.status(404).json({ message: "League not found" });
+
+      if (!user?.isAdmin) {
+        const member = await storage.getLeagueMember(req.params.id, userId);
+        if (!member) {
+          // Also allow access if user is a member of any season in the franchise
+          const history = await storage.getSeasonHistory(req.params.id);
+          const isMemberOfFranchise = await Promise.all(
+            history.map(s => storage.getLeagueMember(s.id, userId))
+          );
+          if (!isMemberOfFranchise.some(Boolean)) {
+            return res.status(403).json({ message: "Access denied" });
+          }
+        }
+      }
+
       const seasons = await storage.getSeasonHistory(req.params.id);
       res.json(seasons);
     } catch (err) {
