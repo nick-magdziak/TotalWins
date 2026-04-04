@@ -1445,37 +1445,53 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return { gamesProcessed: 0, totalGames: 0, players: [] };
 
-    // --- Games Processed: derived from team records (always accurate regardless of games table completeness) ---
-    // Full season game counts: (teams × gamesPerTeam) / 2
+    // --- Games Processed ---
+    // Full season totals: (numTeams × gamesPerTeam) / 2
     const SEASON_TOTAL_GAMES: Record<string, number> = { NFL: 272, MLB: 2430, NBA: 1230 };
+
+    // Calendar-based season completion check — more reliable than team records
+    // (team records can be stale if ESPN sync hasn't run for the final weeks).
+    // NFL "YYYY-YY": season ends ~February of end year  → complete after March 1 of end year
+    // MLB "YYYY":    season ends ~October of that year  → complete after November 1
+    // NBA "YYYY-YY": season ends ~June of end year      → complete after August 1 of end year
+    const isSeasonCalendarComplete = (sport: string, season: string): boolean => {
+      const now = new Date();
+      const startYear = parseInt(season.split('-')[0], 10);
+      const endYear = season.includes('-') ? startYear + 1 : startYear;
+      switch (sport) {
+        case 'NFL': return now > new Date(endYear, 2, 1);   // after March 1 of end year
+        case 'MLB': return now > new Date(endYear, 10, 1);  // after November 1 of season year
+        case 'NBA': return now > new Date(endYear, 7, 1);   // after August 1 of end year
+        default:    return false;
+      }
+    };
+    const seasonComplete = isSeasonCalendarComplete(league.sport, league.season);
 
     let gamesProcessed = 0;
     let totalGames = 0;
 
     if (league.sport === 'WORLD_CUP') {
-      // WC: use the games table (it's fully seeded and accurate)
-      const wcSeasonStr = league.season; // e.g. "2026"
+      // WC: use the games table (fully seeded and accurate)
       const allWCDbGames = await db.select({ id: games.id, status: games.status })
         .from(games)
-        .where(and(eq(games.sport, 'WORLD_CUP'), eq(games.season, wcSeasonStr)));
+        .where(and(eq(games.sport, 'WORLD_CUP'), eq(games.season, league.season)));
       totalGames = allWCDbGames.length;
       gamesProcessed = allWCDbGames.filter(g => g.status === 'completed').length;
-    } else if (league.sport === 'NFL') {
-      const [row] = await db.select({ total: sql<number>`sum(wins + losses + ties)` }).from(nflTeams);
-      gamesProcessed = Math.floor((Number(row?.total) || 0) / 2);
-      totalGames = SEASON_TOTAL_GAMES['NFL'];
-    } else if (league.sport === 'MLB') {
-      const [row] = await db.select({ total: sql<number>`sum(wins + losses)` }).from(mlbTeams);
-      gamesProcessed = Math.floor((Number(row?.total) || 0) / 2);
-      totalGames = SEASON_TOTAL_GAMES['MLB'];
-    } else if (league.sport === 'NBA') {
-      const [row] = await db.select({ total: sql<number>`sum(wins + losses)` }).from(nbaTeams);
-      gamesProcessed = Math.floor((Number(row?.total) || 0) / 2);
-      totalGames = SEASON_TOTAL_GAMES['NBA'];
+    } else {
+      totalGames = SEASON_TOTAL_GAMES[league.sport] || 0;
+      if (seasonComplete) {
+        gamesProcessed = totalGames; // season over → 100%
+      } else if (league.sport === 'NFL') {
+        const [row] = await db.select({ total: sql<number>`sum(wins + losses + ties)` }).from(nflTeams);
+        gamesProcessed = Math.min(Math.floor((Number(row?.total) || 0) / 2), totalGames);
+      } else if (league.sport === 'MLB') {
+        const [row] = await db.select({ total: sql<number>`sum(wins + losses)` }).from(mlbTeams);
+        gamesProcessed = Math.min(Math.floor((Number(row?.total) || 0) / 2), totalGames);
+      } else if (league.sport === 'NBA') {
+        const [row] = await db.select({ total: sql<number>`sum(wins + losses)` }).from(nbaTeams);
+        gamesProcessed = Math.min(Math.floor((Number(row?.total) || 0) / 2), totalGames);
+      }
     }
-
-    // Season is considered complete when ≥95% of games are processed
-    const seasonComplete = totalGames > 0 && gamesProcessed >= totalGames * 0.95;
 
     const members = await db.select({ member: leagueMembers, user: users })
       .from(leagueMembers)
