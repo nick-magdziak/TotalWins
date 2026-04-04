@@ -1445,10 +1445,21 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return { gamesProcessed: 0, totalGames: 0, players: [] };
 
-    // Count all games for this sport (across all seasons in DB)
-    const allGamesForSport = await db.select({ id: games.id, status: games.status })
+    // Determine the current season by finding the season of the most recently-dated
+    // game for this sport (handles format mismatches between league.season and games.season)
+    const latestSeasonRow = await db.select({ season: games.season })
       .from(games)
-      .where(eq(games.sport, league.sport));
+      .where(eq(games.sport, league.sport))
+      .orderBy(desc(games.gameDate))
+      .limit(1);
+    const currentSeason = latestSeasonRow[0]?.season;
+
+    // Count completed vs total games for this sport in the current season
+    const allGamesForSport = currentSeason
+      ? await db.select({ id: games.id, status: games.status })
+          .from(games)
+          .where(and(eq(games.sport, league.sport), eq(games.season, currentSeason)))
+      : [];
     const totalGames = allGamesForSport.length;
     const gamesProcessed = allGamesForSport.filter(g => g.status === 'completed').length;
 
@@ -1469,12 +1480,18 @@ export class DatabaseStorage implements IStorage {
 
         let maxAdditional = 0;
         for (const teamId of teamIds) {
-          const teamGroupGames = allWCGames.filter(
-            g => g.wcRound === 'group_stage' && (g.homeTeamId === teamId || g.awayTeamId === teamId)
+          const teamIncompleteGames = allWCGames.filter(
+            g => (g.homeTeamId === teamId || g.awayTeamId === teamId) && g.status !== 'completed'
           );
-          const completedGroupGames = teamGroupGames.filter(g => g.status === 'completed').length;
-          const remaining = Math.max(0, 3 - completedGroupGames);
-          maxAdditional += remaining * 2;
+          for (const game of teamIncompleteGames) {
+            if (game.wcRound === 'group_stage') {
+              maxAdditional += 2; // max 2 pts for a group-stage win
+            } else if (game.wcRound === 'third_place') {
+              maxAdditional += 2; // third place: win = 2 pts, no advancement bonus
+            } else if (game.wcRound) {
+              maxAdditional += 3; // knockout: advance (1) + win (2) = 3 pts max
+            }
+          }
         }
 
         players.push({
