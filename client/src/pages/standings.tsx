@@ -27,6 +27,9 @@ export default function Standings() {
   // Resolve current league early so queries can be sport-aware
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
+  // Derived: the league we're actually displaying (may be a past season)
+  // This is computed lazily after seasonHistory is loaded below
+
   // Season history for this franchise (hidden when only one season)
   const { data: seasonHistory } = useQuery<League[]>({
     queryKey: ["/api/leagues", leagueId, "seasons"],
@@ -40,8 +43,11 @@ export default function Standings() {
   // The ID we actually pass to standings & game queries
   const activeLeagueId = selectedSeasonId ?? leagueId;
 
-  // When navigating away and back, reset to current
-  // (state already resets on unmount; no extra effect needed)
+  // The league object that drives header metadata
+  // When viewing a past season, derive from seasonHistory; otherwise use currentLeague
+  const displayLeague: League | undefined = selectedSeasonId && selectedSeasonId !== leagueId
+    ? (seasonHistory?.find(s => s.id === selectedSeasonId) ?? currentLeague)
+    : currentLeague;
 
   // Compute local date info from the browser's clock (not the server's UTC clock)
   const now = new Date();
@@ -294,18 +300,18 @@ export default function Standings() {
         <div className="bg-gradient-to-r from-retro-purple to-retro-pink p-4 sm:p-6 rounded-2xl retro-border mb-6">
           <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
             <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
-              {currentLeague?.name || "TOTAL WINS"}
+              {displayLeague?.name || "TOTAL WINS"}
             </h2>
             <p className="text-white text-sm sm:text-base md:text-lg font-bold">
-              {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2025-26"} • STANDINGS
+              {displayLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (displayLeague?.sport || "NFL")} • {displayLeague?.season || "2025-26"} • STANDINGS
             </p>
             <div className="mt-3 flex flex-row items-center justify-center gap-3 flex-wrap">
-              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(currentLeague?.draftStatus)}`}>
-                {getDraftStatusLabel(currentLeague?.draftStatus, currentLeague?.sport)}
+              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(displayLeague?.draftStatus)}`}>
+                {getDraftStatusLabel(displayLeague?.draftStatus, displayLeague?.sport)}
               </Badge>
-              {getTealBadgeLabel(currentLeague?.draftStatus, currentLeague?.sport, currentLeague?.draftScheduledAt) && (
+              {getTealBadgeLabel(displayLeague?.draftStatus, displayLeague?.sport, displayLeague?.draftScheduledAt) && (
                 <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
-                  {getTealBadgeLabel(currentLeague?.draftStatus, currentLeague?.sport, currentLeague?.draftScheduledAt)}
+                  {getTealBadgeLabel(displayLeague?.draftStatus, displayLeague?.sport, displayLeague?.draftScheduledAt)}
                 </Badge>
               )}
             </div>

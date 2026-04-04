@@ -828,45 +828,51 @@ export class DatabaseStorage implements IStorage {
     // Compute the root franchise ID
     const rootId = source.parentLeagueId ?? source.id;
 
-    // Generate a fresh invite code
+    // Generate a fresh invite code outside the transaction (await not allowed inside drizzle tx callback)
     const crypto = await import("crypto");
     const inviteCode = crypto.randomBytes(4).toString("hex").toUpperCase();
 
-    const [newLeague] = await db.insert(leagues).values({
-      name: source.name,
-      season: newSeason,
-      sport: source.sport,
-      teamsPerPlayer: source.teamsPerPlayer,
-      maxPlayers: source.maxPlayers,
-      draftType: source.draftType,
-      draftConfiguration: source.draftConfiguration,
-      draftStatus: "pending",
-      seasonStatus: "pre_season",
-      createdBy,
-      inviteCode,
-      parentLeagueId: rootId,
-    }).returning();
-
-    // Mark the source season as completed
-    await db.update(leagues)
-      .set({ seasonStatus: "completed" })
-      .where(eq(leagues.id, leagueId));
-
-    // Carry over selected members (or all if no selection provided)
+    // Fetch members to carry over before the transaction
     const allMembers = await this.getLeagueMembers(leagueId);
     const membersToCarry = memberUserIds && memberUserIds.length > 0
       ? allMembers.filter(m => m.userId && memberUserIds.includes(m.userId))
       : allMembers;
 
-    for (const m of membersToCarry) {
-      await this.addLeagueMember({
-        leagueId: newLeague.id,
-        userId: m.userId!,
-        draftPosition: m.draftPosition,
-        totalWins: 0,
-        invitationStatus: "active",
-      });
-    }
+    // Wrap all writes in a single transaction for atomicity
+    const newLeague = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(leagues).values({
+        name: source.name,
+        season: newSeason,
+        sport: source.sport,
+        teamsPerPlayer: source.teamsPerPlayer,
+        maxPlayers: source.maxPlayers,
+        draftType: source.draftType,
+        draftConfiguration: source.draftConfiguration,
+        draftStatus: "pending",
+        seasonStatus: "pre_season",
+        createdBy,
+        inviteCode,
+        parentLeagueId: rootId,
+      }).returning();
+
+      // Mark the source season as completed
+      await tx.update(leagues)
+        .set({ seasonStatus: "completed" })
+        .where(eq(leagues.id, leagueId));
+
+      // Carry over selected members
+      for (const m of membersToCarry) {
+        await tx.insert(leagueMembers).values({
+          leagueId: created.id,
+          userId: m.userId!,
+          draftPosition: m.draftPosition,
+          totalWins: 0,
+          invitationStatus: "active",
+        });
+      }
+
+      return created;
+    });
 
     return newLeague;
   }

@@ -1957,19 +1957,24 @@ export default function Admin() {
                   {membersWithUserData.map((m: LeagueMember & { user?: { displayName?: string } }) => {
                     const uid = m.userId ?? "";
                     const checked = rolloverMemberIds.includes(uid);
+                    const isCreator = uid === currentLeague?.createdBy;
                     return (
-                      <label key={uid} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50">
+                      <label key={uid} className={`flex items-center gap-3 px-3 py-2 ${isCreator ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:bg-gray-50'}`}>
                         <input
                           type="checkbox"
                           checked={checked}
+                          disabled={isCreator}
                           onChange={() => {
-                            setRolloverMemberIds(prev =>
-                              checked ? prev.filter(id => id !== uid) : [...prev, uid]
-                            );
+                            if (!isCreator) {
+                              setRolloverMemberIds(prev =>
+                                checked ? prev.filter(id => id !== uid) : [...prev, uid]
+                              );
+                            }
                           }}
                           className="accent-retro-purple"
                         />
                         <span className="text-sm font-medium">{m.user?.displayName || uid}</span>
+                        {isCreator && <span className="text-xs text-gray-400 ml-auto">(creator)</span>}
                       </label>
                     );
                   })}
