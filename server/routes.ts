@@ -526,6 +526,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         memberUserIds: z.array(z.string()).optional(),
       }).parse(req.body);
 
+      // Server-side guard: at least one member must be carried over
+      if (memberUserIds !== undefined && memberUserIds.length === 0) {
+        return res.status(400).json({ message: "At least one member must be carried over to the new season" });
+      }
+      // Ensure the league creator is always included when a list is provided
+      if (memberUserIds !== undefined && league.createdBy && !memberUserIds.includes(league.createdBy)) {
+        memberUserIds.push(league.createdBy);
+      }
+
       const newLeague = await storage.rolloverLeague(req.params.id, newSeason, userId, memberUserIds);
       res.json(newLeague);
     } catch (err: unknown) {
