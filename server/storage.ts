@@ -863,12 +863,12 @@ export class DatabaseStorage implements IStorage {
         .set({ seasonStatus: "completed" })
         .where(eq(leagues.id, leagueId));
 
-      // Carry over selected members
+      // Carry over selected members — draft positions are reset for the new season
       for (const m of membersToCarry) {
         await tx.insert(leagueMembers).values({
           leagueId: created.id,
           userId: m.userId!,
-          draftPosition: m.draftPosition,
+          draftPosition: null,
           totalWins: 0,
           invitationStatus: "active",
         });
