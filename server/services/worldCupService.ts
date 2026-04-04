@@ -15,13 +15,16 @@ export class WorldCupDataService {
       const wcExisting = allExisting.filter((g) => g.sport === "WORLD_CUP");
 
       for (const game of games) {
-        // Match by home+away team combination and round to avoid ID mismatch
-        // with pre-seeded fixtures (seeded IDs: wc-gs-A-md1-1, ESPN IDs: wc-{eventId})
+        // Match by unordered team pair + round to avoid ID mismatch with pre-seeded
+        // fixtures (seeded IDs: wc-gs-A-md1-1, ESPN IDs: wc-{eventId}).
+        // Try both home/away orderings because ESPN neutral-site orientation may differ.
+        const teamA = game.homeTeamId;
+        const teamB = game.awayTeamId;
         const existing = wcExisting.find(
           (g) =>
-            g.homeTeamId === game.homeTeamId &&
-            g.awayTeamId === game.awayTeamId &&
-            g.wcRound === game.wcRound
+            g.wcRound === game.wcRound &&
+            ((g.homeTeamId === teamA && g.awayTeamId === teamB) ||
+              (g.homeTeamId === teamB && g.awayTeamId === teamA))
         );
 
         if (existing) {
