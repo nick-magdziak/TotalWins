@@ -1476,7 +1476,7 @@ export class DatabaseStorage implements IStorage {
 
     if (league.sport === 'WORLD_CUP') {
       const wcStandings = await this.getWorldCupPlayerStandings(leagueId);
-      const allWCGames = await this.getWorldCupGames();
+      const allWCGames = (await this.getWorldCupGames()).filter(g => g.season === currentSeason);
 
       for (const s of wcStandings) {
         const picks = await this.getUserDraftPicks(leagueId, s.userId);
