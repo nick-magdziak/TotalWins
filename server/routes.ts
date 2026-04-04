@@ -1451,14 +1451,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { SportsDataService } = await import("./sportsDataService");
       const sportsService = new SportsDataService(storage);
-      
-      // Update MLB standings with live 2025 season data
+
+      // Sync current game scores
       await sportsService.updateMLBStandings();
+
+      // Sync team win/loss records from ESPN standings API
+      const { sportsApi } = await import("./services/sportsApi");
+      const standingsResult = await sportsApi.syncTeamStandingsFromESPN();
       
       res.json({ 
         message: "Live scores synced successfully",
         timestamp: new Date().toISOString(),
-        season: "2025"
+        season: "2025",
+        standingsUpdated: standingsResult.updated,
+        standingsErrors: standingsResult.errors,
       });
     } catch (error) {
       console.error("Live scoring sync error:", error);

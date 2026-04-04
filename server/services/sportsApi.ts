@@ -528,6 +528,71 @@ export class SportsApiService {
   }
 
   /**
+   * Sync team win/loss records directly from ESPN's team API.
+   * This is more reliable than computing from our games table (which is partial).
+   */
+  async syncTeamStandingsFromESPN(): Promise<{ updated: number; errors: number }> {
+    const toESPNAbbr = (id: string) => id.replace(/-MLB$/, '').replace(/-NBA$/, '');
+    const endpoints: { sport: 'NFL' | 'MLB' | 'NBA'; path: string }[] = [
+      { sport: 'NFL', path: 'football/nfl' },
+      { sport: 'MLB', path: 'baseball/mlb' },
+      { sport: 'NBA', path: 'basketball/nba' },
+    ];
+
+    let updated = 0;
+    let errors = 0;
+
+    for (const { sport, path } of endpoints) {
+      let teamIds: string[] = [];
+      if (sport === 'NFL') {
+        const rows = await storage.getAllNFLTeams();
+        teamIds = rows.map(t => t.id);
+      } else if (sport === 'MLB') {
+        const rows = await storage.getAllMLBTeams();
+        teamIds = rows.map(t => t.id);
+      } else {
+        const rows = await storage.getAllNBATeams();
+        teamIds = rows.map(t => t.id);
+      }
+
+      const results = await Promise.allSettled(
+        teamIds.map(async (teamId) => {
+          const espnAbbr = toESPNAbbr(teamId);
+          const url = `https://site.api.espn.com/apis/site/v2/sports/${path}/teams/${espnAbbr}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          // items[0] is the "total" (overall) season record
+          const stats: Array<{ name: string; value: number }> =
+            data.team?.record?.items?.find((i: any) => i.type === 'total')?.stats
+            ?? data.team?.record?.items?.[0]?.stats
+            ?? [];
+          const wins = Math.round(stats.find(s => s.name === 'wins')?.value ?? 0);
+          const losses = Math.round(stats.find(s => s.name === 'losses')?.value ?? 0);
+          const ties = Math.round(stats.find(s => s.name === 'ties')?.value ?? 0);
+          // Use sport-specific update methods so team IDs that exist in multiple
+          // tables (e.g. "NO" = Saints AND Pelicans) don't cross-contaminate.
+          if (sport === 'NFL') {
+            await storage.updateTeamRecord(teamId, wins, losses, ties);
+          } else if (sport === 'MLB') {
+            await storage.updateMLBTeamRecord(teamId, wins, losses);
+          } else {
+            await storage.updateNBATeamRecord(teamId, wins, losses);
+          }
+        })
+      );
+
+      for (const r of results) {
+        if (r.status === 'fulfilled') updated++;
+        else errors++;
+      }
+    }
+
+    console.log(`✅ Team standings synced: ${updated} updated, ${errors} errors`);
+    return { updated, errors };
+  }
+
+  /**
    * Sync next week NFL games for upcoming preview
    */
   async syncNextWeekNFLGames(): Promise<void> {

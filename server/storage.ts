@@ -66,6 +66,10 @@ export interface IStorage {
   getAllMLBTeams(): Promise<MLBTeam[]>;
   updateMLBTeamRecord(teamId: string, wins: number, losses: number): Promise<void>;
 
+  // NBA Teams
+  getAllNBATeams(): Promise<NBATeam[]>;
+  updateNBATeamRecord(teamId: string, wins: number, losses: number): Promise<void>;
+
   // Draft
   getDraftPicks(leagueId: string): Promise<DraftPick[]>;
   addDraftPick(pick: InsertDraftPick): Promise<DraftPick>;
@@ -949,6 +953,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateMLBTeamRecord(teamId: string, wins: number, losses: number): Promise<void> {
     await db.update(mlbTeams).set({ wins, losses }).where(eq(mlbTeams.id, teamId));
+  }
+
+  async updateNBATeamRecord(teamId: string, wins: number, losses: number): Promise<void> {
+    await db.update(nbaTeams).set({ wins, losses }).where(eq(nbaTeams.id, teamId));
   }
 
   // Helper method to check for standings changes and send notifications

@@ -84,6 +84,10 @@ app.use((req, res, next) => {
     await sportsApi.syncCurrentNFLGames();
     await sportsApi.syncNextWeekNFLGames();
 
+    // Sync team win/loss records directly from ESPN standings — more reliable
+    // than computing from our partial games table
+    await sportsApi.syncTeamStandingsFromESPN();
+
     // World Cup sync
     try {
       const { worldCupDataService } = await import("./services/worldCupService");
