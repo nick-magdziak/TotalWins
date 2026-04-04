@@ -553,6 +553,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const league = await storage.getLeague(leagueId);
       if (!league) return res.status(404).json({ message: "League not found" });
 
+      const member = await storage.getLeagueMember(leagueId, req.session.userId!);
+      const isLeagueAdmin = user.isAdmin || league.createdBy === req.session.userId;
+      if (!member && !isLeagueAdmin) return res.status(403).json({ message: "You are not a member of this league" });
+
       const { emailService } = await import("./services/emailService.js");
       const standings = await storage.getPlayerStandings(leagueId);
 
