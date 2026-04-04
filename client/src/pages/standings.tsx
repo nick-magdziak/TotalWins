@@ -386,7 +386,7 @@ export default function Standings() {
       </section>
 
       {/* World Cup Group Tables */}
-      {isWorldCup && (
+      {isWorldCup && !isViewingPastSeason && (
         <section className="mb-8 px-4">
           <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
             <Globe className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
@@ -446,8 +446,8 @@ export default function Standings() {
         </section>
       )}
 
-      {/* Recent Updates Section */}
-      <section className="mb-8 px-4">
+      {/* Recent Updates Section — hidden for past seasons (final standings only) */}
+      {!isViewingPastSeason && <section className="mb-8 px-4">
         <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
           <Clock className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
           {currentLeague?.sport === 'NFL' && 'NFL GAMES'}
@@ -609,7 +609,7 @@ export default function Standings() {
             </CardContent>
           </Card>
         </div>
-      </section>
+      </section>}
     </>
   );
 }
