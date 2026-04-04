@@ -834,7 +834,9 @@ export class DatabaseStorage implements IStorage {
 
     // Fetch members to carry over before the transaction
     const allMembers = await this.getLeagueMembers(leagueId);
-    const membersToCarry = memberUserIds && memberUserIds.length > 0
+    // If memberUserIds is provided (even empty), use it exactly.
+    // If omitted (undefined), carry all current members.
+    const membersToCarry = memberUserIds !== undefined
       ? allMembers.filter(m => m.userId && memberUserIds.includes(m.userId))
       : allMembers;
 
