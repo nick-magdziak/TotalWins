@@ -99,6 +99,18 @@ export default function Admin() {
     refetchInterval: 3000, // Poll every 3 seconds for real-time updates
   });
 
+  const { data: seasonGameStatus } = useQuery<{
+    totalGames: number;
+    completedGames: number;
+    pendingGames: number;
+    isComplete: boolean;
+  }>({
+    queryKey: ["/api/leagues", leagueId, "season-complete"],
+    queryFn: () => fetch(`/api/leagues/${leagueId}/season-complete`).then(r => r.json()),
+    enabled: !!leagueId,
+    refetchInterval: 60000, // Refresh every minute
+  });
+
   // Get last draft pick for display
   const { data: lastPick } = useQuery({
     queryKey: ["/api/leagues", leagueId, "draft", "last-pick"],
@@ -1464,15 +1476,26 @@ export default function Admin() {
                       setRolloverMemberIds(allIds);
                       setShowRolloverDialog(true);
                     }}
+                    disabled={!seasonGameStatus?.isComplete}
                     variant="outline"
-                    className="w-full border-2 border-retro-purple text-retro-purple hover:bg-retro-purple hover:text-white font-bold py-2 rounded-lg retro-font"
+                    className="w-full border-2 border-retro-purple text-retro-purple hover:bg-retro-purple hover:text-white font-bold py-2 rounded-lg retro-font disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-retro-purple"
                   >
                     <Trophy className="w-4 h-4 mr-2" />
                     START NEW SEASON
                   </Button>
-                  <p className="text-xs text-gray-500 mt-1 text-center">
-                    Creates a fresh league season carrying over all members
-                  </p>
+                  {seasonGameStatus && !seasonGameStatus.isComplete ? (
+                    <p className="text-xs text-amber-600 mt-1 text-center font-medium">
+                      {seasonGameStatus.pendingGames} game{seasonGameStatus.pendingGames !== 1 ? 's' : ''} still pending — available when all games are complete
+                    </p>
+                  ) : seasonGameStatus?.isComplete ? (
+                    <p className="text-xs text-green-600 mt-1 text-center font-medium">
+                      All {seasonGameStatus.completedGames} games complete — ready to start a new season
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      Available when all season games are processed
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -1922,6 +1945,27 @@ export default function Admin() {
               This creates a fresh <strong>{currentLeague?.name}</strong> season.
               Existing season data is preserved. Wins reset to zero; draft positions reset.
             </p>
+
+            {/* View-only: current season info */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Current Season
+                </Label>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 retro-font">
+                  {currentLeague?.season || "—"}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  League Type
+                </Label>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 retro-font">
+                  {currentLeague?.sport === 'WORLD_CUP' ? 'World Cup' : (currentLeague?.sport || "NFL")}
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 New Season Label

@@ -543,6 +543,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Season completion status — checks if all games for the sport are processed
+  app.get("/api/leagues/:id/season-complete", requireAuth, async (req, res) => {
+    try {
+      const status = await storage.getLeagueSeasonGameStatus(req.params.id);
+      res.json(status);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to check season status" });
+    }
+  });
+
   app.get("/api/leagues/:leagueId/export", async (req, res) => {
     try {
       const { leagueId } = req.params;

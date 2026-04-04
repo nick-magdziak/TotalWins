@@ -49,6 +49,7 @@ export interface IStorage {
   getUserLeagues(userId: string): Promise<League[]>;
   getSeasonHistory(leagueId: string): Promise<League[]>;
   rolloverLeague(leagueId: string, newSeason: string, createdBy: string, memberUserIds?: string[]): Promise<League>;
+  getLeagueSeasonGameStatus(leagueId: string): Promise<{ totalGames: number; completedGames: number; pendingGames: number; isComplete: boolean }>;
 
   // League Members
   getLeagueMembers(leagueId: string): Promise<LeagueMember[]>;
@@ -878,6 +879,29 @@ export class DatabaseStorage implements IStorage {
     });
 
     return newLeague;
+  }
+
+  async getLeagueSeasonGameStatus(leagueId: string): Promise<{ totalGames: number; completedGames: number; pendingGames: number; isComplete: boolean }> {
+    const league = await this.getLeague(leagueId);
+    if (!league) return { totalGames: 0, completedGames: 0, pendingGames: 0, isComplete: false };
+
+    const sport = league.sport || "NFL";
+    // Count all synced games for this sport
+    const allGames = await db.select().from(games).where(eq(games.sport, sport));
+    if (allGames.length === 0) {
+      // No games synced yet — treat as not complete
+      return { totalGames: 0, completedGames: 0, pendingGames: 0, isComplete: false };
+    }
+
+    const completedGames = allGames.filter(g => g.status === "completed").length;
+    const pendingGames = allGames.filter(g => g.status === "scheduled" || g.status === "in_progress").length;
+
+    return {
+      totalGames: allGames.length,
+      completedGames,
+      pendingGames,
+      isComplete: pendingGames === 0 && completedGames > 0,
+    };
   }
 
   // League member methods
