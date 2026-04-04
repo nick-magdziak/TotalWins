@@ -474,6 +474,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Season history — all seasons in a franchise chain
+  app.get("/api/leagues/:id/seasons", async (req, res) => {
+    try {
+      const seasons = await storage.getSeasonHistory(req.params.id);
+      res.json(seasons);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to load season history" });
+    }
+  });
+
+  // Roll over to a new season (admin only)
+  app.post("/api/leagues/:id/rollover", requireAdmin, async (req, res) => {
+    try {
+      const { newSeason } = z.object({ newSeason: z.string().min(1) }).parse(req.body);
+      const userId = req.session.userId!;
+      const newLeague = await storage.rolloverLeague(req.params.id, newSeason, userId);
+      res.json(newLeague);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Rollover failed" });
+    }
+  });
+
   app.get("/api/leagues/:leagueId/export", async (req, res) => {
     try {
       const { leagueId } = req.params;

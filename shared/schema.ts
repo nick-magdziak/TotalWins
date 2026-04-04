@@ -46,6 +46,7 @@ export const leagues = pgTable("leagues", {
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
   inviteCode: text("invite_code").unique(),
   createdBy: varchar("created_by").references(() => users.id),
+  parentLeagueId: varchar("parent_league_id"), // franchise parent; null = this IS the root
   createdAt: timestamp("created_at").defaultNow(),
 });
 

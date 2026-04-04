@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Clock, TrendingUp, Globe } from "lucide-react";
+import { Trophy, Clock, TrendingUp, Globe, ChevronDown } from "lucide-react";
 import StandingsTable from "@/components/StandingsTable";
 import { type Game, type League, type WCGroupStanding, type WCPlayerStanding } from "@shared/schema";
 import { CURRENT_SEASON, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
@@ -26,6 +27,22 @@ export default function Standings() {
   // Resolve current league early so queries can be sport-aware
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
+  // Season history for this franchise (hidden when only one season)
+  const { data: seasonHistory } = useQuery<League[]>({
+    queryKey: ["/api/leagues", leagueId, "seasons"],
+    queryFn: () => fetch(`/api/leagues/${leagueId}/seasons`).then(r => r.json()),
+    enabled: !!leagueId,
+  });
+
+  // Selected season — default to current (null = use leagueId)
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
+
+  // The ID we actually pass to standings & game queries
+  const activeLeagueId = selectedSeasonId ?? leagueId;
+
+  // When navigating away and back, reset to current
+  // (state already resets on unmount; no extra effect needed)
+
   // Compute local date info from the browser's clock (not the server's UTC clock)
   const now = new Date();
   const tzOffset = now.getTimezoneOffset(); // minutes west of UTC (e.g. 240 for ET, 420 for PT)
@@ -40,17 +57,17 @@ export default function Standings() {
   const recentDateStr = isWorldCup ? yesterdayStr : todayStr;
 
   const { data: recentGames } = useQuery<any[]>({
-    queryKey: ["/api/leagues", leagueId, "games/recent", recentDateStr],
+    queryKey: ["/api/leagues", activeLeagueId, "games/recent", recentDateStr],
     queryFn: () =>
-      fetch(`/api/leagues/${leagueId}/games/recent?localDate=${recentDateStr}&tzOffset=${tzOffset}`)
+      fetch(`/api/leagues/${activeLeagueId}/games/recent?localDate=${recentDateStr}&tzOffset=${tzOffset}`)
         .then(r => r.json()),
     refetchInterval: 60000, // Poll every 1 minute for live game updates
   });
 
   const { data: upcomingGames } = useQuery<any[]>({
-    queryKey: ["/api/leagues", leagueId, "games/upcoming", tomorrowStr],
+    queryKey: ["/api/leagues", activeLeagueId, "games/upcoming", tomorrowStr],
     queryFn: () =>
-      fetch(`/api/leagues/${leagueId}/games/upcoming?localDate=${tomorrowStr}&tzOffset=${tzOffset}`)
+      fetch(`/api/leagues/${activeLeagueId}/games/upcoming?localDate=${tomorrowStr}&tzOffset=${tzOffset}`)
         .then(r => r.json()),
     refetchInterval: 300000, // Poll every 5 minutes for upcoming games
   });
@@ -61,7 +78,7 @@ export default function Standings() {
   });
 
   const { data: wcPlayerStandings } = useQuery<WCPlayerStanding[]>({
-    queryKey: ["/api/leagues", leagueId, "world-cup/standings"],
+    queryKey: ["/api/leagues", activeLeagueId, "world-cup/standings"],
     enabled: isWorldCup,
     refetchInterval: 60000,
   });
@@ -282,7 +299,7 @@ export default function Standings() {
             <p className="text-white text-sm sm:text-base md:text-lg font-bold">
               {currentLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (currentLeague?.sport || "NFL")} • {currentLeague?.season || "2025-26"} • STANDINGS
             </p>
-            <div className="mt-3 flex flex-row items-center justify-center gap-3">
+            <div className="mt-3 flex flex-row items-center justify-center gap-3 flex-wrap">
               <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(currentLeague?.draftStatus)}`}>
                 {getDraftStatusLabel(currentLeague?.draftStatus, currentLeague?.sport)}
               </Badge>
@@ -292,6 +309,30 @@ export default function Standings() {
                 </Badge>
               )}
             </div>
+
+            {/* Season selector — only shown when franchise has multiple seasons */}
+            {seasonHistory && seasonHistory.length > 1 && (
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <span className="text-gray-300 text-xs font-semibold uppercase tracking-wide">Season:</span>
+                <div className="relative inline-block">
+                  <select
+                    value={selectedSeasonId ?? leagueId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedSeasonId(val === leagueId ? null : val);
+                    }}
+                    className="appearance-none bg-white/10 border border-white/30 text-white text-xs font-bold px-3 py-1 pr-7 rounded-full cursor-pointer focus:outline-none focus:border-white/60"
+                  >
+                    {[...seasonHistory].reverse().map((s) => (
+                      <option key={s.id} value={s.id} className="bg-gray-800 text-white">
+                        {s.season}{s.id === leagueId ? " (current)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/70 pointer-events-none" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -300,7 +341,9 @@ export default function Standings() {
       <section className="mb-8 px-4">
         <h3 className="text-black text-xl sm:text-2xl font-bold mb-2 text-center retro-font">
           <Trophy className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
-          STANDINGS
+          {selectedSeasonId && selectedSeasonId !== leagueId
+            ? `${seasonHistory?.find(s => s.id === selectedSeasonId)?.season || ""} STANDINGS`
+            : "STANDINGS"}
         </h3>
         <p className="text-xs text-gray-600 text-center mb-4">
           Last updated: {new Date().toLocaleDateString('en-US', { 
@@ -313,7 +356,7 @@ export default function Standings() {
           })}
         </p>
         
-        <StandingsTable leagueId={leagueId} />
+        <StandingsTable leagueId={activeLeagueId} />
       </section>
 
       {/* World Cup Group Tables */}

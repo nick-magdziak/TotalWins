@@ -59,6 +59,8 @@ export default function Admin() {
   const [isEditingLeagueName, setIsEditingLeagueName] = useState(false);
   const [showDraftOrderDialog, setShowDraftOrderDialog] = useState(false);
   const [draftOrder, setDraftOrder] = useState<string[]>([]);
+  const [showRolloverDialog, setShowRolloverDialog] = useState(false);
+  const [newSeasonLabel, setNewSeasonLabel] = useState("");
   
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
@@ -517,6 +519,33 @@ export default function Admin() {
       toast({
         title: "Removal failed",
         description: "Failed to remove player. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rolloverMutation = useMutation({
+    mutationFn: async (newSeason: string) => {
+      const response = await apiRequest("POST", `/api/leagues/${leagueId}/rollover`, { newSeason });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as any).message || "Rollover failed");
+      }
+      return response.json();
+    },
+    onSuccess: (newLeague: any) => {
+      toast({
+        title: "New season created!",
+        description: `${newLeague.name} — ${newLeague.season} is ready. All members have been carried over.`,
+      });
+      setShowRolloverDialog(false);
+      setNewSeasonLabel("");
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Rollover failed",
+        description: err.message || "Could not create the new season. Please try again.",
         variant: "destructive",
       });
     },
@@ -1394,6 +1423,33 @@ export default function Admin() {
                     RESET DRAFT
                   </Button>
                 </div>
+
+                {/* Season Rollover */}
+                <div className="border-t border-gray-200 pt-4">
+                  <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                    Season Management
+                  </Label>
+                  <Button
+                    onClick={() => {
+                      const sport = currentLeague?.sport || 'NFL';
+                      const now = new Date();
+                      const yr = now.getFullYear();
+                      const defaultSeason = sport === 'NFL' || sport === 'NBA'
+                        ? `${yr}-${String(yr + 1).slice(-2)}`
+                        : String(yr + 1);
+                      setNewSeasonLabel(defaultSeason);
+                      setShowRolloverDialog(true);
+                    }}
+                    variant="outline"
+                    className="w-full border-2 border-retro-purple text-retro-purple hover:bg-retro-purple hover:text-white font-bold py-2 rounded-lg retro-font"
+                  >
+                    <Trophy className="w-4 h-4 mr-2" />
+                    START NEW SEASON
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-1 text-center">
+                    Creates a fresh league season carrying over all members
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1821,6 +1877,63 @@ export default function Admin() {
             >
               <Save className="w-4 h-4 mr-2" />
               {saveDraftOrderMutation.isPending ? "SAVING..." : "SAVE ORDER"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Start New Season Dialog */}
+      <Dialog open={showRolloverDialog} onOpenChange={(open) => {
+        setShowRolloverDialog(open);
+        if (!open) setNewSeasonLabel("");
+      }}>
+        <DialogContent className="bg-white rounded-2xl retro-border max-w-md" aria-describedby="rollover-description">
+          <DialogHeader>
+            <DialogTitle className="text-retro-purple text-xl font-bold retro-font text-center">
+              START NEW SEASON
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2" id="rollover-description">
+            <p className="text-sm text-gray-600">
+              This will create a fresh copy of <strong>{currentLeague?.name}</strong> for the new season.
+              All current members will be carried over with their draft positions reset and wins set to zero.
+              Your existing season data is preserved.
+            </p>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                New Season Label
+              </Label>
+              <Input
+                value={newSeasonLabel}
+                onChange={(e) => setNewSeasonLabel(e.target.value)}
+                placeholder="e.g. 2026-27"
+                className="border-2 border-retro-purple focus:border-retro-pink"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRolloverDialog(false);
+                setNewSeasonLabel("");
+              }}
+              disabled={rolloverMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (newSeasonLabel.trim()) {
+                  rolloverMutation.mutate(newSeasonLabel.trim());
+                }
+              }}
+              disabled={rolloverMutation.isPending || !newSeasonLabel.trim()}
+              className="bg-gradient-to-r from-retro-purple to-retro-pink text-white font-bold retro-font"
+            >
+              <Trophy className={`w-4 h-4 mr-2 ${rolloverMutation.isPending ? 'animate-pulse' : ''}`} />
+              {rolloverMutation.isPending ? "CREATING..." : "CREATE SEASON"}
             </Button>
           </DialogFooter>
         </DialogContent>

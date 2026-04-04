@@ -47,6 +47,8 @@ export interface IStorage {
   createLeague(league: InsertLeague): Promise<League>;
   updateLeague(id: string, updates: Partial<League>): Promise<League | undefined>;
   getUserLeagues(userId: string): Promise<League[]>;
+  getSeasonHistory(leagueId: string): Promise<League[]>;
+  rolloverLeague(leagueId: string, newSeason: string, createdBy: string): Promise<League>;
 
   // League Members
   getLeagueMembers(leagueId: string): Promise<LeagueMember[]>;
@@ -798,6 +800,66 @@ export class DatabaseStorage implements IStorage {
       .where(eq(leagueMembers.userId, userId));
     
     return result.map(r => r.league);
+  }
+
+  async getSeasonHistory(leagueId: string): Promise<League[]> {
+    const target = await this.getLeague(leagueId);
+    if (!target) return [];
+    // Root of the franchise is either the league itself (no parent) or its parent
+    const rootId = target.parentLeagueId ?? target.id;
+    // Fetch root + all children whose parentLeagueId = rootId
+    const all = await db
+      .select()
+      .from(leagues)
+      .where(
+        sql`${leagues.id} = ${rootId} OR ${leagues.parentLeagueId} = ${rootId}`
+      );
+    return all.sort((a, b) => {
+      const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return at - bt;
+    });
+  }
+
+  async rolloverLeague(leagueId: string, newSeason: string, createdBy: string): Promise<League> {
+    const source = await this.getLeague(leagueId);
+    if (!source) throw new Error("League not found");
+
+    // Compute the root franchise ID
+    const rootId = source.parentLeagueId ?? source.id;
+
+    // Generate a fresh invite code
+    const crypto = await import("crypto");
+    const inviteCode = crypto.randomBytes(4).toString("hex").toUpperCase();
+
+    const [newLeague] = await db.insert(leagues).values({
+      name: source.name,
+      season: newSeason,
+      sport: source.sport,
+      teamsPerPlayer: source.teamsPerPlayer,
+      maxPlayers: source.maxPlayers,
+      draftType: source.draftType,
+      draftConfiguration: source.draftConfiguration,
+      draftStatus: "pending",
+      seasonStatus: "pre_season",
+      createdBy,
+      inviteCode,
+      parentLeagueId: rootId,
+    }).returning();
+
+    // Copy all current members (reset wins; preserve draft positions)
+    const members = await this.getLeagueMembers(leagueId);
+    for (const m of members) {
+      await this.addLeagueMember({
+        leagueId: newLeague.id,
+        userId: m.userId!,
+        draftPosition: m.draftPosition,
+        totalWins: 0,
+        invitationStatus: "active",
+      });
+    }
+
+    return newLeague;
   }
 
   // League member methods
