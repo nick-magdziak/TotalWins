@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, jsonb, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -46,7 +46,7 @@ export const leagues = pgTable("leagues", {
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
   inviteCode: text("invite_code").unique(),
   createdBy: varchar("created_by").references(() => users.id),
-  parentLeagueId: varchar("parent_league_id"), // franchise parent; null = this IS the root
+  parentLeagueId: varchar("parent_league_id").references((): AnyPgColumn => leagues.id), // franchise parent; null = this IS the root
   createdAt: timestamp("created_at").defaultNow(),
 });
 

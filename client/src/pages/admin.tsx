@@ -1434,12 +1434,30 @@ export default function Admin() {
                   </Label>
                   <Button
                     onClick={() => {
-                      const sport = currentLeague?.sport || 'NFL';
-                      const now = new Date();
-                      const yr = now.getFullYear();
-                      const defaultSeason = sport === 'NFL' || sport === 'NBA'
-                        ? `${yr}-${String(yr + 1).slice(-2)}`
-                        : String(yr + 1);
+                      // Try to derive next season from current league season string
+                      const currentSeason = currentLeague?.season ?? "";
+                      let defaultSeason = "";
+                      // Pattern "YYYY-YY" or "YYYY-YYYY" → increment both years
+                      const dashMatch = currentSeason.match(/^(\d{4})-(\d{2,4})$/);
+                      if (dashMatch) {
+                        const startYr = parseInt(dashMatch[1], 10) + 1;
+                        const endSuffix = String(startYr + 1).slice(-dashMatch[2].length);
+                        defaultSeason = `${startYr}-${endSuffix}`;
+                      } else {
+                        // Pattern "YYYY" → increment
+                        const yearMatch = currentSeason.match(/^(\d{4})$/);
+                        if (yearMatch) {
+                          defaultSeason = String(parseInt(yearMatch[1], 10) + 1);
+                        } else {
+                          // Fallback to date-based heuristic
+                          const sport = currentLeague?.sport || 'NFL';
+                          const now = new Date();
+                          const yr = now.getFullYear();
+                          defaultSeason = (sport === 'NFL' || sport === 'NBA')
+                            ? `${yr}-${String(yr + 1).slice(-2)}`
+                            : String(yr + 1);
+                        }
+                      }
                       setNewSeasonLabel(defaultSeason);
                       // Pre-check all current members
                       const allIds = (membersWithUserData ?? []).map((m: LeagueMember & { user?: { id?: string } }) => m.userId ?? "").filter(Boolean);

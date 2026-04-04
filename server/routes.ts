@@ -484,14 +484,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Roll over to a new season (admin only)
-  app.post("/api/leagues/:id/rollover", requireAdmin, async (req, res) => {
+  // Roll over to a new season — global admin OR league creator
+  app.post("/api/leagues/:id/rollover", requireAuth, async (req, res) => {
     try {
+      const userId = req.session.userId!;
+
+      // Authorise: global admin or league creator
+      const [user, league] = await Promise.all([
+        storage.getUser(userId),
+        storage.getLeague(req.params.id),
+      ]);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (!user?.isAdmin && league.createdBy !== userId) {
+        return res.status(403).json({ message: "Only a league admin can roll over to a new season" });
+      }
+
       const { newSeason, memberUserIds } = z.object({
         newSeason: z.string().min(1),
         memberUserIds: z.array(z.string()).optional(),
       }).parse(req.body);
-      const userId = req.session.userId!;
+
       const newLeague = await storage.rolloverLeague(req.params.id, newSeason, userId, memberUserIds);
       res.json(newLeague);
     } catch (err: unknown) {
