@@ -15,20 +15,25 @@ export class WorldCupDataService {
       const wcExisting = allExisting.filter((g) => g.sport === "WORLD_CUP");
 
       for (const game of games) {
-        // Match by unordered team pair + round to avoid ID mismatch with pre-seeded
-        // fixtures (seeded IDs: wc-gs-A-md1-1, ESPN IDs: wc-{eventId}).
+        // Match by unordered team pair + round + date proximity (±3 days) to avoid
+        // cross-matchday contamination (e.g. MEX vs RSA on June 11 matching the
+        // seeded MEX vs RSA fixture on June 17).
         // Try both home/away orderings because ESPN neutral-site orientation may differ.
         const teamA = game.homeTeamId;
         const teamB = game.awayTeamId;
-        const existing = wcExisting.find(
-          (g) =>
-            g.wcRound === game.wcRound &&
-            ((g.homeTeamId === teamA && g.awayTeamId === teamB) ||
-              (g.homeTeamId === teamB && g.awayTeamId === teamA))
-        );
+        const gameDate = new Date(game.gameDate).getTime();
+        const existing = wcExisting.find((g) => {
+          const sameRound = g.wcRound === game.wcRound;
+          const sameTeams =
+            (g.homeTeamId === teamA && g.awayTeamId === teamB) ||
+            (g.homeTeamId === teamB && g.awayTeamId === teamA);
+          // Require dates within ±3 days to prevent matching different matchday's games
+          const daysDiff = Math.abs(new Date(g.gameDate).getTime() - gameDate) / 86_400_000;
+          return sameRound && sameTeams && daysDiff <= 3;
+        });
 
         if (existing) {
-          // Update the seeded record in-place; preserve its stable ID
+          // Update the seeded record in-place; preserve its stable ID and group
           await storage.updateGame(existing.id, {
             homeScore: game.homeScore,
             awayScore: game.awayScore,
@@ -38,7 +43,12 @@ export class WorldCupDataService {
             gameDate: game.gameDate, // update to exact ESPN kickoff time
           });
         } else {
-          // No matching seeded fixture — add as new record (e.g. knockout games)
+          // No matching seeded fixture — only add as new record if it has full group info
+          // (group stage games without a wcGroup are likely ESPN schedule previews that
+          // don't correspond to a real already-seeded fixture, so skip to avoid duplicates).
+          if (game.wcRound === "group_stage" && !game.wcGroup) {
+            continue; // skip — incomplete group info, likely a duplicate of a seeded fixture
+          }
           await storage.addGame(game);
         }
       }
