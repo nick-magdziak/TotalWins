@@ -96,6 +96,7 @@ export class DatabaseStorage implements IStorage {
     this.initializeMLBTeams();
     this.initializeNBATeams();
     this.initializeWorldCupTeams();
+    this.initializeWorldCupGames();
     this.initializeSampleGameData();
     this.initializeDemoLeagues();
     // Sync real MLB games after initialization
@@ -1170,7 +1171,32 @@ export class DatabaseStorage implements IStorage {
     // For MLB/NBA, get today's games only. For NFL, get recent completed games
     let recentGames;
     
-    if (league.sport === 'MLB' || league.sport === 'NBA') {
+    if (league.sport === 'WORLD_CUP') {
+      // World Cup: yesterday midnight → today end-of-day (2-day window, date-based)
+      // localDate is "yesterday" sent by the frontend
+      let windowStart: Date, windowEnd: Date;
+      if (localDate) {
+        const [year, month, day] = localDate.split('-').map(Number);
+        const utcMidnight = Date.UTC(year, month - 1, day, 0, 0, 0);
+        windowStart = new Date(utcMidnight + tzOffset * 60 * 1000);
+        windowEnd = new Date(windowStart.getTime() + 48 * 60 * 60 * 1000 - 1);
+      } else {
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        windowStart = new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), 0, 0, 0));
+        windowEnd = new Date(windowStart.getTime() + 48 * 60 * 60 * 1000 - 1);
+      }
+      recentGames = await db
+        .select()
+        .from(games)
+        .where(and(
+          eq(games.sport, "WORLD_CUP"),
+          gte(games.gameDate, windowStart),
+          lte(games.gameDate, windowEnd)
+        ))
+        .orderBy(games.gameDate)
+        .limit(limit);
+    } else if (league.sport === 'MLB' || league.sport === 'NBA') {
       // Compute the UTC window for the user's local "today"
       // localDate = "YYYY-MM-DD" in user's timezone, tzOffset = minutes (from getTimezoneOffset(), positive = west of UTC)
       let todayStart: Date, todayEnd: Date;
@@ -1319,6 +1345,76 @@ export class DatabaseStorage implements IStorage {
       console.log("World Cup teams initialized");
     } catch (error) {
       console.error("Error initializing World Cup teams:", error);
+    }
+  }
+
+  private async initializeWorldCupGames() {
+    try {
+      // Only seed if our group stage fixtures haven't been inserted yet
+      const existing = await db.select({ id: games.id }).from(games).where(eq(games.id, "wc-gs-A-md1-1")).limit(1);
+      if (existing.length > 0) return;
+
+      const season = "2026";
+
+      const groupTeams: Record<string, [string, string, string, string]> = {
+        A: ["wc-MEX", "wc-RSA", "wc-KOR", "wc-A4"],
+        B: ["wc-CAN", "wc-SUI", "wc-QAT", "wc-B4"],
+        C: ["wc-BRA", "wc-MAR", "wc-SCO", "wc-HAI"],
+        D: ["wc-USA", "wc-PAR", "wc-AUS", "wc-D4"],
+        E: ["wc-GER", "wc-ECU", "wc-CIV", "wc-CUW"],
+        F: ["wc-NED", "wc-JPN", "wc-TUN", "wc-F4"],
+        G: ["wc-BEL", "wc-IRN", "wc-EGY", "wc-NZL"],
+        H: ["wc-ESP", "wc-URU", "wc-KSA", "wc-CPV"],
+        I: ["wc-FRA", "wc-SEN", "wc-NOR", "wc-IRQ"],
+        J: ["wc-ARG", "wc-AUT", "wc-ALG", "wc-JOR"],
+        K: ["wc-POR", "wc-COL", "wc-UZB", "wc-K4"],
+        L: ["wc-ENG", "wc-CRO", "wc-GHA", "wc-PAN"],
+      };
+
+      // Schedule per group: md1/md2 dates get 2 kickoff hours each; md3 is simultaneous (same hour for both games)
+      const groupSchedule: Record<string, { md1: string; md2: string; md3: string; h1: number; h2: number; h3: number }> = {
+        A: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 14, h2: 20, h3: 19 },
+        B: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 17, h2: 23, h3: 22 },
+        C: { md1: "2026-06-12", md2: "2026-06-18", md3: "2026-06-25", h1: 14, h2: 20, h3: 19 },
+        D: { md1: "2026-06-12", md2: "2026-06-18", md3: "2026-06-25", h1: 17, h2: 23, h3: 22 },
+        E: { md1: "2026-06-13", md2: "2026-06-19", md3: "2026-06-26", h1: 14, h2: 20, h3: 19 },
+        F: { md1: "2026-06-13", md2: "2026-06-19", md3: "2026-06-26", h1: 17, h2: 23, h3: 22 },
+        G: { md1: "2026-06-14", md2: "2026-06-20", md3: "2026-06-26", h1: 14, h2: 20, h3: 19 },
+        H: { md1: "2026-06-14", md2: "2026-06-20", md3: "2026-06-26", h1: 17, h2: 23, h3: 22 },
+        I: { md1: "2026-06-15", md2: "2026-06-21", md3: "2026-06-27", h1: 14, h2: 20, h3: 19 },
+        J: { md1: "2026-06-15", md2: "2026-06-21", md3: "2026-06-27", h1: 17, h2: 23, h3: 22 },
+        K: { md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27", h1: 14, h2: 20, h3: 19 },
+        L: { md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27", h1: 17, h2: 23, h3: 22 },
+      };
+
+      const makeDate = (dateStr: string, hour: number): Date => {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        return new Date(Date.UTC(y, m - 1, d, hour, 0, 0));
+      };
+
+      const wcGames: InsertGame[] = [];
+
+      for (const [group, sched] of Object.entries(groupSchedule)) {
+        const [t1, t2, t3, t4] = groupTeams[group];
+        const base = { sport: "WORLD_CUP", season, week: null, homeScore: null, awayScore: null, status: "scheduled", completedAt: null, period: null, wcRound: "group_stage", wcGroup: group } as const;
+
+        // MD1: t1 v t4 (h1), t2 v t3 (h2)
+        wcGames.push({ ...base, id: `wc-gs-${group}-md1-1`, homeTeamId: t1, awayTeamId: t4, gameDate: makeDate(sched.md1, sched.h1) });
+        wcGames.push({ ...base, id: `wc-gs-${group}-md1-2`, homeTeamId: t2, awayTeamId: t3, gameDate: makeDate(sched.md1, sched.h2) });
+
+        // MD2: t1 v t2 (h1), t3 v t4 (h2)
+        wcGames.push({ ...base, id: `wc-gs-${group}-md2-1`, homeTeamId: t1, awayTeamId: t2, gameDate: makeDate(sched.md2, sched.h1) });
+        wcGames.push({ ...base, id: `wc-gs-${group}-md2-2`, homeTeamId: t3, awayTeamId: t4, gameDate: makeDate(sched.md2, sched.h2) });
+
+        // MD3: t1 v t3 (simultaneous h3), t2 v t4 (simultaneous h3)
+        wcGames.push({ ...base, id: `wc-gs-${group}-md3-1`, homeTeamId: t1, awayTeamId: t3, gameDate: makeDate(sched.md3, sched.h3) });
+        wcGames.push({ ...base, id: `wc-gs-${group}-md3-2`, homeTeamId: t2, awayTeamId: t4, gameDate: makeDate(sched.md3, sched.h3) });
+      }
+
+      await db.insert(games).values(wcGames).onConflictDoNothing();
+      console.log(`World Cup group stage schedule seeded: ${wcGames.length} fixtures`);
+    } catch (error) {
+      console.error("Error initializing World Cup games:", error);
     }
   }
 
@@ -1555,7 +1651,32 @@ export class DatabaseStorage implements IStorage {
     // For MLB/NBA, get tomorrow's games only. For NFL, get upcoming scheduled games
     let upcomingGames;
     
-    if (league.sport === 'MLB' || league.sport === 'NBA') {
+    if (league.sport === 'WORLD_CUP') {
+      // World Cup: tomorrow midnight → day+3 end-of-day (3-day window, date-based)
+      // localDate is "tomorrow" sent by the frontend
+      let windowStart: Date, windowEnd: Date;
+      if (localDate) {
+        const [year, month, day] = localDate.split('-').map(Number);
+        const utcMidnight = Date.UTC(year, month - 1, day, 0, 0, 0);
+        windowStart = new Date(utcMidnight + tzOffset * 60 * 1000);
+        windowEnd = new Date(windowStart.getTime() + 72 * 60 * 60 * 1000 - 1);
+      } else {
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        windowStart = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0));
+        windowEnd = new Date(windowStart.getTime() + 72 * 60 * 60 * 1000 - 1);
+      }
+      upcomingGames = await db
+        .select()
+        .from(games)
+        .where(and(
+          eq(games.sport, "WORLD_CUP"),
+          gte(games.gameDate, windowStart),
+          lte(games.gameDate, windowEnd)
+        ))
+        .orderBy(games.gameDate)
+        .limit(limit);
+    } else if (league.sport === 'MLB' || league.sport === 'NBA') {
       // Compute the UTC window for the user's local "tomorrow"
       // localDate here is already tomorrow's date (YYYY-MM-DD) in user's timezone
       let tomorrowStart: Date, tomorrowEnd: Date;

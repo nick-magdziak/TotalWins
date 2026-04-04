@@ -28,13 +28,13 @@ export default function Standings() {
   const tzOffset = now.getTimezoneOffset(); // minutes west of UTC (e.g. 240 for ET, 420 for PT)
   const toLocalDateStr = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const todayStr = toLocalDateStr(now);
+  const yesterdayStr = toLocalDateStr(new Date(now.getTime() - 24 * 60 * 60 * 1000));
   const tomorrowStr = toLocalDateStr(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
   const { data: recentGames } = useQuery<any[]>({
-    queryKey: ["/api/leagues", leagueId, "games/recent", todayStr],
+    queryKey: ["/api/leagues", leagueId, "games/recent", yesterdayStr],
     queryFn: () =>
-      fetch(`/api/leagues/${leagueId}/games/recent?localDate=${todayStr}&tzOffset=${tzOffset}`)
+      fetch(`/api/leagues/${leagueId}/games/recent?localDate=${yesterdayStr}&tzOffset=${tzOffset}`)
         .then(r => r.json()),
     refetchInterval: 60000, // Poll every 1 minute for live game updates
   });

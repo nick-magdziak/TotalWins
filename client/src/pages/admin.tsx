@@ -308,12 +308,22 @@ export default function Admin() {
 
   const syncLiveScoresMutation = useMutation({
     mutationFn: async () => {
+      if (currentLeague?.sport === 'WORLD_CUP') {
+        return apiRequest("POST", "/api/admin/sync-world-cup", {});
+      }
       return apiRequest("POST", "/api/admin/sync-live-scores", {});
     },
     onSuccess: (data: any) => {
+      const sport = currentLeague?.sport || 'MLB';
       toast({
         title: "Live Scores Synced!",
-        description: `Updated with current 2025 MLB season data. Validated: Yankees=60, White Sox=40, Pirates=47 wins.`,
+        description: sport === 'WORLD_CUP'
+          ? "World Cup match scores updated from ESPN."
+          : sport === 'NBA'
+          ? "NBA standings updated with latest game data."
+          : sport === 'NFL'
+          ? "NFL standings updated with latest game data."
+          : "Updated with current MLB season data.",
       });
       queryClient.invalidateQueries();
     },
