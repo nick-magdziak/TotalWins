@@ -101,9 +101,10 @@ export default function CreateLeague() {
     switch (sport) {
       case "NFL":
       case "NBA":
-        // These sports span across two calendar years (e.g., 2024-25)
-        // NFL season starts in September, NBA in October
-        if ((sport === "NFL" && currentMonth >= 9) || (sport === "NBA" && currentMonth >= 10)) {
+        // These sports span across two calendar years (e.g., 2025-26)
+        // NFL: March onwards = upcoming season (Super Bowl is in Feb, season ends by March)
+        // NBA: October onwards = current season
+        if ((sport === "NFL" && currentMonth >= 3) || (sport === "NBA" && currentMonth >= 10)) {
           season = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
         } else {
           season = `${currentYear - 1}-${currentYear.toString().slice(-2)}`;

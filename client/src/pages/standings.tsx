@@ -303,6 +303,8 @@ export default function Standings() {
     return null;
   };
 
+  const hasNoLeagues = currentUser && userLeagues !== undefined && userLeagues.length === 0;
+
   return (
     <>
       {/* Hero Section */}
@@ -310,21 +312,37 @@ export default function Standings() {
         <div className="bg-gradient-to-r from-retro-purple to-retro-pink p-4 sm:p-6 rounded-2xl retro-border mb-6">
           <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
             <h2 className="text-retro-yellow text-2xl sm:text-3xl md:text-4xl font-bold mb-3 neon-glow retro-font">
-              {displayLeague?.name || "TOTAL WINS"}
+              TOTAL WINS
             </h2>
-            <p className="text-white text-sm sm:text-base md:text-lg font-bold">
-              {displayLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (displayLeague?.sport || "NFL")} • {displayLeague?.season || "2025-26"} • STANDINGS
-            </p>
-            <div className="mt-3 flex flex-row items-center justify-center gap-3 flex-wrap">
-              <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(displayLeague?.draftStatus)}`}>
-                {getDraftStatusLabel(displayLeague?.draftStatus, displayLeague?.sport)}
-              </Badge>
-              {getTealBadgeLabel(displayLeague?.draftStatus, displayLeague?.sport, displayLeague?.draftScheduledAt) && (
-                <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
-                  {getTealBadgeLabel(displayLeague?.draftStatus, displayLeague?.sport, displayLeague?.draftScheduledAt)}
+            {hasNoLeagues ? (
+              <div className="mt-2">
+                <p className="text-white text-sm sm:text-base font-bold mb-3">
+                  WELCOME TO THE POOL
+                </p>
+                <p className="text-gray-300 text-xs sm:text-sm mb-4">
+                  You're not in a league yet. Create one or ask your commissioner for an invite code to get started.
+                </p>
+                <Badge className="bg-retro-teal text-white px-4 py-2 rounded-full font-bold text-sm">
+                  JOIN YOUR FIRST LEAGUE
                 </Badge>
-              )}
-            </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-white text-sm sm:text-base md:text-lg font-bold">
+                  {displayLeague?.sport === 'WORLD_CUP' ? 'WORLD CUP' : (displayLeague?.sport || "NFL")} • {displayLeague?.season || ""} • STANDINGS
+                </p>
+                <div className="mt-3 flex flex-row items-center justify-center gap-3 flex-wrap">
+                  <Badge className={`px-3 py-1 rounded-full font-bold text-xs ${getDraftStatusClass(displayLeague?.draftStatus)}`}>
+                    {getDraftStatusLabel(displayLeague?.draftStatus, displayLeague?.sport)}
+                  </Badge>
+                  {getTealBadgeLabel(displayLeague?.draftStatus, displayLeague?.sport, displayLeague?.draftScheduledAt) && (
+                    <Badge className="bg-retro-teal text-white px-3 py-1 rounded-full font-bold text-xs">
+                      {getTealBadgeLabel(displayLeague?.draftStatus, displayLeague?.sport, displayLeague?.draftScheduledAt)}
+                    </Badge>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Season selector — only shown when franchise has multiple seasons */}
             {seasonHistory && seasonHistory.length > 1 && (

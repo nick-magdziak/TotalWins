@@ -104,6 +104,17 @@ app.use((req, res, next) => {
       console.error("Failed to initialize World Cup data service:", wcError);
     }
 
+    // Run an immediate game sync so upcoming/recent games are ready before the first interval fires
+    try {
+      await sportsApi.syncMLBGames();
+      await sportsApi.syncNBAGames();
+      await sportsApi.syncCurrentNFLGames();
+      await sportsApi.syncNextWeekNFLGames();
+      log("Initial MLB, NBA, and NFL game sync complete");
+    } catch (initSyncError) {
+      console.error("Initial game sync error:", initSyncError);
+    }
+
     log("ESPN API sports data service initialized (MLB, NFL, NBA & World Cup)");
     
     // Set up automatic live game updates every 2 minutes during active hours
