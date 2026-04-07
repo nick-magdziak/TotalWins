@@ -1,0 +1,130 @@
+{\rtf1\ansi\deff0
+  {\fonttbl{\f0\froman\fcharset0 Times New Roman;}{\f1\fswiss\fcharset0 Calibri;}{\f2\fmodern\fcharset0 Courier New;}}
+  {\colortbl ;\red255\green0\blue0;\red0\green112\blue192;\red0\green128\blue0;\red255\green102\blue0;\red128\green128\blue128;}
+  {\stylesheet{\s0\f1\fs22\sl276\slmult1 Normal;}}
+  \widowctrl\hyphauto
+
+  {\pard\qc\f1\fs40\b\cf2 Total Wins\par}
+  {\pard\qc\f1\fs28\b\cf2 Deployment Checklist\par}
+  {\pard\qc\f1\fs20\cf5 totalwins.app\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 1. Replit Secrets (Environment Variables)\par}
+  {\pard\f1\fs20 Set these in Replit \b Secrets\b0  (Settings \u8594? Secrets) before deploying:\par}
+  \par
+  {\pard\f1\fs20\b DATABASE_URL\b0  \u8212? Your Neon PostgreSQL connection string\line
+  {\cf3 \u9989? Already set by Replit \u8212? no action needed}\par}
+  \par
+  {\pard\f1\fs20\b SESSION_SECRET\b0  \u8212? A long random string (32+ characters). Critical for session security.\line
+  {\cf4 \u26A0? Set this now if not already done}\par}
+  \par
+  {\pard\f1\fs20\b AWS_REGION\b0  \u8212? Set to \f2 us-east-1\f1  (or your SES region)\line
+  {\cf4 \u26A0? Set explicitly in secrets}\par}
+  \par
+  {\pard\f1\fs20\b AWS_ACCESS_KEY_ID\b0  \u8212? Your AWS IAM access key (for SES email sending)\line
+  {\cf4 \u26A0? Must be set}\par}
+  \par
+  {\pard\f1\fs20\b AWS_SECRET_ACCESS_KEY\b0  \u8212? Your AWS IAM secret key (for SES email sending)\line
+  {\cf4 \u26A0? Must be set}\par}
+  \par
+  {\pard\f1\fs20\b FROM_EMAIL\b0  \u8212? Set to: \f2 Total Wins <admin@totalwins.app>\f1\line
+  {\cf3 \u9989? Has a default \u8212? confirm it is explicitly set}\par}
+  \par
+  {\pard\f1\fs20\b APP_URL\b0  \u8212? Set to: \f2 https://totalwins.app\f1\line
+  {\cf4 \u26A0? Required so invite links and email links point to your domain, not the Replit dev URL}\par}
+  \par
+  {\pard\f1\fs20\i Note: VAPID push notification keys and ESPN_API_KEY are optional \u8212? the app works without them.\i0\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 2. AWS Account \u8212? SES (Email)\par}
+  {\pard\f1\fs20 Your domain (totalwins.app) is already verified with DKIM/SPF/DMARC. Two things to confirm:\par}
+  \par
+  {\pard\f1\fs20\b \u9312? Request SES Production Access\b0\par}
+  {\pard\f1\fs20 AWS starts all new SES accounts in Sandbox mode, which only allows sending to verified email addresses. To send to real users:\par}
+  {\pard\li360\f1\fs20\bullet  Go to AWS Console \u8594? SES \u8594? \b Account Dashboard\b0\par}
+  {\pard\li360\f1\fs20\bullet  Click \b Request Production Access\b0\par}
+  {\pard\li360\f1\fs20\bullet  This takes 24\u8211?48 hours for AWS to approve\par}
+  \par
+  {\pard\f1\fs20\b \u9313? IAM User Permissions\b0\par}
+  {\pard\f1\fs20 The IAM user whose keys you enter in Replit Secrets must have at minimum:\par}
+  {\pard\li360\f1\fs20\bullet  \f2 ses:SendEmail\f1\par}
+  {\pard\li360\f1\fs20\bullet  \f2 ses:SendRawEmail\f1\par}
+  {\pard\li360\f1\fs20\bullet  Or attach the managed policy: \f2 AmazonSESFullAccess\f1\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 3. Database\par}
+  {\pard\f1\fs20 Your Replit PostgreSQL database carries over to production automatically via DATABASE_URL.\par}
+  \par
+  {\pard\f1\fs20\b Schema status:\b0\par}
+  {\pard\li360\f1\fs20\bullet  The \b parent_league_id\b0  column (Season Rollover feature) was already applied directly to the database during development. It will be present in production. {\cf3 \u9989? No migration needed.}\par}
+  {\pard\li360\f1\fs20\bullet  All demo leagues (Champions League / NFL, Sunday Squad / MLB, Fantasy Friends / NBA) are seeded automatically on startup. {\cf3 \u9989? No manual data import needed.}\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 4. Domain Setup \u8212? totalwins.app\par}
+  \par
+  {\pard\f1\fs24\b\cf4 Step A \u8212? Add Custom Domain in Replit\par}
+  {\pard\li360\f1\fs20\bullet  Go to your Repl \u8594? \b Deployments\b0\par}
+  {\pard\li360\f1\fs20\bullet  Click \b Custom Domain\b0\par}
+  {\pard\li360\f1\fs20\bullet  Enter \f2 totalwins.app\f1\par}
+  {\pard\li360\f1\fs20\bullet  Replit will display a CNAME target (e.g. \f2 your-repl.replit.app\f1 )\par}
+  \par
+  {\pard\f1\fs24\b\cf4 Step B \u8212? DNS Records at Your Registrar\par}
+  {\pard\f1\fs20 Log in to wherever you registered totalwins.app and add:\par}
+  \par
+  {\pard\f1\fs20\b Root domain (totalwins.app):\b0\par}
+  {\pard\li360\f1\fs20\bullet  \b Type:\b0  ALIAS or ANAME (preferred) \u8212? or CNAME if your registrar supports it on root\par}
+  {\pard\li360\f1\fs20\bullet  \b Name:\b0  \f2 @\f1\par}
+  {\pard\li360\f1\fs20\bullet  \b Value:\b0  The CNAME target Replit gave you\par}
+  \par
+  {\pard\f1\fs20\b Optional www subdomain:\b0\par}
+  {\pard\li360\f1\fs20\bullet  \b Type:\b0  CNAME\par}
+  {\pard\li360\f1\fs20\bullet  \b Name:\b0  \f2 www\f1\par}
+  {\pard\li360\f1\fs20\bullet  \b Value:\b0  The CNAME target Replit gave you\par}
+  \par
+  {\pard\f1\fs20\i DNS propagation typically takes 5\u8211?30 minutes but can take up to 48 hours.\i0\par}
+  \par
+  {\pard\f1\fs20\b AWS SES DNS (already done):\b0  SPF, DKIM, and DMARC records are already in place. {\cf3 \u9989? No action needed.}\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 5. Deploy Steps \u8212? In Order\par}
+  \par
+  {\pard\li360\f1\fs20 {\b 1.}  Set all secrets in Step 1 above (SESSION_SECRET, AWS credentials, APP_URL)\par}
+  {\pard\li360\f1\fs20 {\b 2.}  Confirm SES production access is granted in AWS\par}
+  {\pard\li360\f1\fs20 {\b 3.}  Click \b Deploy\b0  in Replit (builds frontend + bundles backend automatically)\par}
+  {\pard\li360\f1\fs20 {\b 4.}  After deployment succeeds, go to Deployments \u8594? Custom Domain\par}
+  {\pard\li360\f1\fs20 {\b 5.}  Enter \f2 totalwins.app\f1  and copy the CNAME target Replit provides\par}
+  {\pard\li360\f1\fs20 {\b 6.}  Add DNS records at your registrar (see Step 4)\par}
+  {\pard\li360\f1\fs20 {\b 7.}  Wait for DNS propagation, then visit https://totalwins.app to confirm\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 6. Post-Deploy Smoke Test\par}
+  {\pard\f1\fs20 After the domain is live, verify each of these:\par}
+  \par
+  {\pard\li360\f1\fs20 \u9744? Can create an account and log in\par}
+  {\pard\li360\f1\fs20 \u9744? Standings page loads and shows correct data\par}
+  {\pard\li360\f1\fs20 \u9744? League switching works via the header dropdown\par}
+  {\pard\li360\f1\fs20 \u9744? Admin panel loads (must be logged in as admin)\par}
+  {\pard\li360\f1\fs20 \u9744? Sync Live Scores button works in Admin\par}
+  {\pard\li360\f1\fs20 \u9744? Send a test league invite \u8212? confirm email arrives from admin@totalwins.app\par}
+  {\pard\li360\f1\fs20 \u9744? Confirm invite email links point to https://totalwins.app (not the Replit dev URL)\par}
+  {\pard\li360\f1\fs20 \u9744? Test password reset email\par}
+  {\pard\li360\f1\fs20 \u9744? Draft page loads and draft picks work\par}
+  {\pard\li360\f1\fs20 \u9744? World Cup standings display correctly\par}
+  \par
+
+  {\pard\f1\fs28\b\cf2 7. Important Notes\par}
+  \par
+  {\pard\f1\fs20\b Biggest blockers to a successful launch:\b0\par}
+  {\pard\li360\f1\fs20 1.  SES still in Sandbox mode (emails only go to verified addresses)\par}
+  {\pard\li360\f1\fs20 2.  SESSION_SECRET not set (sessions will break on restart)\par}
+  {\pard\li360\f1\fs20 3.  AWS IAM credentials missing from Replit Secrets (no emails send)\par}
+  {\pard\li360\f1\fs20 4.  APP_URL not set (invite/reset links in emails will point to wrong URL)\par}
+  \par
+  {\pard\f1\fs20\b What is handled automatically:\b0\par}
+  {\pard\li360\f1\fs20\bullet  Database seeding (demo leagues, NFL/MLB/NBA/World Cup teams)\par}
+  {\pard\li360\f1\fs20\bullet  Live score syncing (every 2 minutes from ESPN public API)\par}
+  {\pard\li360\f1\fs20\bullet  TLS/HTTPS (handled by Replit deployment)\par}
+  {\pard\li360\f1\fs20\bullet  Build process (frontend + backend bundled by Replit)\par}
+  \par
+  {\pard\f1\fs16\cf5 Generated for Total Wins \u8212? totalwins.app\par}
+  }
