@@ -245,8 +245,18 @@ export default function Standings() {
         
         return `WEEK ${nextWeek} PREVIEW`;
       }
-      case 'MLB': return "TOMORROW'S GAMES";
-      case 'NBA': return "TOMORROW'S GAMES";
+      case 'MLB':
+      case 'NBA': {
+        // Dynamically label based on the actual first game date
+        if (upcomingGames && upcomingGames.length > 0) {
+          const firstGameDate = new Date(upcomingGames[0].gameDate);
+          const firstDateStr = toLocalDateStr(firstGameDate);
+          if (firstDateStr === tomorrowStr) return "TOMORROW'S GAMES";
+          const label = firstGameDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+          return `${label} GAMES`;
+        }
+        return "TOMORROW'S GAMES";
+      }
       case 'WORLD_CUP': return "UPCOMING MATCHES";
       default: return "TOMORROW'S GAMES";
     }

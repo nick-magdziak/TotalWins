@@ -1944,30 +1944,45 @@ export class DatabaseStorage implements IStorage {
     } else if (league.sport === 'MLB' || league.sport === 'NBA') {
       // Compute the UTC window for the user's local "tomorrow"
       // localDate here is already tomorrow's date (YYYY-MM-DD) in user's timezone
-      let tomorrowStart: Date, tomorrowEnd: Date;
+      let tomorrowStart: Date;
       if (localDate) {
         const [year, month, day] = localDate.split('-').map(Number);
         const utcMidnight = Date.UTC(year, month - 1, day, 0, 0, 0);
         tomorrowStart = new Date(utcMidnight + tzOffset * 60 * 1000);
-        tomorrowEnd = new Date(tomorrowStart.getTime() + 24 * 60 * 60 * 1000 - 1);
       } else {
         // Fallback: use server UTC date + 1 day
         const now = new Date();
         const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         tomorrowStart = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0));
-        tomorrowEnd = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 23, 59, 59));
       }
+      // Search up to 4 days ahead to handle off days (e.g. MLB Mondays)
+      const windowEnd = new Date(tomorrowStart.getTime() + 4 * 24 * 60 * 60 * 1000 - 1);
       
-      upcomingGames = await db
+      const allUpcoming = await db
         .select()
         .from(games)
         .where(and(
           eq(games.sport, league.sport),
           gte(games.gameDate, tomorrowStart),
-          lte(games.gameDate, tomorrowEnd)
+          lte(games.gameDate, windowEnd)
         ))
         .orderBy(games.gameDate)
-        .limit(limit);
+        .limit(50);
+      
+      if (allUpcoming.length === 0) {
+        upcomingGames = [];
+      } else {
+        // Return only games from the first day that has scheduled games
+        const firstGame = allUpcoming[0];
+        const firstDayStart = new Date(Date.UTC(
+          firstGame.gameDate!.getUTCFullYear(),
+          firstGame.gameDate!.getUTCMonth(),
+          firstGame.gameDate!.getUTCDate(),
+          0, 0, 0
+        ));
+        const firstDayEnd = new Date(firstDayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+        upcomingGames = allUpcoming.filter(g => g.gameDate! >= firstDayStart && g.gameDate! <= firstDayEnd).slice(0, limit);
+      }
     } else {
       // For NFL, get next week's upcoming scheduled games only
       const currentWeek = this.getCurrentNFLWeek();
