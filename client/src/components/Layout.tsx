@@ -17,7 +17,7 @@ export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
-  const [currentLeagueId, setCurrentLeagueId] = useState<string>("demo-league-1");
+  const [currentLeagueId, setCurrentLeagueId] = useState<string>("");
 
   // Listen for auth state changes
   useEffect(() => {
@@ -75,21 +75,24 @@ export default function Layout({ children }: LayoutProps) {
                        userLeagues?.[0]; // Fallback to first league
 
   useEffect(() => {
-    // Set default league when leagues are loaded
-    if (userLeagues && userLeagues.length > 0 && !currentLeague) {
+    // Set default league when leagues are loaded and none is selected yet
+    if (!currentLeagueId && userLeagues && userLeagues.length > 0) {
       setCurrentLeagueId(userLeagues[0].id);
     }
-  }, [userLeagues, currentLeague]);
+  }, [userLeagues, currentLeagueId]);
 
   // Show Admin for global admins OR league creators (anyone who created the current league)
   const isLeagueAdmin = currentUser?.isAdmin || 
                         currentLeague?.createdBy === currentUser?.id;
 
+  // Always derive the effective league ID from the resolved currentLeague, never from the raw state default
+  const effectiveLeagueId = currentLeague?.id ?? "";
+
   // League-specific navigation items with current league context
   const leagueNavItems = [
-    { path: `/standings?league=${currentLeagueId}`, label: "STANDINGS", icon: Trophy },
-    { path: `/draft?league=${currentLeagueId}`, label: "DRAFT", icon: Users },
-    ...(isLeagueAdmin ? [{ path: `/admin?league=${currentLeagueId}`, label: "ADMIN", icon: Settings }] : []),
+    { path: `/standings?league=${effectiveLeagueId}`, label: "STANDINGS", icon: Trophy },
+    { path: `/draft?league=${effectiveLeagueId}`, label: "DRAFT", icon: Users },
+    ...(isLeagueAdmin ? [{ path: `/admin?league=${effectiveLeagueId}`, label: "ADMIN", icon: Settings }] : []),
   ];
 
   // General navigation items (not league-specific)
