@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LogIn, Eye, EyeOff, Volleyball } from "lucide-react";
+import { LogIn, Eye, EyeOff } from "lucide-react";
+import totalWinsLogo from "@assets/TotalWinsLogo - Transparent_1753759057781.png";
 import { login } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -104,7 +105,7 @@ export default function Login() {
           <div className="text-center mb-6">
             <div className="bg-gradient-to-r from-retro-teal to-retro-purple p-4 sm:p-6 rounded-2xl retro-border">
               <div className="bg-retro-charcoal rounded-xl p-4 bg-opacity-80">
-                <Volleyball className="text-retro-yellow text-4xl neon-glow mx-auto mb-3" />
+                <img src={totalWinsLogo} alt="Total Wins" className="w-16 h-16 object-contain mx-auto mb-3 drop-shadow-lg" />
                 <h2 className="text-retro-yellow text-2xl sm:text-3xl font-bold mb-2 neon-glow retro-font">
                   TOTAL WINS
                 </h2>
