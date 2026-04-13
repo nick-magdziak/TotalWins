@@ -181,7 +181,7 @@ export default function Standings() {
 
   const getDraftStatusLabel = (status?: string, sport?: string) => {
     if (status === 'active') return 'DRAFT IN PROGRESS';
-    if (status === 'completed') return getSeasonPeriodLabel(sport);
+    if (status === 'completed') return 'DRAFT COMPLETE';
     return 'DRAFT NOT STARTED';
   };
 
@@ -192,7 +192,7 @@ export default function Standings() {
   };
 
   const getTealBadgeLabel = (status?: string, sport?: string, draftScheduledAt?: string | Date | null) => {
-    if (status === 'completed') return null;
+    if (status === 'completed') return getSeasonPeriodLabel(sport);
     if (status !== 'active' && draftScheduledAt) return formatDraftDate(draftScheduledAt);
     return getSeasonPeriodLabel(sport);
   };
