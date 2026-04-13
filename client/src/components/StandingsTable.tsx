@@ -118,22 +118,22 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                       })}
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-1">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 58px)', gap: '3px' }}>
                       {standing.teams.map((team) => {
                         const teamColorsMap = getTeamColors();
                         const teamColors = teamColorsMap[team.abbreviation as keyof typeof teamColorsMap];
                         return (
-                          <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
-                            <Badge
-                              className="px-2 py-1 rounded text-xs font-bold border-0"
+                          <div key={team.id} style={{ width: '58px' }} className="flex items-center">
+                            <div
+                              className="flex items-center justify-center flex-1 min-w-0 rounded px-1 py-0.5 text-xs font-bold"
                               style={{
                                 backgroundColor: teamColors?.background || '#374151',
                                 color: teamColors?.font || '#ffffff'
                               }}
                             >
                               {team.abbreviation}
-                            </Badge>
-                            <span className="text-xs font-bold text-retro-charcoal">
+                            </div>
+                            <span className="flex-shrink-0 ml-1 text-xs font-bold text-retro-charcoal" style={{ width: '14px', textAlign: 'right' }}>
                               {team.wins}
                             </span>
                           </div>
