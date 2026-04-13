@@ -12,57 +12,30 @@ export class SportsApiService {
     try {
       const allGames: Game[] = [];
       
-      // Fetch current day games
-      const todayResponse = await fetch(
-        'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }
-      );
-
-      if (todayResponse.ok) {
-        const todayData = await todayResponse.json();
-        allGames.push(...this.parseESPNMLBGames(todayData));
-      }
-
-      // Fetch tomorrow's games for upcoming games
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0].replace(/-/g, '');
+      // ESPN's default no-date endpoint returns the last completed day, not today.
+      // Always fetch by explicit ET date to get today's scheduled games correctly.
+      // ET (EDT) = UTC-4 in April/May, UTC-5 in standard time.
+      const etOffsetMs = 4 * 60 * 60 * 1000; // EDT = UTC-4
+      const etNow = new Date(Date.now() - etOffsetMs);
+      const toDateStr = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '');
       
-      const tomorrowResponse = await fetch(
-        `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${tomorrowStr}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
+      const dates = [
+        new Date(etNow.getTime() - 86400000), // yesterday ET (update completed scores)
+        new Date(etNow.getTime()),             // today ET
+        new Date(etNow.getTime() + 86400000),  // tomorrow ET
+        new Date(etNow.getTime() + 2 * 86400000), // day after ET
+      ];
+
+      for (const date of dates) {
+        const dateStr = toDateStr(date);
+        const response = await fetch(
+          `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${dateStr}`,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          allGames.push(...this.parseESPNMLBGames(data));
         }
-      );
-
-      if (tomorrowResponse.ok) {
-        const tomorrowData = await tomorrowResponse.json();
-        allGames.push(...this.parseESPNMLBGames(tomorrowData));
-      }
-
-      // Fetch day after tomorrow's games
-      const dayAfter = new Date();
-      dayAfter.setDate(dayAfter.getDate() + 2);
-      const dayAfterStr = dayAfter.toISOString().split('T')[0].replace(/-/g, '');
-      
-      const dayAfterResponse = await fetch(
-        `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${dayAfterStr}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }
-      );
-
-      if (dayAfterResponse.ok) {
-        const dayAfterData = await dayAfterResponse.json();
-        allGames.push(...this.parseESPNMLBGames(dayAfterData));
       }
 
       return allGames;
