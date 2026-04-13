@@ -96,7 +96,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                   </span>
                 </td>
                 <td className="px-2 py-3">
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap gap-1">
                     {standing.teams.map((team) => {
                       if (league?.sport === 'WORLD_CUP') {
                         const wcTeam = team as unknown as WorldCupTeam;
