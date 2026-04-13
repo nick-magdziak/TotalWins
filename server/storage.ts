@@ -1931,6 +1931,13 @@ export class DatabaseStorage implements IStorage {
         windowStart = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0));
         windowEnd = new Date(windowStart.getTime() + 72 * 60 * 60 * 1000 - 1);
       }
+      // Before the tournament starts (June 11, 2026): fast-forward to the opening
+      // day so users always see the first batch of fixtures rather than a blank section.
+      const wcOpeningDay = new Date(Date.UTC(2026, 5, 11, 0, 0, 0)); // June 11, 2026 00:00 UTC
+      if (windowStart < wcOpeningDay) {
+        windowStart = wcOpeningDay;
+        windowEnd = new Date(wcOpeningDay.getTime() + 72 * 60 * 60 * 1000 - 1);
+      }
       upcomingGames = await db
         .select()
         .from(games)
