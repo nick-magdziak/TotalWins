@@ -1,6 +1,7 @@
 import { eq, desc, and, sql, gte, lt, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { hashPassword } from "./lib/auth.js";
+import { getDraftConfigByKey } from "../shared/draftConfig.js";
 import {
   type User,
   type InsertUser,
@@ -1146,7 +1147,12 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Shared computation for both active and paused states
-    const totalPicks = members.length * league.teamsPerPlayer;
+    // Use the draft configuration's authoritative player/team counts when available,
+    // otherwise fall back to league settings (handles snake drafts without a named config)
+    const draftConfig = league.draftConfiguration ? getDraftConfigByKey(league.draftConfiguration) : null;
+    const totalPicks = draftConfig
+      ? draftConfig.players * draftConfig.teams
+      : members.length * league.teamsPerPlayer;
     const currentPickNumber = picks.length + 1;
 
     if (currentPickNumber > totalPicks) {
