@@ -273,26 +273,26 @@ export default function Standings() {
   // Function to get display abbreviation from team ID
   const getTeamDisplayName = (teamId: string) => {
     if (!teamId) return 'N/A';
-    
-    // World Cup teams — show flag + country name
-    if (teamId.startsWith('wc-')) {
-      const team = wcTeamMap.get(teamId);
-      if (team) return `${team.flagEmoji} ${team.abbreviation}`;
-      return teamId.replace('wc-', '');
-    }
-    
-    // Handle MLB team IDs that end with -MLB
-    if (teamId.endsWith('-MLB')) {
-      return teamId.replace('-MLB', '');
-    }
-    
-    // Handle NBA team IDs that end with -NBA  
-    if (teamId.endsWith('-NBA')) {
-      return teamId.replace('-NBA', '');
-    }
-    
-    // For NFL and other teams, return as-is (they're already 3 characters)
+    if (teamId.endsWith('-MLB')) return teamId.replace('-MLB', '');
+    if (teamId.endsWith('-NBA')) return teamId.replace('-NBA', '');
     return teamId;
+  };
+
+  // JSX version — uses FlagImage for WC teams so flags render on Windows too
+  const renderTeamName = (teamId: string) => {
+    if (teamId?.startsWith('wc-')) {
+      const team = wcTeamMap.get(teamId);
+      if (team) {
+        return (
+          <span className="inline-flex items-center gap-0.5">
+            <FlagImage teamId={teamId} emoji={team.flagEmoji} name={team.name} size={14} />
+            {team.abbreviation}
+          </span>
+        );
+      }
+      return <span>{teamId.replace('wc-', '')}</span>;
+    }
+    return <span>{getTeamDisplayName(teamId)}</span>;
   };
 
   const getByeWeekTeams = () => {
@@ -522,8 +522,8 @@ export default function Standings() {
                       className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-lime"
                     >
                       <div className="flex-1">
-                        <div className="font-bold text-retro-charcoal retro-font text-xs">
-                          {getTeamDisplayName(game.awayTeamId)} @ {getTeamDisplayName(game.homeTeamId)}
+                        <div className="font-bold text-retro-charcoal retro-font text-xs flex items-center gap-1 flex-wrap">
+                          {renderTeamName(game.awayTeamId)} <span>@</span> {renderTeamName(game.homeTeamId)}
                         </div>
                         <div className="text-xs text-retro-charcoal font-bold">
                           {game.status === 'completed' || game.status === 'in_progress' ? (
@@ -606,8 +606,8 @@ export default function Standings() {
                       className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-orange"
                     >
                       <div className="flex-1">
-                        <div className="font-bold text-retro-charcoal retro-font text-xs">
-                          {getTeamDisplayName(game.awayTeamId)} @ {getTeamDisplayName(game.homeTeamId)}
+                        <div className="font-bold text-retro-charcoal retro-font text-xs flex items-center gap-1 flex-wrap">
+                          {renderTeamName(game.awayTeamId)} <span>@</span> {renderTeamName(game.homeTeamId)}
                         </div>
                         <div className="text-xs text-retro-charcoal">
                           {new Date(game.gameDate).toLocaleDateString('en-US', { 
