@@ -130,13 +130,20 @@ export default function Admin() {
         case 'NBA':
           team = await fetch(`/api/nba/teams`).then(r => r.json()).then((teams: any[]) => teams.find((t: any) => t.id === lastPick.teamId));
           break;
+        case 'WORLD_CUP':
+          team = await fetch(`/api/world-cup/teams`).then(r => r.json()).then((teams: any[]) => teams.find((t: any) => t.id === lastPick.teamId));
+          break;
         default:
           team = await fetch(`/api/nfl/teams`).then(r => r.json()).then((teams: any[]) => teams.find((t: any) => t.id === lastPick.teamId));
       }
       
+      const teamName = team
+        ? (currentLeague?.sport === 'WORLD_CUP' ? team.name : `${team.city} ${team.name}`)
+        : 'Unknown Team';
+      
       return {
         playerName: user.displayName,
-        teamName: team ? `${team.city} ${team.name}` : 'Unknown Team',
+        teamName,
         round: lastPick.round,
         pickNumber: lastPick.pickNumber
       };
@@ -1716,7 +1723,7 @@ export default function Admin() {
                   <SelectContent>
                     {availableTeams?.map((team: any) => (
                       <SelectItem key={team.id} value={team.id}>
-                        {team.city} {team.name}
+                        {currentLeague?.sport === 'WORLD_CUP' ? team.name : `${team.city} ${team.name}`}
                       </SelectItem>
                     ))}
                     {(!availableTeams || availableTeams.length === 0) && (
