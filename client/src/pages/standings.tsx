@@ -277,7 +277,7 @@ export default function Standings() {
     // World Cup teams — show flag + country name
     if (teamId.startsWith('wc-')) {
       const team = wcTeamMap.get(teamId);
-      if (team) return `${team.flagEmoji} ${team.name}`;
+      if (team) return `${team.flagEmoji} ${team.abbreviation}`;
       return teamId.replace('wc-', '');
     }
     
