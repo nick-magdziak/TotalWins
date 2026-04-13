@@ -95,6 +95,14 @@ export default function Standings() {
     enabled: !!leagueId && !isViewingPastSeason,
   });
 
+  const { data: wcTeams } = useQuery<any[]>({
+    queryKey: ["/api/world-cup/teams"],
+    enabled: !!leagueId && isWorldCup,
+    staleTime: Infinity,
+  });
+
+  const wcTeamMap = new Map((wcTeams || []).map((t: any) => [t.id, t]));
+
   const { data: wcGroups } = useQuery<Record<string, WCGroupStanding[]>>({
     queryKey: ["/api/world-cup/groups"],
     enabled: !!leagueId && isWorldCup && !isViewingPastSeason,
@@ -265,6 +273,13 @@ export default function Standings() {
   // Function to get display abbreviation from team ID
   const getTeamDisplayName = (teamId: string) => {
     if (!teamId) return 'N/A';
+    
+    // World Cup teams — show flag + country name
+    if (teamId.startsWith('wc-')) {
+      const team = wcTeamMap.get(teamId);
+      if (team) return `${team.flagEmoji} ${team.name}`;
+      return teamId.replace('wc-', '');
+    }
     
     // Handle MLB team IDs that end with -MLB
     if (teamId.endsWith('-MLB')) {
