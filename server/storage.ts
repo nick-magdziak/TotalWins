@@ -1501,7 +1501,7 @@ export class DatabaseStorage implements IStorage {
 
       // Schedule per group: md1/md2 dates get 2 kickoff hours each; md3 is simultaneous (same hour for both games)
       const groupSchedule: Record<string, { md1: string; md2: string; md3: string; h1: number; h2: number; h3: number }> = {
-        A: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 14, h2: 20, h3: 19 },
+        A: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 17, h2: 24, h3: 19 },
         B: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 17, h2: 23, h3: 22 },
         C: { md1: "2026-06-12", md2: "2026-06-18", md3: "2026-06-25", h1: 14, h2: 20, h3: 19 },
         D: { md1: "2026-06-12", md2: "2026-06-18", md3: "2026-06-25", h1: 17, h2: 23, h3: 22 },
@@ -1515,9 +1515,12 @@ export class DatabaseStorage implements IStorage {
         L: { md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27", h1: 17, h2: 23, h3: 22 },
       };
 
+      // makeDate handles hour overflow: hour=24 → midnight next day, hour=25 → 1 AM next day, etc.
       const makeDate = (dateStr: string, hour: number): Date => {
         const [y, m, d] = dateStr.split("-").map(Number);
-        return new Date(Date.UTC(y, m - 1, d, hour, 0, 0));
+        const base = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+        base.setUTCHours(hour); // setUTCHours safely rolls over 24+ into next day
+        return base;
       };
 
       const wcGames: InsertGame[] = [];
@@ -1526,20 +1529,24 @@ export class DatabaseStorage implements IStorage {
         const [t1, t2, t3, t4] = groupTeams[group];
         const base = { sport: "WORLD_CUP", season, week: null, homeScore: null, awayScore: null, status: "scheduled", completedAt: null, period: null, wcRound: "group_stage", wcGroup: group } as const;
 
-        // MD1: t1 v t4 (h1), t2 v t3 (h2)
-        wcGames.push({ ...base, id: `wc-gs-${group}-md1-1`, homeTeamId: t1, awayTeamId: t4, gameDate: makeDate(sched.md1, sched.h1) });
-        wcGames.push({ ...base, id: `wc-gs-${group}-md1-2`, homeTeamId: t2, awayTeamId: t3, gameDate: makeDate(sched.md1, sched.h2) });
+        // FIFA standard round-robin: MD1: 1v2, 3v4 | MD2: 1v3, 2v4 | MD3: 1v4, 2v3 (simultaneous)
+        // MD1
+        wcGames.push({ ...base, id: `wc-gs-${group}-md1-1`, homeTeamId: t1, awayTeamId: t2, gameDate: makeDate(sched.md1, sched.h1) });
+        wcGames.push({ ...base, id: `wc-gs-${group}-md1-2`, homeTeamId: t3, awayTeamId: t4, gameDate: makeDate(sched.md1, sched.h2) });
 
-        // MD2: t1 v t2 (h1), t3 v t4 (h2)
-        wcGames.push({ ...base, id: `wc-gs-${group}-md2-1`, homeTeamId: t1, awayTeamId: t2, gameDate: makeDate(sched.md2, sched.h1) });
-        wcGames.push({ ...base, id: `wc-gs-${group}-md2-2`, homeTeamId: t3, awayTeamId: t4, gameDate: makeDate(sched.md2, sched.h2) });
+        // MD2
+        wcGames.push({ ...base, id: `wc-gs-${group}-md2-1`, homeTeamId: t1, awayTeamId: t3, gameDate: makeDate(sched.md2, sched.h1) });
+        wcGames.push({ ...base, id: `wc-gs-${group}-md2-2`, homeTeamId: t2, awayTeamId: t4, gameDate: makeDate(sched.md2, sched.h2) });
 
-        // MD3: t1 v t3 (simultaneous h3), t2 v t4 (simultaneous h3)
-        wcGames.push({ ...base, id: `wc-gs-${group}-md3-1`, homeTeamId: t1, awayTeamId: t3, gameDate: makeDate(sched.md3, sched.h3) });
-        wcGames.push({ ...base, id: `wc-gs-${group}-md3-2`, homeTeamId: t2, awayTeamId: t4, gameDate: makeDate(sched.md3, sched.h3) });
+        // MD3 (simultaneous kickoffs so neither team has advance info)
+        wcGames.push({ ...base, id: `wc-gs-${group}-md3-1`, homeTeamId: t1, awayTeamId: t4, gameDate: makeDate(sched.md3, sched.h3) });
+        wcGames.push({ ...base, id: `wc-gs-${group}-md3-2`, homeTeamId: t2, awayTeamId: t3, gameDate: makeDate(sched.md3, sched.h3) });
       }
 
-      await db.insert(games).values(wcGames).onConflictDoNothing();
+      // Delete existing group-stage fixtures and re-seed with corrected matchups
+      // (safe pre-tournament since no real scores exist yet)
+      await db.delete(games).where(and(eq(games.sport, "WORLD_CUP"), eq(games.wcRound, "group_stage")));
+      await db.insert(games).values(wcGames);
       console.log(`World Cup group stage schedule seeded: ${wcGames.length} fixtures`);
     } catch (error) {
       console.error("Error initializing World Cup games:", error);
