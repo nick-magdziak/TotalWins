@@ -208,7 +208,7 @@ export type WCPlayerStanding = {
   userId: string;
   displayName: string;
   fantasyPoints: number;
-  teams: WorldCupTeam[];
+  teams: (WorldCupTeam & { wins: number })[];
   rank: number;
   goalsFor: number;
   goalsAgainst: number;

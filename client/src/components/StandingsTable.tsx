@@ -99,7 +99,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                   <div className="flex flex-wrap gap-1">
                     {standing.teams.map((team) => {
                       if (league?.sport === 'WORLD_CUP') {
-                        const wcTeam = team as unknown as WorldCupTeam;
+                        const wcTeam = team as unknown as WorldCupTeam & { wins: number };
                         const confColors = WC_CONFEDERATION_COLORS[wcTeam.confederation] || { background: '#374151', font: '#ffffff' };
                         return (
                           <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
@@ -112,6 +112,7 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                             >
                               <FlagImage teamId={wcTeam.id} emoji={wcTeam.flagEmoji} name={wcTeam.name} size={16} className="mr-1" />{wcTeam.abbreviation}
                             </Badge>
+                            <span className="text-xs font-bold text-retro-charcoal">{wcTeam.wins}</span>
                           </div>
                         );
                       }
