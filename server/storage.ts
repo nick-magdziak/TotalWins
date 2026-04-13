@@ -1484,67 +1484,170 @@ export class DatabaseStorage implements IStorage {
     try {
       const season = "2026";
 
-      const groupTeams: Record<string, [string, string, string, string]> = {
-        A: ["wc-MEX", "wc-RSA", "wc-KOR", "wc-A4"],
-        B: ["wc-CAN", "wc-SUI", "wc-QAT", "wc-B4"],
-        C: ["wc-BRA", "wc-MAR", "wc-SCO", "wc-HAI"],
-        D: ["wc-USA", "wc-PAR", "wc-AUS", "wc-D4"],
-        E: ["wc-GER", "wc-ECU", "wc-CIV", "wc-CUW"],
-        F: ["wc-NED", "wc-JPN", "wc-TUN", "wc-F4"],
-        G: ["wc-BEL", "wc-IRN", "wc-EGY", "wc-NZL"],
-        H: ["wc-ESP", "wc-URU", "wc-KSA", "wc-CPV"],
-        I: ["wc-FRA", "wc-SEN", "wc-NOR", "wc-IRQ"],
-        J: ["wc-ARG", "wc-AUT", "wc-ALG", "wc-JOR"],
-        K: ["wc-POR", "wc-COL", "wc-UZB", "wc-K4"],
-        L: ["wc-ENG", "wc-CRO", "wc-GHA", "wc-PAN"],
-      };
+      // Hardcoded fixture list — each game individually specified from ESPN/FIFA official schedule.
+      // Kickoff times are in UTC (ET = UTC-4 in June). The worldCupService ESPN sync will
+      // overwrite gameDates with exact kickoff times once the tournament begins.
+      // Format: [id, group, homeTeamId, awayTeamId, utcDateStr, utcHour]
+      type FixtureRow = [string, string, string, string, string, number];
+      const fixtureRows: FixtureRow[] = [
+        // ── GROUP A: Mexico · South Africa · South Korea · Czechia ──────────────────
+        // MD1 – Jun 11 (confirmed from ESPN)
+        ["wc-gs-A-1",  "A", "wc-MEX", "wc-RSA", "2026-06-11", 16], // 12 PM ET
+        ["wc-gs-A-2",  "A", "wc-KOR", "wc-A4",  "2026-06-11", 23], // 7 PM ET
+        // MD2 – Jun 18 (from ESPN/search)
+        ["wc-gs-A-3",  "A", "wc-A4",  "wc-RSA", "2026-06-18", 16], // 12 PM ET
+        ["wc-gs-A-4",  "A", "wc-MEX", "wc-KOR", "2026-06-19",  3], // 11 PM ET Jun 18
+        // MD3 – Jun 24, simultaneous (from search)
+        ["wc-gs-A-5",  "A", "wc-A4",  "wc-MEX", "2026-06-25",  1], // 9 PM ET Jun 24
+        ["wc-gs-A-6",  "A", "wc-RSA", "wc-KOR", "2026-06-25",  1],
 
-      // Schedule per group: md1/md2 dates get 2 kickoff hours each; md3 is simultaneous (same hour for both games)
-      const groupSchedule: Record<string, { md1: string; md2: string; md3: string; h1: number; h2: number; h3: number }> = {
-        A: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 17, h2: 24, h3: 19 },
-        B: { md1: "2026-06-11", md2: "2026-06-17", md3: "2026-06-24", h1: 17, h2: 23, h3: 22 },
-        C: { md1: "2026-06-12", md2: "2026-06-18", md3: "2026-06-25", h1: 14, h2: 20, h3: 19 },
-        D: { md1: "2026-06-12", md2: "2026-06-18", md3: "2026-06-25", h1: 17, h2: 23, h3: 22 },
-        E: { md1: "2026-06-13", md2: "2026-06-19", md3: "2026-06-26", h1: 14, h2: 20, h3: 19 },
-        F: { md1: "2026-06-13", md2: "2026-06-19", md3: "2026-06-26", h1: 17, h2: 23, h3: 22 },
-        G: { md1: "2026-06-14", md2: "2026-06-20", md3: "2026-06-26", h1: 14, h2: 20, h3: 19 },
-        H: { md1: "2026-06-14", md2: "2026-06-20", md3: "2026-06-26", h1: 17, h2: 23, h3: 22 },
-        I: { md1: "2026-06-15", md2: "2026-06-21", md3: "2026-06-27", h1: 14, h2: 20, h3: 19 },
-        J: { md1: "2026-06-15", md2: "2026-06-21", md3: "2026-06-27", h1: 17, h2: 23, h3: 22 },
-        K: { md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27", h1: 14, h2: 20, h3: 19 },
-        L: { md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27", h1: 17, h2: 23, h3: 22 },
-      };
+        // ── GROUP B: Canada · Bosnia & Herzegovina · Qatar · Switzerland ─────────────
+        // MD1 – Jun 12 (CAN-BIH confirmed) / Jun 13 (QAT-SUI confirmed from ESPN)
+        ["wc-gs-B-1",  "B", "wc-CAN", "wc-B4",  "2026-06-12", 16], // 12 PM ET
+        ["wc-gs-B-2",  "B", "wc-QAT", "wc-SUI", "2026-06-13", 16], // 12 PM ET
+        // MD2 – Jun 18 (from search)
+        ["wc-gs-B-3",  "B", "wc-SUI", "wc-B4",  "2026-06-18", 19], // 3 PM ET
+        ["wc-gs-B-4",  "B", "wc-CAN", "wc-QAT", "2026-06-18", 22], // 6 PM ET
+        // MD3 – Jun 24, simultaneous (from search)
+        ["wc-gs-B-5",  "B", "wc-SUI", "wc-CAN", "2026-06-24", 19], // 3 PM ET
+        ["wc-gs-B-6",  "B", "wc-B4",  "wc-QAT", "2026-06-24", 19],
 
-      // makeDate handles hour overflow: hour=24 → midnight next day, hour=25 → 1 AM next day, etc.
+        // ── GROUP C: Brazil · Morocco · Scotland · Haiti ─────────────────────────────
+        // MD1 – Jun 13 (confirmed from ESPN)
+        ["wc-gs-C-1",  "C", "wc-BRA", "wc-MAR", "2026-06-13", 19], // 3 PM ET
+        ["wc-gs-C-2",  "C", "wc-HAI", "wc-SCO", "2026-06-13", 22], // 6 PM ET
+        // MD2 – Jun 19 (from search)
+        ["wc-gs-C-3",  "C", "wc-SCO", "wc-MAR", "2026-06-19", 22], // 6 PM ET
+        ["wc-gs-C-4",  "C", "wc-BRA", "wc-HAI", "2026-06-20",  1], // 9 PM ET Jun 19
+        // MD3 – Jun 24, simultaneous (from search)
+        ["wc-gs-C-5",  "C", "wc-SCO", "wc-BRA", "2026-06-24", 22], // 6 PM ET
+        ["wc-gs-C-6",  "C", "wc-MAR", "wc-HAI", "2026-06-24", 22],
+
+        // ── GROUP D: USA · Paraguay · Australia · Türkiye ────────────────────────────
+        // MD1 – Jun 12 (USA-PAR confirmed) / Jun 13 (AUS-TUR confirmed from ESPN)
+        ["wc-gs-D-1",  "D", "wc-USA", "wc-PAR", "2026-06-12", 22], // 6 PM ET
+        ["wc-gs-D-2",  "D", "wc-AUS", "wc-D4",  "2026-06-14",  1], // 9 PM ET Jun 13
+        // MD2 – Jun 19 (from search)
+        ["wc-gs-D-3",  "D", "wc-USA", "wc-AUS", "2026-06-19", 19], // 3 PM ET
+        ["wc-gs-D-4",  "D", "wc-D4",  "wc-PAR", "2026-06-20",  4], // midnight ET Jun 19/20
+        // MD3 – Jun 25, simultaneous (from search)
+        ["wc-gs-D-5",  "D", "wc-USA", "wc-D4",  "2026-06-26",  2], // 10 PM ET Jun 25
+        ["wc-gs-D-6",  "D", "wc-PAR", "wc-AUS", "2026-06-26",  2],
+
+        // ── GROUP E: Germany · Ecuador · Ivory Coast · Curaçao ───────────────────────
+        // MD1 – Jun 14 (confirmed from ESPN)
+        ["wc-gs-E-1",  "E", "wc-GER", "wc-CUW", "2026-06-14", 14], // 10 AM ET
+        ["wc-gs-E-2",  "E", "wc-CIV", "wc-ECU", "2026-06-14", 20], // 4 PM ET
+        // MD2 – Jun 21 (approx; ESPN sync will correct)
+        ["wc-gs-E-3",  "E", "wc-GER", "wc-CIV", "2026-06-21", 16], // approx 12 PM ET
+        ["wc-gs-E-4",  "E", "wc-ECU", "wc-CUW", "2026-06-21", 20], // approx 4 PM ET
+        // MD3 – Jun 26, simultaneous
+        ["wc-gs-E-5",  "E", "wc-GER", "wc-ECU", "2026-06-26", 22], // approx 6 PM ET
+        ["wc-gs-E-6",  "E", "wc-CIV", "wc-CUW", "2026-06-26", 22],
+
+        // ── GROUP F: Netherlands · Japan · Tunisia · Sweden ──────────────────────────
+        // MD1 – Jun 14 (confirmed from ESPN)
+        ["wc-gs-F-1",  "F", "wc-NED", "wc-JPN", "2026-06-14", 17], // 1 PM ET
+        ["wc-gs-F-2",  "F", "wc-F4",  "wc-TUN", "2026-06-14", 23], // 7 PM ET (Sweden home)
+        // MD2 – Jun 21 (approx)
+        ["wc-gs-F-3",  "F", "wc-NED", "wc-F4",  "2026-06-21", 19], // approx 3 PM ET
+        ["wc-gs-F-4",  "F", "wc-JPN", "wc-TUN", "2026-06-21", 23], // approx 7 PM ET
+        // MD3 – Jun 26, simultaneous
+        ["wc-gs-F-5",  "F", "wc-NED", "wc-TUN", "2026-06-26", 19], // approx 3 PM ET
+        ["wc-gs-F-6",  "F", "wc-JPN", "wc-F4",  "2026-06-26", 19],
+
+        // ── GROUP G: Belgium · Iran · Egypt · New Zealand ────────────────────────────
+        // MD1 – Jun 15 (from search)
+        ["wc-gs-G-1",  "G", "wc-BEL", "wc-EGY", "2026-06-15", 22], // 6 PM ET
+        ["wc-gs-G-2",  "G", "wc-IRN", "wc-NZL", "2026-06-16",  0], // midnight ET
+        // MD2 – Jun 21/22 (approx)
+        ["wc-gs-G-3",  "G", "wc-BEL", "wc-IRN", "2026-06-21", 16],
+        ["wc-gs-G-4",  "G", "wc-EGY", "wc-NZL", "2026-06-21", 22],
+        // MD3 – Jun 26, simultaneous
+        ["wc-gs-G-5",  "G", "wc-BEL", "wc-NZL", "2026-06-26", 19],
+        ["wc-gs-G-6",  "G", "wc-EGY", "wc-IRN", "2026-06-26", 19],
+
+        // ── GROUP H: Spain · Uruguay · Saudi Arabia · Cape Verde ─────────────────────
+        // MD1 – Jun 15 (from search)
+        ["wc-gs-H-1",  "H", "wc-ESP", "wc-CPV", "2026-06-15", 17], // 1 PM ET
+        ["wc-gs-H-2",  "H", "wc-KSA", "wc-URU", "2026-06-15", 22], // 6 PM ET
+        // MD2 – Jun 21 (ESP-KSA confirmed from search)
+        ["wc-gs-H-3",  "H", "wc-ESP", "wc-KSA", "2026-06-21", 16], // 12 PM ET
+        ["wc-gs-H-4",  "H", "wc-URU", "wc-CPV", "2026-06-21", 22], // approx
+        // MD3 – Jun 26, simultaneous
+        ["wc-gs-H-5",  "H", "wc-ESP", "wc-URU", "2026-06-26", 16],
+        ["wc-gs-H-6",  "H", "wc-CPV", "wc-KSA", "2026-06-26", 16],
+
+        // ── GROUP I: France · Senegal · Norway · Iraq ─────────────────────────────────
+        // MD1 – Jun 16 (from search)
+        ["wc-gs-I-1",  "I", "wc-FRA", "wc-SEN", "2026-06-16", 19], // 3 PM ET
+        ["wc-gs-I-2",  "I", "wc-IRQ", "wc-NOR", "2026-06-16", 22], // 6 PM ET
+        // MD2 – Jun 22 (approx)
+        ["wc-gs-I-3",  "I", "wc-FRA", "wc-IRQ", "2026-06-22", 16],
+        ["wc-gs-I-4",  "I", "wc-SEN", "wc-NOR", "2026-06-22", 22],
+        // MD3 – Jun 27, simultaneous
+        ["wc-gs-I-5",  "I", "wc-FRA", "wc-NOR", "2026-06-27", 19],
+        ["wc-gs-I-6",  "I", "wc-SEN", "wc-IRQ", "2026-06-27", 19],
+
+        // ── GROUP J: Argentina · Austria · Algeria · Jordan ───────────────────────────
+        // MD1 – Jun 16/17 (from search)
+        ["wc-gs-J-1",  "J", "wc-ARG", "wc-ALG", "2026-06-17",  1], // 9 PM ET Jun 16
+        ["wc-gs-J-2",  "J", "wc-AUT", "wc-JOR", "2026-06-17",  4], // midnight ET Jun 16/17
+        // MD2 – Jun 22/23 (approx)
+        ["wc-gs-J-3",  "J", "wc-ARG", "wc-AUT", "2026-06-22", 22],
+        ["wc-gs-J-4",  "J", "wc-ALG", "wc-JOR", "2026-06-23",  2],
+        // MD3 – Jun 27, simultaneous
+        ["wc-gs-J-5",  "J", "wc-ARG", "wc-JOR", "2026-06-27", 22],
+        ["wc-gs-J-6",  "J", "wc-ALG", "wc-AUT", "2026-06-27", 22],
+
+        // ── GROUP K: Portugal · Colombia · Uzbekistan · DR Congo ─────────────────────
+        // MD1 – Jun 17/18 (from search: POR-COD Jun 17, UZB-COL Jun 17 late)
+        ["wc-gs-K-1",  "K", "wc-POR", "wc-K4",  "2026-06-17", 17], // 1 PM ET (POR vs DR Congo)
+        ["wc-gs-K-2",  "K", "wc-UZB", "wc-COL", "2026-06-18",  2], // 10 PM ET Jun 17
+        // MD2 – Jun 23 (approx)
+        ["wc-gs-K-3",  "K", "wc-POR", "wc-UZB", "2026-06-23", 16],
+        ["wc-gs-K-4",  "K", "wc-K4",  "wc-COL", "2026-06-23", 22],
+        // MD3 – Jun 27/28, simultaneous (search confirmed DR Congo vs Uzbekistan Jun 27)
+        ["wc-gs-K-5",  "K", "wc-POR", "wc-COL", "2026-06-27", 23],
+        ["wc-gs-K-6",  "K", "wc-K4",  "wc-UZB", "2026-06-27", 23],
+
+        // ── GROUP L: England · Croatia · Ghana · Panama ───────────────────────────────
+        // MD1 – Jun 17 (from search)
+        ["wc-gs-L-1",  "L", "wc-ENG", "wc-CRO", "2026-06-17", 20], // 4 PM ET
+        ["wc-gs-L-2",  "L", "wc-GHA", "wc-PAN", "2026-06-17", 23], // 7 PM ET
+        // MD2 – Jun 22/23 (approx)
+        ["wc-gs-L-3",  "L", "wc-ENG", "wc-GHA", "2026-06-22", 16],
+        ["wc-gs-L-4",  "L", "wc-CRO", "wc-PAN", "2026-06-22", 22],
+        // MD3 – Jun 27, simultaneous
+        ["wc-gs-L-5",  "L", "wc-ENG", "wc-PAN", "2026-06-27", 22],
+        ["wc-gs-L-6",  "L", "wc-GHA", "wc-CRO", "2026-06-27", 22],
+      ];
+
       const makeDate = (dateStr: string, hour: number): Date => {
         const [y, m, d] = dateStr.split("-").map(Number);
         const base = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
-        base.setUTCHours(hour); // setUTCHours safely rolls over 24+ into next day
+        base.setUTCHours(hour);
         return base;
       };
 
-      const wcGames: InsertGame[] = [];
+      const wcGames: InsertGame[] = fixtureRows.map(([id, group, home, away, dateStr, hour]) => ({
+        id,
+        sport: "WORLD_CUP",
+        season,
+        week: null,
+        homeTeamId: home,
+        awayTeamId: away,
+        homeScore: null,
+        awayScore: null,
+        status: "scheduled" as const,
+        gameDate: makeDate(dateStr, hour),
+        completedAt: null,
+        period: null,
+        wcRound: "group_stage",
+        wcGroup: group,
+      }));
 
-      for (const [group, sched] of Object.entries(groupSchedule)) {
-        const [t1, t2, t3, t4] = groupTeams[group];
-        const base = { sport: "WORLD_CUP", season, week: null, homeScore: null, awayScore: null, status: "scheduled", completedAt: null, period: null, wcRound: "group_stage", wcGroup: group } as const;
-
-        // FIFA standard round-robin: MD1: 1v2, 3v4 | MD2: 1v3, 2v4 | MD3: 1v4, 2v3 (simultaneous)
-        // MD1
-        wcGames.push({ ...base, id: `wc-gs-${group}-md1-1`, homeTeamId: t1, awayTeamId: t2, gameDate: makeDate(sched.md1, sched.h1) });
-        wcGames.push({ ...base, id: `wc-gs-${group}-md1-2`, homeTeamId: t3, awayTeamId: t4, gameDate: makeDate(sched.md1, sched.h2) });
-
-        // MD2
-        wcGames.push({ ...base, id: `wc-gs-${group}-md2-1`, homeTeamId: t1, awayTeamId: t3, gameDate: makeDate(sched.md2, sched.h1) });
-        wcGames.push({ ...base, id: `wc-gs-${group}-md2-2`, homeTeamId: t2, awayTeamId: t4, gameDate: makeDate(sched.md2, sched.h2) });
-
-        // MD3 (simultaneous kickoffs so neither team has advance info)
-        wcGames.push({ ...base, id: `wc-gs-${group}-md3-1`, homeTeamId: t1, awayTeamId: t4, gameDate: makeDate(sched.md3, sched.h3) });
-        wcGames.push({ ...base, id: `wc-gs-${group}-md3-2`, homeTeamId: t2, awayTeamId: t3, gameDate: makeDate(sched.md3, sched.h3) });
-      }
-
-      // Delete existing group-stage fixtures and re-seed with corrected matchups
-      // (safe pre-tournament since no real scores exist yet)
+      // Delete existing group-stage fixtures and re-seed with correct individual matchups
       await db.delete(games).where(and(eq(games.sport, "WORLD_CUP"), eq(games.wcRound, "group_stage")));
       await db.insert(games).values(wcGames);
       console.log(`World Cup group stage schedule seeded: ${wcGames.length} fixtures`);
