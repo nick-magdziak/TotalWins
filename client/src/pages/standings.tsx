@@ -19,6 +19,13 @@ export default function Standings() {
   const { data: userLeagues } = useQuery<League[]>({
     queryKey: ["/api/users", currentUser?.id, "leagues"],
     enabled: !!currentUser?.id,
+    // Poll every 10s while any league has an active/paused draft so the badge
+    // updates automatically when the draft completes
+    refetchInterval: (query) => {
+      const leagues = query.state.data as League[] | undefined;
+      const hasActiveDraft = leagues?.some(l => l.draftStatus === 'active' || l.draftStatus === 'paused');
+      return hasActiveDraft ? 10000 : false;
+    },
   });
 
   // Determine current league — never fall back to a hardcoded demo league
