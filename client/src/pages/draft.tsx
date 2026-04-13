@@ -35,8 +35,8 @@ export default function Draft() {
     enabled: !!currentUser?.id,
   });
 
-  // Determine current league
-  const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
+  // Determine current league — never fall back to a hardcoded demo league
+  const leagueId = urlLeagueId || userLeagues?.[0]?.id;
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
 
   const sportTeamsPath = currentLeague?.sport === 'WORLD_CUP'
@@ -50,17 +50,19 @@ export default function Draft() {
 
   const { data: draftStatus } = useQuery<DraftStatus>({
     queryKey: ["/api/leagues", leagueId, "draft", "status"],
-    refetchInterval: 3000, // Always poll draft status for immediate admin feedback
+    refetchInterval: 3000,
+    enabled: !!leagueId,
   });
 
   const { data: draftPicks, isLoading: picksLoading } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "draft", "picks"],
     refetchInterval: (draftStatus?.isActive || draftStatus?.isPaused) ? 3000 : 30000,
+    enabled: !!leagueId,
   });
 
   const { data: userPicks } = useQuery<DraftPick[]>({
     queryKey: ["/api/leagues", leagueId, "users", currentUser?.id, "picks"],
-    enabled: !!currentUser?.id,
+    enabled: !!currentUser?.id && !!leagueId,
   });
 
 

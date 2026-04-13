@@ -21,8 +21,8 @@ export default function Standings() {
     enabled: !!currentUser?.id,
   });
 
-  // Determine current league
-  const leagueId = urlLeagueId || userLeagues?.[0]?.id || "demo-league-1";
+  // Determine current league — never fall back to a hardcoded demo league
+  const leagueId = urlLeagueId || userLeagues?.[0]?.id;
 
   // Resolve current league early so queries can be sport-aware
   const currentLeague = userLeagues?.find(league => league.id === leagueId) || userLeagues?.[0];
@@ -76,7 +76,7 @@ export default function Standings() {
       fetch(`/api/leagues/${activeLeagueId}/games/recent?localDate=${recentDateStr}&tzOffset=${tzOffset}`)
         .then(r => r.json()),
     refetchInterval: 60000, // Poll every 1 minute for live game updates
-    enabled: !isViewingPastSeason,
+    enabled: !!leagueId && !isViewingPastSeason,
   });
 
   const { data: upcomingGames } = useQuery<any[]>({
@@ -84,18 +84,18 @@ export default function Standings() {
     queryFn: () =>
       fetch(`/api/leagues/${activeLeagueId}/games/upcoming?localDate=${tomorrowStr}&tzOffset=${tzOffset}`)
         .then(r => r.json()),
-    refetchInterval: 300000, // Poll every 5 minutes for upcoming games
-    enabled: !isViewingPastSeason,
+    refetchInterval: 300000,
+    enabled: !!leagueId && !isViewingPastSeason,
   });
 
   const { data: wcGroups } = useQuery<Record<string, WCGroupStanding[]>>({
     queryKey: ["/api/world-cup/groups"],
-    enabled: isWorldCup && !isViewingPastSeason,
+    enabled: !!leagueId && isWorldCup && !isViewingPastSeason,
   });
 
   const { data: wcPlayerStandings } = useQuery<WCPlayerStanding[]>({
     queryKey: ["/api/leagues", activeLeagueId, "world-cup/standings"],
-    enabled: isWorldCup && !isViewingPastSeason,
+    enabled: !!leagueId && isWorldCup && !isViewingPastSeason,
     refetchInterval: 60000,
   });
 
