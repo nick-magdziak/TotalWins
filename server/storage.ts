@@ -1156,6 +1156,10 @@ export class DatabaseStorage implements IStorage {
     const currentPickNumber = picks.length + 1;
 
     if (currentPickNumber > totalPicks) {
+      // Auto-correct the DB status if it hasn't been marked completed yet
+      if (league.draftStatus === 'active' || league.draftStatus === 'paused') {
+        await this.updateLeague(leagueId, { draftStatus: 'completed' });
+      }
       return {
         isActive: false,
         isPaused: false,

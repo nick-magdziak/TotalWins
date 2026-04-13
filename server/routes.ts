@@ -799,6 +799,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const pick = await storage.addDraftPick(pickData);
+
+      // Auto-complete: mark the draft as "completed" in the DB when all picks are done
+      try {
+        const completionStatus = await storage.getDraftStatus(req.params.leagueId);
+        const leagueForCompletion = await storage.getLeague(req.params.leagueId);
+        if (!completionStatus.isActive && !completionStatus.isPaused && leagueForCompletion?.draftStatus === 'active') {
+          await storage.updateLeague(req.params.leagueId, { draftStatus: 'completed' });
+          console.log(`✅ Draft auto-completed for league ${req.params.leagueId}`);
+        }
+      } catch (completionError) {
+        console.error('Failed to auto-complete draft:', completionError);
+      }
       
       // Send draft notification to the next player
       try {
