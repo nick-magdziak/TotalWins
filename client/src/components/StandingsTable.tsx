@@ -96,46 +96,51 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                   </span>
                 </td>
                 <td className="px-2 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {standing.teams.map((team) => {
-                      if (league?.sport === 'WORLD_CUP') {
+                  {league?.sport === 'WORLD_CUP' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 68px)', gap: '3px' }}>
+                      {standing.teams.map((team) => {
                         const wcTeam = team as unknown as WorldCupTeam & { wins: number };
                         const confColors = WC_CONFEDERATION_COLORS[wcTeam.confederation] || { background: '#374151', font: '#ffffff' };
                         return (
-                          <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
-                            <Badge 
-                              className="px-2 py-1 rounded text-xs font-bold border-0"
-                              style={{
-                                backgroundColor: confColors.background,
-                                color: confColors.font
-                              }}
+                          <div key={team.id} style={{ width: '68px' }} className="flex items-center">
+                            <div
+                              className="flex items-center justify-center flex-1 min-w-0 rounded px-1 py-0.5 text-xs font-bold"
+                              style={{ backgroundColor: confColors.background, color: confColors.font }}
                             >
-                              <FlagImage teamId={wcTeam.id} emoji={wcTeam.flagEmoji} name={wcTeam.name} size={16} className="mr-1" />{wcTeam.abbreviation}
-                            </Badge>
-                            <span className="text-xs font-bold text-retro-charcoal">{wcTeam.wins}</span>
+                              <FlagImage teamId={wcTeam.id} emoji={wcTeam.flagEmoji} name={wcTeam.name} size={14} className="mr-0.5 flex-shrink-0" />
+                              <span>{wcTeam.abbreviation}</span>
+                            </div>
+                            <span className="flex-shrink-0 ml-1 text-xs font-bold text-retro-charcoal" style={{ width: '14px', textAlign: 'right' }}>
+                              {wcTeam.wins}
+                            </span>
                           </div>
                         );
-                      }
-                      const teamColorsMap = getTeamColors();
-                      const teamColors = teamColorsMap[team.abbreviation as keyof typeof teamColorsMap];
-                      return (
-                        <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
-                          <Badge 
-                            className="px-2 py-1 rounded text-xs font-bold border-0"
-                            style={{
-                              backgroundColor: teamColors?.background || '#374151',
-                              color: teamColors?.font || '#ffffff'
-                            }}
-                          >
-                            {team.abbreviation}
-                          </Badge>
-                          <span className="text-xs font-bold text-retro-charcoal">
-                            {team.wins}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {standing.teams.map((team) => {
+                        const teamColorsMap = getTeamColors();
+                        const teamColors = teamColorsMap[team.abbreviation as keyof typeof teamColorsMap];
+                        return (
+                          <div key={team.id} className="flex items-center gap-1 whitespace-nowrap">
+                            <Badge
+                              className="px-2 py-1 rounded text-xs font-bold border-0"
+                              style={{
+                                backgroundColor: teamColors?.background || '#374151',
+                                color: teamColors?.font || '#ffffff'
+                              }}
+                            >
+                              {team.abbreviation}
+                            </Badge>
+                            <span className="text-xs font-bold text-retro-charcoal">
+                              {team.wins}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
