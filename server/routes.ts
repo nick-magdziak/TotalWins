@@ -427,6 +427,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pending league invitations for the logged-in user
+  app.get("/api/users/pending-invitations", async (req, res) => {
+    try {
+      const sessionUserId = req.session.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const invitations = await storage.getUserPendingInvitations(sessionUserId);
+      res.json(invitations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
+  // Accept a pending league invitation
+  app.post("/api/leagues/:id/accept-invitation", async (req, res) => {
+    try {
+      const sessionUserId = req.session.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const leagueId = req.params.id;
+      const member = await storage.getLeagueMember(leagueId, sessionUserId);
+      if (!member || member.invitationStatus !== "pending") {
+        return res.status(404).json({ message: "No pending invitation found" });
+      }
+      const ok = await storage.acceptLeagueInvitation(leagueId, sessionUserId);
+      if (!ok) {
+        return res.status(500).json({ message: "Failed to accept invitation" });
+      }
+      const league = await storage.getLeague(leagueId);
+      res.json({ success: true, league });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to accept invitation" });
+    }
+  });
+
   // Leagues
   app.post("/api/leagues", async (req, res) => {
     try {

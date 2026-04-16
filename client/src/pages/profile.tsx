@@ -77,6 +77,38 @@ export default function Profile() {
     enabled: !!currentUser?.id,
   });
 
+  // Pending invitations
+  const { data: pendingInvitations } = useQuery<Array<{ league: League; member: any }>>({
+    queryKey: ["/api/users/pending-invitations"],
+    enabled: !!currentUser?.id,
+  });
+
+  const acceptInvitationMutation = useMutation({
+    mutationFn: async (leagueId: string) => {
+      const res = await apiRequest("POST", `/api/leagues/${leagueId}/accept-invitation`, {});
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to accept invitation");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users/pending-invitations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+      toast({
+        title: "Invitation accepted!",
+        description: `You've joined ${data.league?.name}.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Could not accept invitation",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Set default league when leagues are loaded
   useEffect(() => {
     if (userLeagues && userLeagues.length > 0 && !selectedLeagueId) {
@@ -474,6 +506,45 @@ export default function Profile() {
           Manage your account preferences and notifications
         </p>
       </div>
+
+      {/* Pending Invitations */}
+      {pendingInvitations && pendingInvitations.length > 0 && (
+        <Card className="border-2 border-orange-400 bg-orange-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-orange-700">
+              <Bell className="h-5 w-5" />
+              Pending League Invitations
+              <span className="ml-auto bg-orange-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                {pendingInvitations.length}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pendingInvitations.map(({ league }) => {
+              const sportEmoji: Record<string, string> = { NFL: "🏈", MLB: "⚾", NBA: "🏀", WORLD_CUP: "⚽" };
+              return (
+                <div key={league.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{sportEmoji[league.sport] || "🏆"}</span>
+                    <div>
+                      <p className="font-bold text-retro-charcoal">{league.name}</p>
+                      <p className="text-sm text-gray-500">{league.sport} · Season {league.season}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-gradient-to-r from-retro-pink to-retro-purple text-white font-bold retro-font"
+                    disabled={acceptInvitationMutation.isPending}
+                    onClick={() => acceptInvitationMutation.mutate(league.id)}
+                  >
+                    {acceptInvitationMutation.isPending ? "JOINING..." : "ACCEPT"}
+                  </Button>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* User Information */}

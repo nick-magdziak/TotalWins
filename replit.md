@@ -240,6 +240,11 @@ The application is designed to be easily deployable on platforms like Replit, wi
   - `/reset-password?token=...` — new password form with show/hide, validation, auto-redirect to login on success; handles missing/invalid token gracefully
   - "Forgot password?" button on login page now navigates to `/forgot-password`
 
+### In-App League Invitation Acceptance (April 2026)
+- ✅ **Admin Invite Link Panel**: Admin page now shows a copyable invite link and code in the Player Management card, so admins can share invitations via any channel without relying on email
+- ✅ **Pending Invitations on Profile Page**: Users added to a league via "Add & Invite Later" now see a highlighted "Pending League Invitations" card at the top of their Profile Settings page with a one-click Accept button
+- ✅ **Backend APIs**: Added `GET /api/users/pending-invitations` and `POST /api/leagues/:id/accept-invitation` endpoints; added `getUserPendingInvitations` and `acceptLeagueInvitation` to storage layer
+
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
 2. ✅ **Real Draft Functionality** - COMPLETED
@@ -248,8 +253,8 @@ The application is designed to be easily deployable on platforms like Replit, wi
 5. ✅ **Performance Optimization** - COMPLETED
 6. ✅ **Email Authentication** - COMPLETED
 7. ✅ **NBA Live Data Sync** - COMPLETED
-8. **User Profile Management** - NEXT
-9. **League Join by Code**
+8. ✅ **In-App League Invitation Acceptance** - COMPLETED
+9. **User Profile Management** - NEXT
 10. **Push Notifications**
 11. **Advanced Admin Features**
 12. **Mobile App Feel**

@@ -58,6 +58,8 @@ export interface IStorage {
   addLeagueMember(member: InsertLeagueMember): Promise<LeagueMember>;
   removeLeagueMember(leagueId: string, userId: string): Promise<boolean>;
   updateLeagueMemberPreferences(leagueId: string, userId: string, preferences: { draftNotifications?: boolean; gameNotifications?: boolean; }): Promise<boolean>;
+  getUserPendingInvitations(userId: string): Promise<Array<{ league: League; member: LeagueMember }>>;
+  acceptLeagueInvitation(leagueId: string, userId: string): Promise<boolean>;
   saveDraftOrder(leagueId: string, orderedUserIds: string[]): Promise<boolean>;
   getPlayerStandings(leagueId: string): Promise<PlayerStanding[]>;
 
@@ -941,6 +943,23 @@ export class DatabaseStorage implements IStorage {
       .set(preferences)
       .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
     
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getUserPendingInvitations(userId: string): Promise<Array<{ league: League; member: LeagueMember }>> {
+    const result = await db
+      .select({ league: leagues, member: leagueMembers })
+      .from(leagueMembers)
+      .innerJoin(leagues, eq(leagueMembers.leagueId, leagues.id))
+      .where(and(eq(leagueMembers.userId, userId), eq(leagueMembers.invitationStatus, "pending")));
+    return result;
+  }
+
+  async acceptLeagueInvitation(leagueId: string, userId: string): Promise<boolean> {
+    const result = await db
+      .update(leagueMembers)
+      .set({ invitationStatus: "active" })
+      .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 

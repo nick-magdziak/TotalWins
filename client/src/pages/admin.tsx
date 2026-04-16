@@ -33,7 +33,9 @@ import {
   List,
   Shuffle,
   GripVertical,
-  Trophy
+  Trophy,
+  Copy,
+  Link2
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1123,6 +1125,38 @@ export default function Admin() {
                 PLAYER MANAGEMENT
               </h3>
               
+              {/* Invite Link */}
+              {currentLeague?.inviteCode && (
+                <div className="bg-retro-cream border-2 border-retro-teal rounded-xl p-4 mb-4">
+                  <p className="text-retro-charcoal font-bold text-xs retro-font mb-2 flex items-center gap-1">
+                    <Link2 className="h-3 w-3" />
+                    SHARE INVITE LINK
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={`${window.location.origin}/join?code=${currentLeague.inviteCode}`}
+                      className="flex-1 text-xs font-mono border-2 border-retro-pink bg-white cursor-text"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-retro-teal text-white shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/join?code=${currentLeague.inviteCode}`);
+                        toast({ title: "Copied!", description: "Invite link copied to clipboard." });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Code: <span className="font-mono font-bold text-retro-purple">{currentLeague.inviteCode}</span>
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3 mb-4">
                 {membersWithUserData && membersWithUserData.length > 0 ? (
                   membersWithUserData.slice(0, 8).map((memberData, index) => (
