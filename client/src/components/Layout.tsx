@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+import { useRealtimeInvitations } from "@/hooks/use-realtime";
 import totalWinsLogo from "@assets/TotalWinsLogo - Transparent_1753759057781.png";
 
 interface LayoutProps {
@@ -60,12 +61,14 @@ export default function Layout({ children }: LayoutProps) {
     enabled: !!currentUser?.id,
   });
 
-  // Pending invitations for badge - poll periodically so the badge updates in
-  // near real time when an admin sends a new invite mid-session.
+  // Pending invitations for badge — pushed instantly via websocket when an
+  // admin sends an invite. We keep a slow background poll as a safety net in
+  // case the socket is disconnected (e.g. flaky network, sleeping tab).
+  useRealtimeInvitations(!!currentUser?.id);
   const { data: pendingInvitations } = useQuery<Array<{ league: League; member: any }>>({
     queryKey: ["/api/users/pending-invitations"],
     enabled: !!currentUser?.id,
-    refetchInterval: 15000,
+    refetchInterval: 60000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,

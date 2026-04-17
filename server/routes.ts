@@ -6,6 +6,7 @@ import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues, t
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
+import { notifyUser } from "./lib/realtime";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -1107,6 +1108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gameNotifications: false,
         invitationStatus: "pending",
       });
+
+      notifyUser(user.id, "pending-invitations:changed");
 
       res.json({ message: "Player added successfully", userId: user.id });
     } catch (error) {

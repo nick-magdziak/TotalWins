@@ -3,6 +3,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { storage } from "../storage";
 import { emailService } from "../services/emailService";
+import { notifyUser } from "../lib/realtime";
 import { users, leagues, leagueMembers, draftPicks } from "@shared/schema";
 // Draft order calculation helper
 function getDraftOrder(configuration: string): number[] {
@@ -61,6 +62,16 @@ export async function sendLeagueInvite(req: Request, res: Response) {
     );
 
     if (success) {
+      // Best-effort: notify the recipient (if they already have an account)
+      // so their pending-invitations badge updates instantly.
+      try {
+        const recipient = await storage.getUserByEmail(email);
+        if (recipient) {
+          notifyUser(recipient.id, "pending-invitations:changed");
+        }
+      } catch (notifyErr) {
+        console.error("Failed to push invite notification:", notifyErr);
+      }
       res.json({ message: "Invitation sent successfully" });
     } else {
       res.status(500).json({ message: "Failed to send invitation" });

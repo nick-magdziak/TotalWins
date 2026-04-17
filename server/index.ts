@@ -4,6 +4,7 @@ import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupRealtime } from "./lib/realtime";
 
 declare module "express-session" {
   interface SessionData {
@@ -19,7 +20,7 @@ app.use(express.urlencoded({ extended: false }));
 const PgSession = connectPgSimple(session);
 const pgPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
-app.use(session({
+const sessionMiddleware = session({
   store: new PgSession({
     pool: pgPool,
     createTableIfMissing: true,
@@ -40,7 +41,9 @@ app.use(session({
     secure: process.env.NODE_ENV === "production",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
-}));
+});
+
+app.use(sessionMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -74,6 +77,7 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  setupRealtime(server, sessionMiddleware);
 
   // Initialize ESPN API sports data service
   try {
