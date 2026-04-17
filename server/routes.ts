@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { sportsApi } from "./services/sportsApi";
 import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues, type NFLTeam, type MLBTeam, type NBATeam } from "@shared/schema";
@@ -7,6 +8,24 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
 import { notifyUser } from "./lib/realtime";
+
+// Rate limiter: aggressive throttle for auth endpoints to prevent brute-force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window per IP
+  message: { message: "Too many attempts. Please try again in a few minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter: gentler throttle for signup/forgot-password
+const accountLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 per hour per IP
+  message: { message: "Too many requests. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -79,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/admin", requireAdmin);
 
   // Authentication
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", accountLimiter, async (req, res) => {
     try {
       const { inviteCode, ...rawUserData } = req.body;
       const userData = insertUserSchema.parse(rawUserData);
@@ -132,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
       
@@ -177,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Forgot password — generates a reset token and emails it
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", accountLimiter, async (req, res) => {
     try {
       const { email } = z.object({ email: z.string().email() }).parse(req.body);
       const user = await storage.getUserByEmail(email);
@@ -202,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reset password — validates token and sets new password
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
     try {
       const { token, password } = z.object({
         token: z.string().min(1),
@@ -225,19 +244,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth refresh — returns fresh user data by ID (for stale localStorage sessions)
-  app.get("/api/auth/me/:id", async (req, res) => {
+  app.get("/api/auth/me/:id", requireAuth, async (req, res) => {
+    // Users may only fetch their own session profile via this endpoint
+    if (req.session.userId !== req.params.id) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const user = await storage.getUser(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ ...user, password: undefined });
   });
 
-  // Users
-  app.get("/api/users/:id", async (req, res) => {
+  // Users — any authenticated user may look up another user's basic public profile
+  // (display name, etc.) for member lists; sensitive fields are stripped.
+  app.get("/api/users/:id", requireAuth, async (req, res) => {
     const user = await storage.getUser(req.params.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json({ ...user, password: undefined });
+    const requesterId = req.session.userId;
+    const requester = requesterId ? await storage.getUser(requesterId) : null;
+    const isSelfOrAdmin = requesterId === user.id || !!requester?.isAdmin;
+    // Strip sensitive fields when the requester is not the user themselves or an admin
+    const safeUser = isSelfOrAdmin
+      ? { ...user, password: undefined }
+      : {
+          ...user,
+          password: undefined,
+          email: undefined,
+          resetToken: undefined,
+          resetTokenExpiresAt: undefined,
+        };
+    res.json(safeUser);
   });
 
   app.patch("/api/users/:id", requireAuth, async (req, res) => {
@@ -695,13 +732,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/leagues", async (req, res) => {
+  app.get("/api/users/:userId/leagues", requireAuth, async (req, res) => {
+    // A user may only list their own leagues; admins may list anyone's
+    const requester = await storage.getUser(req.session.userId!);
+    if (req.session.userId !== req.params.userId && !requester?.isAdmin) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const leagues = await storage.getUserLeagues(req.params.userId);
     res.json(leagues);
   });
 
   // League Members
-  app.get("/api/leagues/:leagueId/members", async (req, res) => {
+  app.get("/api/leagues/:leagueId/members", requireAuth, async (req, res) => {
     const members = await storage.getLeagueMembers(req.params.leagueId);
     const membersWithUsers = await Promise.all(
       members.map(async (member) => {
@@ -784,11 +826,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(team);
   });
 
-  // Draft
-  app.get("/api/leagues/:leagueId/draft/picks", async (req, res) => {
-    const picks = await storage.getDraftPicks(req.params.leagueId);
+  // Draft — viewing picks requires being a league member or admin
+  app.get("/api/leagues/:leagueId/draft/picks", requireAuth, async (req, res) => {
+    const requester = await storage.getUser(req.session.userId!);
+    const member = await storage.getLeagueMember(req.params.leagueId, req.session.userId!);
     const league = await storage.getLeague(req.params.leagueId);
-    
+    const isLeagueAdmin = !!requester?.isAdmin || (league && league.createdBy === req.session.userId);
+    if (!member && !isLeagueAdmin) {
+      return res.status(403).json({ message: "You are not a member of this league" });
+    }
+    const picks = await storage.getDraftPicks(req.params.leagueId);
+
     const picksWithDetails = await Promise.all(
       picks.map(async (pick) => {
         const user = await storage.getUser(pick.userId!);
@@ -835,7 +883,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         leagueId: req.params.leagueId
       });
-      
+
+      // Authorisation: site admins and the league creator may submit picks for any
+      // user (manual entry / commissioner override). All other callers must be a
+      // member of the league and may only draft for themselves.
+      const requestingUserId = req.session.userId!;
+      const requestingUser = await storage.getUser(requestingUserId);
+      const isLeagueAdmin = !!requestingUser?.isAdmin || league.createdBy === requestingUserId;
+      if (!isLeagueAdmin) {
+        const member = await storage.getLeagueMember(req.params.leagueId, requestingUserId);
+        if (!member) {
+          return res.status(403).json({ message: "You are not a member of this league" });
+        }
+        if (pickData.userId !== requestingUserId) {
+          return res.status(403).json({ message: "You can only draft for yourself" });
+        }
+      }
+
       const pick = await storage.addDraftPick(pickData);
 
       // Auto-complete: mark the draft as "completed" in the DB when all picks are done
@@ -907,7 +971,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/leagues/:leagueId/draft/status", async (req, res) => {
+  app.get("/api/leagues/:leagueId/draft/status", requireAuth, async (req, res) => {
+    const requester = await storage.getUser(req.session.userId!);
+    const member = await storage.getLeagueMember(req.params.leagueId, req.session.userId!);
+    const league = await storage.getLeague(req.params.leagueId);
+    const isLeagueAdmin = !!requester?.isAdmin || (league && league.createdBy === req.session.userId);
+    if (!member && !isLeagueAdmin) {
+      return res.status(403).json({ message: "You are not a member of this league" });
+    }
     const status = await storage.getDraftStatus(req.params.leagueId);
     res.json(status);
   });
@@ -958,7 +1029,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/leagues/:leagueId/users/:userId/picks", async (req, res) => {
+  app.get("/api/leagues/:leagueId/users/:userId/picks", requireAuth, async (req, res) => {
+    const requester = await storage.getUser(req.session.userId!);
+    const member = await storage.getLeagueMember(req.params.leagueId, req.session.userId!);
+    const leagueForAuth = await storage.getLeague(req.params.leagueId);
+    const isLeagueAdmin = !!requester?.isAdmin || (leagueForAuth && leagueForAuth.createdBy === req.session.userId);
+    if (!member && !isLeagueAdmin) {
+      return res.status(403).json({ message: "You are not a member of this league" });
+    }
     const picks = await storage.getUserDraftPicks(req.params.leagueId, req.params.userId);
     const league = await storage.getLeague(req.params.leagueId);
     
@@ -1133,9 +1211,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // League-specific notification preferences
-  app.get("/api/leagues/:leagueId/members/:userId/notification-preferences", async (req, res) => {
+  // League-specific notification preferences — only the owner or admin
+  app.get("/api/leagues/:leagueId/members/:userId/notification-preferences", requireAuth, async (req, res) => {
     try {
+      if (req.session.userId !== req.params.userId) {
+        const caller = await storage.getUser(req.session.userId!);
+        if (!caller?.isAdmin) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
       const member = await storage.getLeagueMember(req.params.leagueId, req.params.userId);
       if (!member) {
         return res.status(404).json({ message: "League member not found" });
@@ -1210,7 +1294,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/users/:userId/notification-preferences", getNotificationPreferences);
+  app.get("/api/users/:userId/notification-preferences", requireAuth, async (req, res) => {
+    if (req.session.userId !== req.params.userId) {
+      const caller = await storage.getUser(req.session.userId!);
+      if (!caller?.isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+    }
+    return getNotificationPreferences(req, res);
+  });
   app.post("/api/admin/test-email", testEmail);
 
   app.post("/api/admin/update-privileges", async (req, res) => {
