@@ -1930,10 +1930,8 @@ export class DatabaseStorage implements IStorage {
                 if (gf > ga) points += 2;
                 else if (gf === ga) points += 1;
               } else if (g.wcRound && g.wcRound !== "third_place") {
-                if (gf > ga) points += 1 + 2;
-                else if (g.wcRound === "round_of_32" || g.wcRound === "round_of_16" || g.wcRound === "quarterfinal" || g.wcRound === "semifinal" || g.wcRound === "final") {
-                  points += 1;
-                }
+                if (g.wcRound === "round_of_32") points += 1;
+                if (gf > ga) points += 2;
               }
             }
           }
@@ -2002,7 +2000,7 @@ export class DatabaseStorage implements IStorage {
             if (gf > ga) fantasyPoints += 2;
             else if (gf === ga) fantasyPoints += 1;
           } else if (g.wcRound && g.wcRound !== "third_place") {
-            fantasyPoints += 1;
+            if (g.wcRound === "round_of_32") fantasyPoints += 1;
             if (gf > ga) fantasyPoints += 2;
           }
         }
