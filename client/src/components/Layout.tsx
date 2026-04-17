@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus } from "lucide-react";
+import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -260,6 +260,14 @@ export default function Layout({ children }: LayoutProps) {
                 </Link>
               );
             })}
+            <a
+              href="mailto:admin@totalwins.app?subject=Total%20Wins%20Beta%20Feedback"
+              className="nav-btn text-retro-yellow hover:bg-retro-yellow hover:text-retro-charcoal inline-flex items-center px-3 rounded-lg transition-colors"
+              data-testid="link-feedback-desktop"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              FEEDBACK
+            </a>
             <Button
               variant="ghost"
               onClick={handleLogout}
@@ -352,6 +360,17 @@ export default function Layout({ children }: LayoutProps) {
                       );
                     })}
                     
+                    {/* Feedback link */}
+                    <a
+                      href="mailto:admin@totalwins.app?subject=Total%20Wins%20Beta%20Feedback"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer w-full text-left text-retro-cream hover:bg-retro-teal/20 hover:text-retro-yellow"
+                      data-testid="link-feedback-mobile"
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      <span className="font-medium retro-font">FEEDBACK</span>
+                    </a>
+
                     {/* Logout button */}
                     <button
                       onClick={handleLogout}
