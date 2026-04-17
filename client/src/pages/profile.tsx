@@ -8,7 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Bell, Mail, User, Settings, Key, Shield, UserCog, Smartphone } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Bell, Mail, User, Settings, Key, Shield, UserCog, Smartphone, Trophy, LogOut, Crown } from "lucide-react";
 import { getCurrentUser, setCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -115,6 +126,36 @@ export default function Profile() {
       setSelectedLeagueId(userLeagues[0].id);
     }
   }, [userLeagues, selectedLeagueId]);
+
+  // Leave league mutation
+  const leaveLeagueMutation = useMutation({
+    mutationFn: async (leagueId: string) => {
+      const res = await apiRequest("DELETE", `/api/leagues/${leagueId}/members/${currentUser?.id}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to leave league");
+      }
+      return res.json();
+    },
+    onSuccess: (_data, leagueId) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+      // If the user just left the league they had selected, clear the selection
+      if (selectedLeagueId === leagueId) {
+        setSelectedLeagueId("");
+      }
+      toast({
+        title: "Left league",
+        description: "You're no longer a member of that league.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Couldn't leave league",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Check push notification support and subscription status
   useEffect(() => {
@@ -539,6 +580,97 @@ export default function Profile() {
                   >
                     {acceptInvitationMutation.isPending ? "JOINING..." : "ACCEPT"}
                   </Button>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My Leagues */}
+      {userLeagues && userLeagues.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-retro-pink" />
+              My Leagues
+              <span className="ml-auto text-xs font-normal text-gray-500">
+                {userLeagues.length} {userLeagues.length === 1 ? "league" : "leagues"}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {userLeagues.map((league) => {
+              const sportEmoji: Record<string, string> = { NFL: "🏈", MLB: "⚾", NBA: "🏀", WORLD_CUP: "⚽" };
+              const isOwner = league.createdBy === currentUser?.id;
+              const draftActive = league.draftStatus === "active";
+              const canLeave = !isOwner && !draftActive;
+              return (
+                <div
+                  key={league.id}
+                  className="flex items-center justify-between bg-retro-cream/50 rounded-lg p-3 border border-gray-200"
+                  data-testid={`my-league-${league.id}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span className="text-2xl flex-shrink-0">{sportEmoji[league.sport] || "🏆"}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-retro-charcoal truncate">{league.name}</p>
+                        {isOwner && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase bg-retro-yellow text-retro-charcoal px-1.5 py-0.5 rounded">
+                            <Crown className="h-3 w-3" /> Owner
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {league.sport} · Season {league.season}
+                      </p>
+                    </div>
+                  </div>
+                  {canLeave ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 flex-shrink-0"
+                          data-testid={`button-leave-league-${league.id}`}
+                          disabled={leaveLeagueMutation.isPending}
+                        >
+                          <LogOut className="h-3 w-3 mr-1" />
+                          Leave
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Leave {league.name}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            You'll lose access to this league's standings and draft. You can re-join later only if an admin invites you again.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => leaveLeagueMutation.mutate(league.id)}
+                          >
+                            Leave league
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <span
+                      className="text-xs text-gray-400 italic flex-shrink-0 ml-2"
+                      title={
+                        isOwner
+                          ? "Owners can't leave their own league"
+                          : "Can't leave during an active draft"
+                      }
+                    >
+                      {isOwner ? "Owner" : "Draft active"}
+                    </span>
+                  )}
                 </div>
               );
             })}

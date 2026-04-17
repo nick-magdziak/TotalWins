@@ -771,18 +771,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/leagues/:leagueId/members/:userId", requireAdmin, async (req, res) => {
+  // Remove a member from a league.
+  //  - Site admins and the league creator can remove anyone (existing behaviour).
+  //  - A regular member can remove themselves ("leave league").
+  //  - The league creator cannot leave their own league (must hand it off first).
+  //  - Removal is blocked once the draft is active.
+  app.delete("/api/leagues/:leagueId/members/:userId", requireAuth, async (req, res) => {
     try {
-      // Check if league exists and get its draft status
+      const requesterId = req.session.userId!;
+      const requester = await storage.getUser(requesterId);
       const league = await storage.getLeague(req.params.leagueId);
       if (!league) {
         return res.status(404).json({ message: "League not found" });
       }
 
+      const isSelfRemoval = requesterId === req.params.userId;
+      const isLeagueAdmin = !!requester?.isAdmin || league.createdBy === requesterId;
+      if (!isSelfRemoval && !isLeagueAdmin) {
+        return res.status(403).json({ message: "You don't have permission to remove this member" });
+      }
+
+      // The league creator cannot leave their own league
+      if (isSelfRemoval && league.createdBy === requesterId) {
+        return res.status(400).json({
+          message: "League creators cannot leave their own league. Hand off ownership first or delete the league.",
+        });
+      }
+
       // Prevent removing players once draft has started
       if (league.draftStatus === "active") {
-        return res.status(400).json({ 
-          message: "Cannot remove players from league once the draft has started" 
+        return res.status(400).json({
+          message: "Cannot remove players from league once the draft has started",
         });
       }
 

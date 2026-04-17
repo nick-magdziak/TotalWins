@@ -516,7 +516,7 @@ export default function Standings() {
               </h4>
               <div className="space-y-2">
                 {recentGames && recentGames.length > 0 ? (
-                  recentGames.map((game) => (
+                  recentGames.map((game: any) => (
                     <div
                       key={game.id}
                       className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-lime"
@@ -559,8 +559,10 @@ export default function Standings() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-4">
-                    <p className="text-retro-charcoal opacity-75">No recent game updates</p>
+                  <div className="text-center py-6">
+                    <Clock className="mx-auto w-8 h-8 text-retro-pink/40 mb-2" />
+                    <p className="text-retro-charcoal font-bold text-sm">No games for your teams today</p>
+                    <p className="text-xs text-gray-500 mt-1">Check back later or peek at upcoming games on the right.</p>
                   </div>
                 )}
                 
@@ -626,8 +628,10 @@ export default function Standings() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-4">
-                    <p className="text-retro-charcoal opacity-75">No upcoming games</p>
+                  <div className="text-center py-6">
+                    <TrendingUp className="mx-auto w-8 h-8 text-retro-pink/40 mb-2" />
+                    <p className="text-retro-charcoal font-bold text-sm">Nothing scheduled yet</p>
+                    <p className="text-xs text-gray-500 mt-1">Upcoming games for your teams will appear here as they're announced.</p>
                   </div>
                 )}
                 
