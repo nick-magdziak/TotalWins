@@ -60,10 +60,15 @@ export default function Layout({ children }: LayoutProps) {
     enabled: !!currentUser?.id,
   });
 
-  // Pending invitations for badge
+  // Pending invitations for badge - poll periodically so the badge updates in
+  // near real time when an admin sends a new invite mid-session.
   const { data: pendingInvitations } = useQuery<Array<{ league: League; member: any }>>({
     queryKey: ["/api/users/pending-invitations"],
     enabled: !!currentUser?.id,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
   const pendingCount = pendingInvitations?.length ?? 0;
 
