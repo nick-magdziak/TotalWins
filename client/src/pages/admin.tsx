@@ -35,7 +35,8 @@ import {
   GripVertical,
   Trophy,
   Copy,
-  Link2
+  Link2,
+  Mail
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1180,6 +1181,30 @@ export default function Admin() {
                         <Badge className={memberData.invitationStatus === "pending" ? "bg-orange-500 text-white" : "bg-retro-teal text-white"}>
                           {memberData.invitationStatus === "pending" ? "PENDING" : "ACTIVE"}
                         </Badge>
+                        {memberData.invitationStatus === "pending" && memberData.user?.email && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            title="Send invite"
+                            data-testid={`button-resend-invite-${memberData.id}`}
+                            disabled={
+                              resendInviteMutation.isPending &&
+                              resendInviteMutation.variables?.email === memberData.user?.email
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const email = memberData.user?.email;
+                              const name = memberData.user?.displayName || "Player";
+                              if (email) {
+                                resendInviteMutation.mutate({ email, name });
+                              }
+                            }}
+                            className="h-7 w-7 p-0 text-retro-purple hover:bg-retro-pink/20"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))
