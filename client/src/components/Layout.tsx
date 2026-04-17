@@ -173,9 +173,14 @@ export default function Layout({ children }: LayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-white hover:bg-white/10 p-2 rounded-lg">
                   <div className="text-left">
-                    <h1 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-wider retro-font">
-                      TOTAL WINS
-                    </h1>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-wider retro-font">
+                        TOTAL WINS
+                      </h1>
+                      <span className="bg-retro-yellow text-retro-charcoal text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded retro-font tracking-wider leading-none">
+                        BETA
+                      </span>
+                    </div>
                     {currentLeague && (
                       <div className="text-xs sm:text-sm opacity-75 -mt-1">
                         {currentLeague.name}
@@ -277,6 +282,9 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="flex items-center gap-2 p-4 border-b border-retro-teal/30">
                   <img src={totalWinsLogo} alt="Total Wins" className="w-8 h-8" />
                   <span className="text-retro-yellow font-bold text-lg retro-font">TOTAL WINS</span>
+                  <span className="bg-retro-yellow text-retro-charcoal text-[10px] font-bold px-1.5 py-0.5 rounded retro-font tracking-wider leading-none">
+                    BETA
+                  </span>
                 </div>
                 
                 <nav className="flex-1 p-4">
