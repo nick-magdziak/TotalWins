@@ -7,6 +7,7 @@ import { getCurrentUser, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
 import totalWinsLogo from "@assets/TotalWinsLogo - Transparent_1753759057781.png";
 
 interface LayoutProps {
@@ -58,6 +59,13 @@ export default function Layout({ children }: LayoutProps) {
     queryKey: ["/api/users", currentUser?.id, "leagues"],
     enabled: !!currentUser?.id,
   });
+
+  // Pending invitations for badge
+  const { data: pendingInvitations } = useQuery<Array<{ league: League; member: any }>>({
+    queryKey: ["/api/users/pending-invitations"],
+    enabled: !!currentUser?.id,
+  });
+  const pendingCount = pendingInvitations?.length ?? 0;
 
   // Get league ID from URL params or use stored league
   const urlParams = new URLSearchParams(window.location.search);
@@ -217,13 +225,24 @@ export default function Layout({ children }: LayoutProps) {
               const currentPath = location.split('?')[0];
               const itemPath = item.path.split('?')[0];
               const isActive = currentPath === itemPath;
+              const showBadge = item.path === "/profile" && pendingCount > 0;
               return (
                 <Link key={item.path} href={item.path}>
                   <Button
                     variant="ghost"
-                    className={`nav-btn ${isActive ? "active" : ""}`}
+                    className={`nav-btn relative ${isActive ? "active" : ""}`}
+                    data-testid={item.path === "/profile" ? "nav-profile" : undefined}
                   >
                     {item.label}
+                    {showBadge && (
+                      <Badge
+                        variant="destructive"
+                        className="ml-2 h-5 min-w-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center"
+                        data-testid="badge-pending-invitations-desktop"
+                      >
+                        {pendingCount}
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
               );
@@ -290,6 +309,7 @@ export default function Layout({ children }: LayoutProps) {
                       const currentPath = location.split('?')[0];
                       const itemPath = item.path.split('?')[0];
                       const isActive = currentPath === itemPath;
+                      const showBadge = item.path === "/profile" && pendingCount > 0;
                       return (
                         <Link key={item.path} href={item.path}>
                           <div
@@ -302,6 +322,15 @@ export default function Layout({ children }: LayoutProps) {
                           >
                             <Icon className="w-5 h-5" />
                             <span className="font-medium retro-font">{item.label}</span>
+                            {showBadge && (
+                              <Badge
+                                variant="destructive"
+                                className="ml-auto h-5 min-w-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center"
+                                data-testid="badge-pending-invitations-mobile"
+                              >
+                                {pendingCount}
+                              </Badge>
+                            )}
                           </div>
                         </Link>
                       );
