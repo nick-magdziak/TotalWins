@@ -2106,16 +2106,21 @@ export class DatabaseStorage implements IStorage {
       if (allUpcoming.length === 0) {
         upcomingGames = [];
       } else {
-        // Return only games from the first day that has scheduled games
+        // Return only games from the first LOCAL day (in the user's timezone)
+        // that has scheduled games. Using UTC day boundaries here would drop
+        // late-evening West Coast games whose UTC date is the next day
+        // (e.g. a 7:10 PM PT first pitch is ~02:10 UTC the next day, but it's
+        // still the same local game-day for a PT user).
         const firstGame = allUpcoming[0];
-        const firstDayStart = new Date(Date.UTC(
-          firstGame.gameDate!.getUTCFullYear(),
-          firstGame.gameDate!.getUTCMonth(),
-          firstGame.gameDate!.getUTCDate(),
-          0, 0, 0
-        ));
-        const firstDayEnd = new Date(firstDayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
-        upcomingGames = allUpcoming.filter(g => g.gameDate! >= firstDayStart && g.gameDate! <= firstDayEnd).slice(0, limit);
+        const msInDay = 24 * 60 * 60 * 1000;
+        const dayIndex = Math.floor(
+          (firstGame.gameDate!.getTime() - tomorrowStart.getTime()) / msInDay
+        );
+        const firstDayStart = new Date(tomorrowStart.getTime() + dayIndex * msInDay);
+        const firstDayEnd = new Date(firstDayStart.getTime() + msInDay - 1);
+        upcomingGames = allUpcoming
+          .filter(g => g.gameDate! >= firstDayStart && g.gameDate! <= firstDayEnd)
+          .slice(0, limit);
       }
     } else {
       // For NFL, get next week's upcoming scheduled games only
