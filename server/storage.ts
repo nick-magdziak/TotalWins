@@ -2060,10 +2060,14 @@ export class DatabaseStorage implements IStorage {
       }
       // Before the tournament starts (June 11, 2026): fast-forward to the opening
       // day so users always see the first batch of fixtures rather than a blank section.
-      const wcOpeningDay = new Date(Date.UTC(2026, 5, 11, 0, 0, 0)); // June 11, 2026 00:00 UTC
-      if (windowStart < wcOpeningDay) {
-        windowStart = wcOpeningDay;
-        windowEnd = new Date(wcOpeningDay.getTime() + 72 * 60 * 60 * 1000 - 1);
+      // Anchor to the user's LOCAL midnight on June 11 (not UTC midnight) so late
+      // evening matches whose UTC date has rolled over to June 12/13/14 are still
+      // included for fans in western timezones (e.g. a 9 PM ET match on June 13 is
+      // 01:00 UTC June 14, which would otherwise fall outside a UTC-anchored window).
+      const wcOpeningLocal = new Date(Date.UTC(2026, 5, 11, 0, 0, 0).valueOf() + tzOffset * 60 * 1000);
+      if (windowStart < wcOpeningLocal) {
+        windowStart = wcOpeningLocal;
+        windowEnd = new Date(wcOpeningLocal.getTime() + 72 * 60 * 60 * 1000 - 1);
       }
       upcomingGames = await db
         .select()
