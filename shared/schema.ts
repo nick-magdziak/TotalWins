@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, jsonb, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, date, jsonb, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -42,6 +42,7 @@ export const leagues = pgTable("leagues", {
   draftType: text("draft_type").notNull().default("snake"), // snake, linear, custom_10_30
   draftConfiguration: text("draft_configuration"), // e.g., "4_players_8_teams" for the new unified config
   draftScheduledAt: timestamp("draft_scheduled_at"), // optional scheduled draft date/time
+  leagueStartDate: date("league_start_date", { mode: "date" }), // only games on/after this date count toward standings
   draftStatus: text("draft_status").notNull().default("pending"), // pending, active, completed
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
   inviteCode: text("invite_code").unique(),

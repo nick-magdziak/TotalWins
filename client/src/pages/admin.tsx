@@ -56,6 +56,7 @@ export default function Admin() {
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [draftConfiguration, setDraftConfiguration] = useState("");
   const [draftDateTime, setDraftDateTime] = useState("");
+  const [leagueStartDate, setLeagueStartDate] = useState("");
   const [updateMessage, setUpdateMessage] = useState("");
   const [showSendUpdatesDialog, setShowSendUpdatesDialog] = useState(false);
   const [leagueName, setLeagueName] = useState("2024 NFL Wins Pool Championship");
@@ -314,6 +315,35 @@ export default function Admin() {
       toast({
         title: "Save failed",
         description: "Failed to save the draft date/time. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const { data: seasonStartFloor } = useQuery<{ seasonStart: string | null }>({
+    queryKey: ["/api/leagues", leagueId, "season-start-floor"],
+    enabled: !!leagueId,
+  });
+
+  const saveLeagueStartDateMutation = useMutation({
+    mutationFn: async (dateStr: string) => {
+      return apiRequest("PATCH", `/api/leagues/${leagueId}`, {
+        leagueStartDate: dateStr ? dateStr : null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "standings"] });
+      toast({
+        title: "League start date saved!",
+        description: "Only games on or after this date will count toward standings.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Save failed",
+        description: err?.message || "Failed to save the league start date. Please try again.",
         variant: "destructive",
       });
     },
@@ -863,6 +893,17 @@ export default function Admin() {
     }
   }, [currentLeague?.draftScheduledAt]);
 
+  // Pre-populate league start date from saved league value (date input expects "YYYY-MM-DD")
+  useEffect(() => {
+    if (currentLeague?.leagueStartDate) {
+      const d = new Date(currentLeague.leagueStartDate as any);
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      setLeagueStartDate(`${yyyy}-${mm}-${dd}`);
+    }
+  }, [currentLeague?.leagueStartDate]);
+
   const handleExportData = async () => {
     try {
       const response = await fetch(`/api/leagues/${leagueId}/export`, {
@@ -1408,6 +1449,90 @@ export default function Admin() {
                     <p className="text-xs text-retro-teal mt-1 retro-font">Saving...</p>
                   )}
                 </div>
+
+                {/* League Start Date — only games on/after this date count toward standings */}
+                {(() => {
+                  const todayUtc = (() => {
+                    const n = new Date();
+                    return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
+                  })();
+
+                  const seasonStartIso = seasonStartFloor?.seasonStart || null;
+                  const seasonStartDateObj = seasonStartIso ? new Date(seasonStartIso) : null;
+                  const seasonStartStr = seasonStartDateObj
+                    ? `${seasonStartDateObj.getUTCFullYear()}-${String(seasonStartDateObj.getUTCMonth() + 1).padStart(2, "0")}-${String(seasonStartDateObj.getUTCDate()).padStart(2, "0")}`
+                    : "";
+
+                  // Locked once the saved start date has already passed.
+                  let isLocked = false;
+                  if (currentLeague?.leagueStartDate) {
+                    const saved = new Date(currentLeague.leagueStartDate as any);
+                    const savedFloor = new Date(Date.UTC(saved.getUTCFullYear(), saved.getUTCMonth(), saved.getUTCDate()));
+                    isLocked = todayUtc.getTime() >= savedFloor.getTime();
+                  }
+
+                  // Grayed out + auto-filled when draft date is before the sport's actual season start.
+                  let isDraftBeforeSeason = false;
+                  if (currentLeague?.draftScheduledAt && seasonStartDateObj) {
+                    const draftAt = new Date(currentLeague.draftScheduledAt as any);
+                    const draftFloor = new Date(Date.UTC(draftAt.getUTCFullYear(), draftAt.getUTCMonth(), draftAt.getUTCDate()));
+                    isDraftBeforeSeason = draftFloor.getTime() < seasonStartDateObj.getTime();
+                  }
+
+                  // Min for the input: the later of draft date and season start.
+                  let minStr = seasonStartStr;
+                  if (currentLeague?.draftScheduledAt) {
+                    const draftAt = new Date(currentLeague.draftScheduledAt as any);
+                    const dStr = `${draftAt.getUTCFullYear()}-${String(draftAt.getUTCMonth() + 1).padStart(2, "0")}-${String(draftAt.getUTCDate()).padStart(2, "0")}`;
+                    if (!minStr || dStr > minStr) minStr = dStr;
+                  }
+
+                  const disabled = isLocked || isDraftBeforeSeason;
+                  const displayValue = isDraftBeforeSeason && !leagueStartDate ? seasonStartStr : leagueStartDate;
+
+                  return (
+                    <div>
+                      <Label className="text-retro-charcoal font-bold text-sm mb-2 block">
+                        League Start Date
+                      </Label>
+                      <Input
+                        type="date"
+                        value={displayValue}
+                        min={minStr || undefined}
+                        disabled={disabled}
+                        onChange={(e) => setLeagueStartDate(e.target.value)}
+                        onBlur={(e) => {
+                          if (disabled) return;
+                          if (!e.target.value) return;
+                          if (currentLeague?.leagueStartDate) {
+                            const saved = new Date(currentLeague.leagueStartDate as any);
+                            const savedStr = `${saved.getUTCFullYear()}-${String(saved.getUTCMonth() + 1).padStart(2, "0")}-${String(saved.getUTCDate()).padStart(2, "0")}`;
+                            if (savedStr === e.target.value) return;
+                          }
+                          saveLeagueStartDateMutation.mutate(e.target.value);
+                        }}
+                        className="w-full border-2 border-retro-pink focus:border-retro-purple disabled:opacity-60 disabled:cursor-not-allowed"
+                        data-testid="input-league-start-date"
+                      />
+                      {isLocked ? (
+                        <p className="text-xs text-retro-charcoal/70 mt-1 retro-font">
+                          Locked — start date has already passed.
+                        </p>
+                      ) : isDraftBeforeSeason ? (
+                        <p className="text-xs text-retro-charcoal/70 mt-1 retro-font">
+                          Draft is before the season starts — defaults to the sport's season start.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-retro-charcoal/70 mt-1 retro-font">
+                          Only games on or after this date count toward standings.
+                        </p>
+                      )}
+                      {saveLeagueStartDateMutation.isPending && (
+                        <p className="text-xs text-retro-teal mt-1 retro-font">Saving...</p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Draft Status */}
                 <div>

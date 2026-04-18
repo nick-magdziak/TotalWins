@@ -62,6 +62,8 @@ export interface IStorage {
   acceptLeagueInvitation(leagueId: string, userId: string): Promise<boolean>;
   saveDraftOrder(leagueId: string, orderedUserIds: string[]): Promise<boolean>;
   getPlayerStandings(leagueId: string): Promise<PlayerStanding[]>;
+  getSportSeasonStart(sport: string, season: string): Promise<Date | null>;
+  backfillLeagueStartDates(): Promise<void>;
 
   // NFL Teams
   getAllNFLTeams(): Promise<NFLTeam[]>;
@@ -984,6 +986,45 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  async getSportSeasonStart(sport: string, season: string): Promise<Date | null> {
+    const [row] = await db
+      .select({ earliest: sql<Date | null>`MIN(${games.gameDate})` })
+      .from(games)
+      .where(and(eq(games.sport, sport), eq(games.season, season)));
+    if (!row?.earliest) return null;
+    const d = row.earliest instanceof Date ? row.earliest : new Date(row.earliest as any);
+    // Floor to UTC midnight so comparisons are date-aligned, not time-aligned.
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  }
+
+  async backfillLeagueStartDates(): Promise<void> {
+    const allLeagues = await db
+      .select()
+      .from(leagues)
+      .where(sql`${leagues.leagueStartDate} IS NULL`);
+    for (const lg of allLeagues) {
+      const start = await this.getSportSeasonStart(lg.sport, lg.season);
+      if (start) {
+        await db.update(leagues).set({ leagueStartDate: start }).where(eq(leagues.id, lg.id));
+      }
+    }
+  }
+
+  /**
+   * Resolve the effective league start date used for filtering games into
+   * standings. Falls back to the sport's earliest synced game date if the
+   * league has no explicit start date (e.g. legacy rows not yet backfilled).
+   */
+  private async getEffectiveLeagueStartDate(league: League): Promise<Date | null> {
+    if (league.leagueStartDate) {
+      const d = league.leagueStartDate instanceof Date
+        ? league.leagueStartDate
+        : new Date(league.leagueStartDate as any);
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    }
+    return this.getSportSeasonStart(league.sport, league.season);
+  }
+
   async getPlayerStandings(leagueId: string): Promise<PlayerStanding[]> {
     const members = await db
       .select({
@@ -1011,13 +1052,44 @@ export class DatabaseStorage implements IStorage {
       }));
     }
 
+    // Resolve the effective league start date once. We then count wins from
+    // completed games on/after this date, instead of summing each team's full
+    // season win total.
+    const startDate = await this.getEffectiveLeagueStartDate(league);
+
+    // Pre-load completed games for this sport+season so we can compute per-team
+    // win counts without an N+1 query against games per member.
+    const completedGames = startDate
+      ? await db
+          .select()
+          .from(games)
+          .where(and(
+            eq(games.sport, league.sport),
+            eq(games.season, league.season),
+            eq(games.status, "completed"),
+            gte(games.gameDate, startDate),
+          ))
+      : [];
+
+    const winsByTeam = new Map<string, number>();
+    for (const g of completedGames) {
+      const home = g.homeScore ?? 0;
+      const away = g.awayScore ?? 0;
+      if (home === away) continue; // ties don't add wins (NFL ties also excluded for parity with prior behavior)
+      const winnerId = home > away ? g.homeTeamId : g.awayTeamId;
+      winsByTeam.set(winnerId, (winsByTeam.get(winnerId) ?? 0) + 1);
+    }
+
     for (const { member, user } of members) {
       const userPicks = await this.getUserDraftPicks(leagueId, user.id);
       const teams = await Promise.all(
         userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
       );
       const validTeams = teams.filter((team): team is NFLTeam | MLBTeam | NBATeam => Boolean(team));
-      const totalWins = validTeams.reduce((sum, team) => sum + (team?.wins || 0), 0);
+      const totalWins = validTeams.reduce(
+        (sum, team) => sum + (winsByTeam.get(team.id) ?? 0),
+        0,
+      );
 
       standings.push({
         userId: user.id,
@@ -1972,8 +2044,16 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(leagueMembers.userId, users.id))
       .where(eq(leagueMembers.leagueId, leagueId));
 
+    const league = await this.getLeague(leagueId);
+    const startDate = league ? await this.getEffectiveLeagueStartDate(league) : null;
+
     const allGames = await this.getWorldCupGames();
-    const completedGames = allGames.filter((g) => g.status === "completed");
+    const completedGames = allGames.filter((g) => {
+      if (g.status !== "completed") return false;
+      if (!startDate) return true;
+      const gd = g.gameDate instanceof Date ? g.gameDate : new Date(g.gameDate as any);
+      return gd.getTime() >= startDate.getTime();
+    });
     const knockoutGames = completedGames.filter((g) => g.wcRound && g.wcRound !== "group_stage" && g.wcRound !== "third_place");
 
     const standings: WCPlayerStanding[] = [];

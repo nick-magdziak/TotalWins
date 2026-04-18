@@ -99,6 +99,10 @@ app.use((req, res, next) => {
     // than computing from our partial games table
     await sportsApi.syncTeamStandingsFromESPN();
 
+    // Backfill league_start_date for any leagues created before the per-league
+    // start-date feature, using the sport's earliest synced game date.
+    await storage.backfillLeagueStartDates();
+
     // World Cup sync
     try {
       const { worldCupDataService } = await import("./services/worldCupService");

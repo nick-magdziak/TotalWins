@@ -546,13 +546,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updates.draftScheduledAt && typeof updates.draftScheduledAt === "string") {
         updates.draftScheduledAt = new Date(updates.draftScheduledAt);
       }
+
+      // Validate leagueStartDate updates: must be on/after the league's draft
+      // date and the sport's actual season start, and cannot be edited once the
+      // currently stored start date has already passed.
+      if (Object.prototype.hasOwnProperty.call(updates, "leagueStartDate")) {
+        const existing = await storage.getLeague(req.params.id);
+        if (!existing) return res.status(404).json({ message: "League not found" });
+
+        const todayUtcMidnight = (() => {
+          const n = new Date();
+          return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
+        })();
+
+        if (existing.leagueStartDate) {
+          const stored = existing.leagueStartDate instanceof Date
+            ? existing.leagueStartDate
+            : new Date(existing.leagueStartDate as any);
+          const storedFloor = new Date(Date.UTC(stored.getUTCFullYear(), stored.getUTCMonth(), stored.getUTCDate()));
+          if (todayUtcMidnight.getTime() >= storedFloor.getTime()) {
+            return res.status(400).json({ message: "League start date is locked because it has already passed" });
+          }
+        }
+
+        if (updates.leagueStartDate) {
+          const proposed = new Date(updates.leagueStartDate);
+          if (isNaN(proposed.getTime())) {
+            return res.status(400).json({ message: "Invalid league start date" });
+          }
+          const proposedFloor = new Date(Date.UTC(proposed.getUTCFullYear(), proposed.getUTCMonth(), proposed.getUTCDate()));
+
+          const draftAt = existing.draftScheduledAt
+            ? (existing.draftScheduledAt instanceof Date ? existing.draftScheduledAt : new Date(existing.draftScheduledAt as any))
+            : null;
+          if (draftAt) {
+            const draftFloor = new Date(Date.UTC(draftAt.getUTCFullYear(), draftAt.getUTCMonth(), draftAt.getUTCDate()));
+            if (proposedFloor.getTime() < draftFloor.getTime()) {
+              return res.status(400).json({ message: "League start date must be on or after the draft date" });
+            }
+          }
+
+          const seasonStart = await storage.getSportSeasonStart(existing.sport, existing.season);
+          if (seasonStart && proposedFloor.getTime() < seasonStart.getTime()) {
+            return res.status(400).json({ message: "League start date must be on or after the sport's season start" });
+          }
+
+          updates.leagueStartDate = proposedFloor;
+        } else {
+          updates.leagueStartDate = null;
+        }
+      }
+
       const league = await storage.updateLeague(req.params.id, updates);
       if (!league) {
         return res.status(404).json({ message: "League not found" });
       }
       res.json(league);
     } catch (error) {
+      console.error("PATCH /api/leagues/:id error:", error);
       res.status(400).json({ message: "Invalid update data" });
+    }
+  });
+
+  // Used by the admin League Settings UI to know the earliest valid date for
+  // the "League Start Date" field (the sport's actual season start, derived
+  // from the earliest synced game date for that sport+season).
+  app.get("/api/leagues/:id/season-start-floor", requireAdmin, async (req, res) => {
+    try {
+      const league = await storage.getLeague(req.params.id);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      const floor = await storage.getSportSeasonStart(league.sport, league.season);
+      res.json({ seasonStart: floor ? floor.toISOString() : null });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load season start" });
     }
   });
 
