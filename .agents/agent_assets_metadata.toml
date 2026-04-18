@@ -6,3 +6,9 @@ id = "DHya0PrLJzF20CDJB0O9D"
 uri = "file://security-hardening-summary.txt"
 type = "text"
 title = "Security Hardening Summary — Task #6"
+
+[[outputs]]
+id = "8QRIeiBwVeAbmrUOU0_j3"
+uri = "file://attached_assets/TotalWinsLogo_PureYellow.png"
+type = "image"
+title = "TotalWinsLogo — Pure Yellow (#FFFF00)"
