@@ -130,34 +130,10 @@ export class DatabaseStorage implements IStorage {
     this.initializeWorldCupGames();
     this.initializeSampleGameData();
     this.initializeDemoLeagues();
-    this.backfillEmailVerification();
     // Sync real MLB games after initialization
     this.syncRealTimeMLBGames();
   }
 
-  // Grandfather every account that already existed BEFORE the
-  // email-verification feature shipped. Uses a fixed cutoff (the deploy
-  // moment) baked into code so this is safe to run on every restart:
-  // users who signed up after the cutoff are NEVER touched, regardless
-  // of how many times the process restarts.
-  private static readonly EMAIL_VERIFICATION_DEPLOY_CUTOFF = new Date(
-    "2026-04-18T00:00:00Z",
-  );
-
-  private async backfillEmailVerification() {
-    try {
-      const cutoff = DatabaseStorage.EMAIL_VERIFICATION_DEPLOY_CUTOFF;
-      await db.execute(sql`
-        UPDATE users
-        SET verified_at = COALESCE(created_at, ${cutoff})
-        WHERE verified_at IS NULL
-          AND created_at IS NOT NULL
-          AND created_at < ${cutoff}
-      `);
-    } catch (error) {
-      console.error("Error backfilling email verification:", error);
-    }
-  }
 
   private async syncRealTimeMLBGames() {
     // Delay to allow other initializations to complete

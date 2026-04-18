@@ -76,7 +76,10 @@ async function hashVerificationToken(token: string): Promise<string> {
 
 // Helper: generate a token, store its hash, and email a verification link.
 // Errors are logged but do not throw — signup must not fail if email is down.
-async function issueVerificationEmail(user: { id: string; email: string; displayName: string }): Promise<void> {
+async function issueVerificationEmail(
+  user: { id: string; email: string; displayName: string },
+  options: { swallowErrors?: boolean } = {},
+): Promise<void> {
   try {
     const crypto = await import("crypto");
     const token = crypto.randomBytes(32).toString("hex");
@@ -90,6 +93,7 @@ async function issueVerificationEmail(user: { id: string; email: string; display
     await emailService.sendVerificationEmail(user.email, user.displayName, verifyUrl);
   } catch (err) {
     console.error("Failed to issue verification email:", err);
+    if (!options.swallowErrors) throw err;
   }
 }
 
@@ -197,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = user.id;
       // Fire off a verification email (do not block on its success)
-      issueVerificationEmail({ id: user.id, email: user.email, displayName: user.displayName });
+      issueVerificationEmail({ id: user.id, email: user.email, displayName: user.displayName }, { swallowErrors: true });
       res.json({ user: { ...user, password: undefined }, joinedLeagueId, joinWarning });
     } catch (error) {
       res.status(400).json({ message: "Invalid user data" });
@@ -353,7 +357,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (recent >= 3) {
         return res.status(429).json({ message: "Too many verification emails sent. Please wait a few minutes and try again." });
       }
-      await issueVerificationEmail({ id: user.id, email: user.email, displayName: user.displayName });
+      try {
+        await issueVerificationEmail({ id: user.id, email: user.email, displayName: user.displayName });
+      } catch (sendErr) {
+        return res.status(502).json({ message: "We could not send the verification email right now. Please try again in a moment." });
+      }
       res.json({ message: "Verification email sent. Please check your inbox." });
     } catch (error) {
       res.status(400).json({ message: "Invalid request" });
