@@ -995,11 +995,30 @@ export class DatabaseStorage implements IStorage {
     return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   }
 
+  /**
+   * Convert a league's season string to the season key used in the games
+   * table for that sport. League seasons are stored using human-readable
+   * formats ("2025", "2025-26") but the games table uses ESPN's
+   * single-year keys: NFL uses the START year ("2025-26" -> "2025"),
+   * NBA uses the END year ("2025-26" -> "2026"), MLB and WORLD_CUP are
+   * already single-year.
+   */
+  private normalizeSeasonForGames(sport: string, leagueSeason: string): string {
+    if (!leagueSeason) return leagueSeason;
+    if (sport === 'NBA' && /^\d{4}-\d{2}$/.test(leagueSeason)) {
+      return `${leagueSeason.slice(0, 2)}${leagueSeason.slice(5, 7)}`;
+    }
+    // NFL and any other YYYY-YY format default to the start year; single-year
+    // seasons (MLB, WORLD_CUP, plain "2025") are returned unchanged.
+    return leagueSeason.slice(0, 4);
+  }
+
   async getSportSeasonStart(sport: string, season: string): Promise<Date | null> {
+    const gamesSeason = this.normalizeSeasonForGames(sport, season);
     const [row] = await db
       .select({ earliest: sql<Date | string | null>`MIN(${games.gameDate})` })
       .from(games)
-      .where(and(eq(games.sport, sport), eq(games.season, season)));
+      .where(and(eq(games.sport, sport), eq(games.season, gamesSeason)));
     if (!row?.earliest) return null;
     return this.toUtcMidnight(row.earliest);
   }
@@ -1064,14 +1083,17 @@ export class DatabaseStorage implements IStorage {
     const startDate = await this.getEffectiveLeagueStartDate(league);
 
     // Pre-load completed games for this sport+season so we can compute per-team
-    // win counts without an N+1 query against games per member.
+    // win counts without an N+1 query against games per member. League seasons
+    // ("2025-26") differ from games-table seasons ("2025" / "2026" depending
+    // on sport), so we normalize before querying.
+    const gamesSeason = this.normalizeSeasonForGames(league.sport, league.season);
     const completedGames = startDate
       ? await db
           .select()
           .from(games)
           .where(and(
             eq(games.sport, league.sport),
-            eq(games.season, league.season),
+            eq(games.season, gamesSeason),
             eq(games.status, "completed"),
             gte(games.gameDate, startDate),
           ))
