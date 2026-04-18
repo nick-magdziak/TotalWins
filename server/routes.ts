@@ -42,6 +42,57 @@ function requireAuth(req: Request, res: Response, next: NextFunction): void {
   next();
 }
 
+// Middleware: require a verified email. Use AFTER an auth check has set userId.
+async function requireVerified(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+    const user = await storage.getUser(userId);
+    if (!user) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+    if (!user.verifiedAt) {
+      res.status(403).json({
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email before doing this. Check your inbox for the verification link, or request a new one from your profile.",
+      });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Helper: hash a verification token for storage (we never store plaintext tokens)
+async function hashVerificationToken(token: string): Promise<string> {
+  const crypto = await import("crypto");
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+// Helper: generate a token, store its hash, and email a verification link.
+// Errors are logged but do not throw — signup must not fail if email is down.
+async function issueVerificationEmail(user: { id: string; email: string; displayName: string }): Promise<void> {
+  try {
+    const crypto = await import("crypto");
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = await hashVerificationToken(token);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    await storage.createEmailVerificationToken(user.id, tokenHash, expiresAt);
+
+    const verifyUrl = `${process.env.APP_URL || "https://totalwins.app"}/verify-email?token=${token}`;
+    const { EmailService } = await import("./services/emailService.js");
+    const emailService = new EmailService();
+    await emailService.sendVerificationEmail(user.email, user.displayName, verifyUrl);
+  } catch (err) {
+    console.error("Failed to issue verification email:", err);
+  }
+}
+
 // Middleware: require authenticated admin session
 async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -146,6 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       req.session.userId = user.id;
+      // Fire off a verification email (do not block on its success)
+      issueVerificationEmail({ id: user.id, email: user.email, displayName: user.displayName });
       res.json({ user: { ...user, password: undefined }, joinedLeagueId, joinWarning });
     } catch (error) {
       res.status(400).json({ message: "Invalid user data" });
@@ -241,8 +294,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hashed = await hashPassword(password);
-      await storage.updateUser(user.id, { password: hashed, resetToken: null, resetTokenExpiresAt: null });
+      // Successfully resetting via the email link also proves email ownership,
+      // so grandfather invited users (PENDING_PLACEHOLDER) into a verified state.
+      const updates: Record<string, unknown> = {
+        password: hashed,
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      };
+      if (!user.verifiedAt) updates.verifiedAt = new Date();
+      await storage.updateUser(user.id, updates);
       res.json({ message: "Password updated successfully. You can now log in." });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Verify email — public; consumes a verification token, marks user verified, logs them in
+  app.post("/api/auth/verify-email", authLimiter, async (req, res) => {
+    try {
+      const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
+      const tokenHash = await hashVerificationToken(token);
+      const row = await storage.getEmailVerificationTokenByHash(tokenHash);
+      if (!row) {
+        return res.status(400).json({ message: "Invalid or expired verification link." });
+      }
+      if (row.consumedAt) {
+        return res.status(400).json({ message: "This verification link has already been used." });
+      }
+      if (new Date() > row.expiresAt) {
+        return res.status(400).json({ message: "This verification link has expired. Please request a new one." });
+      }
+      const user = await storage.getUser(row.userId);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid verification link." });
+      }
+      await storage.consumeEmailVerificationToken(row.id);
+      const updatedUser = user.verifiedAt
+        ? user
+        : (await storage.updateUser(user.id, { verifiedAt: new Date() })) || user;
+      // Log the user in so they land in-app verified
+      req.session.userId = user.id;
+      res.json({ user: { ...updatedUser, password: undefined } });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Resend verification email — authenticated; rate-limited per user (max 3 per 15min)
+  app.post("/api/auth/resend-verification", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.verifiedAt) {
+        return res.status(400).json({ message: "Your email is already verified." });
+      }
+      const since = new Date(Date.now() - 15 * 60 * 1000);
+      const recent = await storage.countRecentVerificationTokens(userId, since);
+      if (recent >= 3) {
+        return res.status(429).json({ message: "Too many verification emails sent. Please wait a few minutes and try again." });
+      }
+      await issueVerificationEmail({ id: user.id, email: user.email, displayName: user.displayName });
+      res.json({ message: "Verification email sent. Please check your inbox." });
     } catch (error) {
       res.status(400).json({ message: "Invalid request" });
     }
@@ -443,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Join a league by invite code — identity derived from server-side session
-  app.post("/api/leagues/join", async (req, res) => {
+  app.post("/api/leagues/join", requireVerified, async (req, res) => {
     try {
       // Require an authenticated session
       const sessionUserId = req.session.userId;
@@ -487,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Accept a pending league invitation
-  app.post("/api/leagues/:id/accept-invitation", async (req, res) => {
+  app.post("/api/leagues/:id/accept-invitation", requireVerified, async (req, res) => {
     try {
       const sessionUserId = req.session.userId;
       if (!sessionUserId) {
@@ -510,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Leagues
-  app.post("/api/leagues", async (req, res) => {
+  app.post("/api/leagues", requireVerified, async (req, res) => {
     try {
       const leagueData = insertLeagueSchema.parse(req.body);
       const league = await storage.createLeague(leagueData);

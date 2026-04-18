@@ -29,8 +29,20 @@ export const users = pgTable("users", {
   pushSubscription: jsonb("push_subscription"), // Store push subscription data
   resetToken: text("reset_token"),
   resetTokenExpiresAt: timestamp("reset_token_expires_at"),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 
 export const leagues = pgTable("leagues", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

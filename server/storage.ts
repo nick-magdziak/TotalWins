@@ -23,6 +23,8 @@ import {
   type WCGroupStanding,
   type WCPlayerStanding,
   users,
+  emailVerificationTokens,
+  type EmailVerificationToken,
   leagues,
   leagueMembers,
   nflTeams,
@@ -41,6 +43,12 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   updateUserPrivileges(userId: string, isAdmin: boolean): Promise<void>;
+
+  // Email verification tokens
+  createEmailVerificationToken(userId: string, tokenHash: string, expiresAt: Date): Promise<EmailVerificationToken>;
+  getEmailVerificationTokenByHash(tokenHash: string): Promise<EmailVerificationToken | undefined>;
+  consumeEmailVerificationToken(id: string): Promise<void>;
+  countRecentVerificationTokens(userId: string, since: Date): Promise<number>;
 
   // Leagues
   getLeague(id: string): Promise<League | undefined>;
@@ -776,6 +784,41 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ isAdmin })
       .where(eq(users.id, userId));
+  }
+
+  // Email verification tokens
+  async createEmailVerificationToken(userId: string, tokenHash: string, expiresAt: Date): Promise<EmailVerificationToken> {
+    const [row] = await db
+      .insert(emailVerificationTokens)
+      .values({ userId, tokenHash, expiresAt })
+      .returning();
+    return row;
+  }
+
+  async getEmailVerificationTokenByHash(tokenHash: string): Promise<EmailVerificationToken | undefined> {
+    const [row] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.tokenHash, tokenHash));
+    return row || undefined;
+  }
+
+  async consumeEmailVerificationToken(id: string): Promise<void> {
+    await db
+      .update(emailVerificationTokens)
+      .set({ consumedAt: new Date() })
+      .where(eq(emailVerificationTokens.id, id));
+  }
+
+  async countRecentVerificationTokens(userId: string, since: Date): Promise<number> {
+    const rows = await db
+      .select({ id: emailVerificationTokens.id })
+      .from(emailVerificationTokens)
+      .where(and(
+        eq(emailVerificationTokens.userId, userId),
+        gte(emailVerificationTokens.createdAt, since),
+      ));
+    return rows.length;
   }
 
   // League methods

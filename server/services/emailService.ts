@@ -472,6 +472,79 @@ Total Wins - Password Reset
     });
   }
 
+  async sendVerificationEmail(
+    email: string,
+    playerName: string,
+    verifyUrl: string
+  ): Promise<boolean> {
+    const safePlayerName = escapeHtml(playerName);
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f0f0f0; }
+          .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+          .header { background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%); color: white; text-align: center; padding: 32px 24px; }
+          .header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px; }
+          .content { padding: 28px 32px; }
+          .info-box { background: #f8f9fa; border-left: 4px solid #FF1493; border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: #555; }
+          .cta-button { display: inline-block; background: linear-gradient(to right, #FF1493 0%, #8A2BE2 50%, #20B2AA 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 16px 0; }
+          .footer { background: #f8f9fa; padding: 18px 24px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          ${LOGO_HTML}
+          <div class="header">
+            <h1>VERIFY YOUR EMAIL</h1>
+          </div>
+          <div class="content">
+            <p style="font-size:16px;">Hi ${safePlayerName},</p>
+            <p style="font-size:15px; color:#444;">Welcome to Total Wins! Please confirm this email address so you can create and join leagues.</p>
+            <div style="text-align:center; margin: 24px 0;">
+              <a href="${verifyUrl}" class="cta-button">Verify My Email</a>
+            </div>
+            <div class="info-box">
+              This link expires in <strong>24 hours</strong>. If you did not create a Total Wins account, you can safely ignore this email.
+            </div>
+            <p style="font-size:13px; color:#888; word-break:break-all;">
+              If the button above does not work, copy and paste this link into your browser:<br>
+              <a href="${verifyUrl}" style="color:#8A2BE2;">${verifyUrl}</a>
+            </p>
+          </div>
+          <div class="footer">
+            <p>Total Wins &mdash; Email Verification</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textBody = `
+VERIFY YOUR EMAIL
+Total Wins
+
+Hi ${playerName},
+
+Welcome to Total Wins! Please confirm your email address so you can create and join leagues.
+
+Verify here: ${verifyUrl}
+
+This link expires in 24 hours. If you did not create a Total Wins account, you can safely ignore this email.
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: `Verify your Total Wins email`,
+      htmlBody,
+      textBody,
+    });
+  }
+
   async sendGameUpdateNotification(
     email: string,
     playerName: string,

@@ -12,9 +12,11 @@ import Signup from "@/pages/signup";
 import Login from "@/pages/login";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import VerifyEmail from "@/pages/verify-email";
 import CreateLeague from "@/pages/create-league";
 import Join from "@/pages/join";
 import NotFound from "@/pages/not-found";
+import VerifyEmailBanner from "@/components/VerifyEmailBanner";
 
 function Router() {
   return (
@@ -29,6 +31,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/join" component={Join} />
       <Route component={NotFound} />
     </Switch>
@@ -40,6 +43,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Layout>
+          <VerifyEmailBanner />
           <Router />
         </Layout>
         <Toaster />
