@@ -120,6 +120,7 @@ export const games = pgTable("games", {
   gameDate: timestamp("game_date").notNull(),
   completedAt: timestamp("completed_at"),
   period: text("period"), // e.g., "Top 9", "Q4 2:45", "Bottom 7"
+  seasonType: text("season_type").default("regular"), // 'regular' | 'postseason' | 'preseason' (MLB/NBA)
   wcRound: text("wc_round"), // group_stage, round_of_32, round_of_16, quarterfinal, semifinal, third_place, final
   wcGroup: text("wc_group"), // A-L for group stage games
 });

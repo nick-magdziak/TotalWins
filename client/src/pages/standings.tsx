@@ -95,6 +95,16 @@ export default function Standings() {
     enabled: !!leagueId && !isViewingPastSeason,
   });
 
+  // For MLB/NBA: once the regular season ends we swap the daily games sections
+  // for an "over" message (we don't track playoff games).
+  const { data: seasonStatus } = useQuery<{ regularSeasonEnded: boolean; sport: string | null }>({
+    queryKey: ["/api/leagues", activeLeagueId, "season-status"],
+    enabled: !!leagueId && !isViewingPastSeason &&
+      (currentLeague?.sport === 'MLB' || currentLeague?.sport === 'NBA'),
+    staleTime: 5 * 60 * 1000,
+  });
+  const regularSeasonEnded = !!seasonStatus?.regularSeasonEnded;
+
   const { data: wcTeams } = useQuery<any[]>({
     queryKey: ["/api/world-cup/teams"],
     enabled: !!leagueId && isWorldCup,
@@ -515,7 +525,13 @@ export default function Standings() {
                 {getRecentResultsTitle()}
               </h4>
               <div className="space-y-2">
-                {recentGames && recentGames.length > 0 ? (
+                {regularSeasonEnded ? (
+                  <div className="text-center py-6">
+                    <Clock className="mx-auto w-8 h-8 text-retro-pink/40 mb-2" />
+                    <p className="text-retro-charcoal font-bold text-sm">Regular season is over</p>
+                    <p className="text-xs text-gray-500 mt-1">Final standings shown — playoff games don't count.</p>
+                  </div>
+                ) : recentGames && recentGames.length > 0 ? (
                   recentGames.map((game: any) => (
                     <div
                       key={game.id}
@@ -601,7 +617,13 @@ export default function Standings() {
                 {getUpcomingTitle()}
               </h4>
               <div className="space-y-2">
-                {upcomingGames && upcomingGames.length > 0 ? (
+                {regularSeasonEnded ? (
+                  <div className="text-center py-6">
+                    <TrendingUp className="mx-auto w-8 h-8 text-retro-pink/40 mb-2" />
+                    <p className="text-retro-charcoal font-bold text-sm">Regular season is over</p>
+                    <p className="text-xs text-gray-500 mt-1">Final standings shown — playoff games don't count.</p>
+                  </div>
+                ) : upcomingGames && upcomingGames.length > 0 ? (
                   upcomingGames.map((game) => (
                     <div
                       key={game.id}

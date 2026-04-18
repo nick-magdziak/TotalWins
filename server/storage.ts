@@ -1370,6 +1370,8 @@ export class DatabaseStorage implements IStorage {
         .from(games)
         .where(and(
           eq(games.sport, league.sport),
+          // Exclude playoff/preseason games — leagues only count the regular season
+          eq(games.seasonType, 'regular'),
           gte(games.gameDate, todayStart),
           lte(games.gameDate, todayEnd)
         ))
@@ -2042,6 +2044,65 @@ export class DatabaseStorage implements IStorage {
     return standings;
   }
 
+  /**
+   * Determine whether the regular season for a league's sport+season has
+   * concluded. Used by the frontend to show a "Regular season is over" banner
+   * in place of the daily games sections once playoffs begin (we don't track
+   * playoff games for fantasy purposes).
+   *
+   * Heuristic (MLB/NBA only):
+   *   ended = (no future regular-season games scheduled within 14 days)
+   *           AND (at least one regular-season game already exists for the season)
+   * Returns false for NFL (week-capped already) and WORLD_CUP (no concept of
+   * regular season).
+   */
+  async getRegularSeasonStatus(leagueId: string): Promise<{ regularSeasonEnded: boolean; sport: string | null }> {
+    const league = await this.getLeague(leagueId);
+    if (!league) return { regularSeasonEnded: false, sport: null };
+    const sport = league.sport || 'NFL';
+    if (sport !== 'MLB' && sport !== 'NBA') {
+      return { regularSeasonEnded: false, sport };
+    }
+    // Season-format normalization: leagues store NBA as "YYYY-YY" (e.g. "2025-26").
+    // ESPN tags NBA games with the END year of the season (so the 2025-26
+    // season's games carry season="2026"). MLB seasons are a single year and
+    // already match. Normalize to the year the games table actually uses.
+    let seasonYear: string;
+    if (sport === 'NBA' && /^\d{4}-\d{2}$/.test(league.season || '')) {
+      seasonYear = `${league.season.slice(0, 2)}${league.season.slice(5, 7)}`;
+    } else {
+      seasonYear = (league.season || "").slice(0, 4);
+    }
+    const now = new Date();
+    const horizon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    const future = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(and(
+        eq(games.sport, sport),
+        eq(games.season, seasonYear),
+        eq(games.seasonType, 'regular'),
+        gte(games.gameDate, now),
+        lte(games.gameDate, horizon),
+      ))
+      .limit(1);
+
+    if (future.length > 0) return { regularSeasonEnded: false, sport };
+
+    const anyRegular = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(and(
+        eq(games.sport, sport),
+        eq(games.season, seasonYear),
+        eq(games.seasonType, 'regular'),
+      ))
+      .limit(1);
+
+    return { regularSeasonEnded: anyRegular.length > 0, sport };
+  }
+
   async getUpcomingGamesWithOwners(leagueId: string, limit: number, localDate?: string, tzOffset: number = 0): Promise<any[]> {
     // Get the league to determine sport
     const league = await this.getLeague(leagueId);
@@ -2108,6 +2169,8 @@ export class DatabaseStorage implements IStorage {
         .from(games)
         .where(and(
           eq(games.sport, league.sport),
+          // Exclude playoff/preseason games — leagues only count the regular season
+          eq(games.seasonType, 'regular'),
           gte(games.gameDate, tomorrowStart),
           lte(games.gameDate, windowEnd)
         ))

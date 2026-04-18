@@ -245,6 +245,15 @@ The application is designed to be easily deployable on platforms like Replit, wi
 - ✅ **Pending Invitations on Profile Page**: Users added to a league via "Add & Invite Later" now see a highlighted "Pending League Invitations" card at the top of their Profile Settings page with a one-click Accept button
 - ✅ **Backend APIs**: Added `GET /api/users/pending-invitations` and `POST /api/leagues/:id/accept-invitation` endpoints; added `getUserPendingInvitations` and `acceptLeagueInvitation` to storage layer
 
+### Playoff Exclusion for MLB/NBA (April 18, 2026)
+- ✅ **Schema**: Added `season_type` column to `games` ('regular' | 'postseason' | 'preseason'), default 'regular'.
+- ✅ **Sync**: NBA + MLB ESPN parsers extract season type via `mapESPNSeasonType()` (1=preseason, 2=regular, 3=postseason).
+- ✅ **Filtering**: `getRecentGamesWithOwners` and `getUpcomingGamesWithOwners` now filter MLB/NBA to `season_type='regular'` only — playoff games never appear in Today's/Tomorrow's Games.
+- ✅ **Season-end detection**: New `getRegularSeasonStatus(leagueId)` storage method + `GET /api/leagues/:id/season-status` endpoint return `{ regularSeasonEnded, sport }`. Heuristic: ended if no future regular-season games scheduled in the next 14 days AND at least one regular-season game already exists for the season.
+- ✅ **NBA season normalization**: ESPN tags NBA games with the END year (2025-26 → "2026") while leagues store "YYYY-YY". `getRegularSeasonStatus` normalizes "2025-26" → "2026" for NBA, `.slice(0,4)` for MLB.
+- ✅ **Frontend message**: `client/src/pages/standings.tsx` queries the season-status endpoint for MLB/NBA leagues; when `regularSeasonEnded=true` both the "Today's Games" and "Tomorrow's Games" cards show "Regular season is over — Final standings shown — playoff games don't count." in place of the games list.
+- ✅ **Win totals freeze naturally**: Standings sync uses regular-season-only upstream endpoints (MLB Stats API `regularSeason`, ESPN NBA standings) so totals stop changing once the regular season ends.
+
 ### Next Priority Items
 1. ✅ **Demo Leagues** - COMPLETED
 2. ✅ **Real Draft Functionality** - COMPLETED

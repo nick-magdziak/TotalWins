@@ -1115,6 +1115,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(games);
   });
 
+  // Has the regular season ended for this league's sport+season?
+  // Frontend uses this to swap the daily games sections for an "over" message
+  // (relevant for MLB/NBA — we don't track playoff games).
+  app.get("/api/leagues/:leagueId/season-status", async (req, res) => {
+    const status = await storage.getRegularSeasonStatus(req.params.leagueId);
+    res.json(status);
+  });
+
   // Admin endpoints
   app.post("/api/admin/sync-scores", async (req, res) => {
     try {

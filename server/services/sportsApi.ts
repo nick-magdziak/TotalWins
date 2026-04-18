@@ -85,6 +85,7 @@ export class SportsApiService {
           id: event.id,
           sport: "MLB",
           season: event.season?.year?.toString() || "2024",
+          seasonType: this.mapESPNSeasonType(event.season?.type ?? event.seasonType?.id),
           homeTeamId: this.mapESPNTeamToMLBId(homeCompetitor?.team),
           awayTeamId: this.mapESPNTeamToMLBId(awayCompetitor?.team),
           homeScore: homeCompetitor?.score != null ? Number(homeCompetitor.score) : null,
@@ -146,6 +147,17 @@ export class SportsApiService {
     };
 
     return espnToMLBMap[team.abbreviation] || team.abbreviation;
+  }
+
+  /**
+   * Map ESPN seasonType id (1=preseason, 2=regular, 3=postseason, 4=offseason)
+   * to the seasonType enum we store ('preseason' | 'regular' | 'postseason').
+   * Defaults to 'regular' when ESPN does not provide a value.
+   */
+  private mapESPNSeasonType(typeId: number | undefined | null): "regular" | "postseason" | "preseason" {
+    if (typeId === 1) return 'preseason';
+    if (typeId === 3) return 'postseason';
+    return 'regular';
   }
 
   private mapESPNStatus(statusName: string): "scheduled" | "in_progress" | "completed" {
@@ -383,6 +395,7 @@ export class SportsApiService {
           id: event.id,
           sport: 'NBA',
           season: event.season?.year?.toString() || '2025',
+          seasonType: this.mapESPNSeasonType(event.season?.type ?? event.seasonType?.id ?? competition.seasonType?.id),
           homeTeamId: this.mapESPNTeamToNBAId(homeCompetitor?.team),
           awayTeamId: this.mapESPNTeamToNBAId(awayCompetitor?.team),
           homeScore: homeCompetitor?.score != null ? Number(homeCompetitor.score) : null,
