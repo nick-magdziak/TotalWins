@@ -426,6 +426,8 @@ export default function Admin() {
       });
       setInviteEmail("");
       setInviteName("");
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members-with-users"] });
     },
     onError: () => {
       toast({
