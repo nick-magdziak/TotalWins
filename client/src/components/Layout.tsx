@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { useRealtimeInvitations } from "@/hooks/use-realtime";
-import totalWinsLogo from "@assets/TotalWinsLogo - Transparent_1753759057781.png";
+import totalWinsLogo from "@assets/TotalWinsLogo_PureYellow.png";
 
 interface LayoutProps {
   children: React.ReactNode;
