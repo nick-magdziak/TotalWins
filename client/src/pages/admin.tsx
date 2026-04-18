@@ -896,7 +896,7 @@ export default function Admin() {
   // Pre-populate league start date from saved league value (date input expects "YYYY-MM-DD")
   useEffect(() => {
     if (currentLeague?.leagueStartDate) {
-      const d = new Date(currentLeague.leagueStartDate as any);
+      const d = new Date(currentLeague.leagueStartDate as unknown as string);
       const yyyy = d.getUTCFullYear();
       const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
       const dd = String(d.getUTCDate()).padStart(2, "0");
@@ -1466,7 +1466,7 @@ export default function Admin() {
                   // Locked once the saved start date has already passed.
                   let isLocked = false;
                   if (currentLeague?.leagueStartDate) {
-                    const saved = new Date(currentLeague.leagueStartDate as any);
+                    const saved = new Date(currentLeague.leagueStartDate as unknown as string);
                     const savedFloor = new Date(Date.UTC(saved.getUTCFullYear(), saved.getUTCMonth(), saved.getUTCDate()));
                     isLocked = todayUtc.getTime() >= savedFloor.getTime();
                   }
@@ -1474,7 +1474,7 @@ export default function Admin() {
                   // Grayed out + auto-filled when draft date is before the sport's actual season start.
                   let isDraftBeforeSeason = false;
                   if (currentLeague?.draftScheduledAt && seasonStartDateObj) {
-                    const draftAt = new Date(currentLeague.draftScheduledAt as any);
+                    const draftAt = new Date(currentLeague.draftScheduledAt as unknown as string);
                     const draftFloor = new Date(Date.UTC(draftAt.getUTCFullYear(), draftAt.getUTCMonth(), draftAt.getUTCDate()));
                     isDraftBeforeSeason = draftFloor.getTime() < seasonStartDateObj.getTime();
                   }
@@ -1482,13 +1482,30 @@ export default function Admin() {
                   // Min for the input: the later of draft date and season start.
                   let minStr = seasonStartStr;
                   if (currentLeague?.draftScheduledAt) {
-                    const draftAt = new Date(currentLeague.draftScheduledAt as any);
+                    const draftAt = new Date(currentLeague.draftScheduledAt as unknown as string);
                     const dStr = `${draftAt.getUTCFullYear()}-${String(draftAt.getUTCMonth() + 1).padStart(2, "0")}-${String(draftAt.getUTCDate()).padStart(2, "0")}`;
                     if (!minStr || dStr > minStr) minStr = dStr;
                   }
 
                   const disabled = isLocked || isDraftBeforeSeason;
                   const displayValue = isDraftBeforeSeason && !leagueStartDate ? seasonStartStr : leagueStartDate;
+
+                  // Inline validation: compute an error message for the
+                  // current input value (independent of save/blur) so the
+                  // user sees feedback immediately on change.
+                  let inlineError: string | null = null;
+                  if (!disabled && displayValue) {
+                    if (currentLeague?.draftScheduledAt) {
+                      const draftAt = new Date(currentLeague.draftScheduledAt as unknown as string);
+                      const draftStr = `${draftAt.getUTCFullYear()}-${String(draftAt.getUTCMonth() + 1).padStart(2, "0")}-${String(draftAt.getUTCDate()).padStart(2, "0")}`;
+                      if (displayValue < draftStr) {
+                        inlineError = `Must be on or after the draft date (${draftStr}).`;
+                      }
+                    }
+                    if (!inlineError && seasonStartStr && displayValue < seasonStartStr) {
+                      inlineError = `Must be on or after the sport's season start (${seasonStartStr}).`;
+                    }
+                  }
 
                   return (
                     <div>
@@ -1500,21 +1517,31 @@ export default function Admin() {
                         value={displayValue}
                         min={minStr || undefined}
                         disabled={disabled}
+                        aria-invalid={inlineError ? true : undefined}
                         onChange={(e) => setLeagueStartDate(e.target.value)}
                         onBlur={(e) => {
                           if (disabled) return;
                           if (!e.target.value) return;
+                          if (inlineError) return;
                           if (currentLeague?.leagueStartDate) {
-                            const saved = new Date(currentLeague.leagueStartDate as any);
+                            const saved = new Date(currentLeague.leagueStartDate as unknown as string);
                             const savedStr = `${saved.getUTCFullYear()}-${String(saved.getUTCMonth() + 1).padStart(2, "0")}-${String(saved.getUTCDate()).padStart(2, "0")}`;
                             if (savedStr === e.target.value) return;
                           }
                           saveLeagueStartDateMutation.mutate(e.target.value);
                         }}
-                        className="w-full border-2 border-retro-pink focus:border-retro-purple disabled:opacity-60 disabled:cursor-not-allowed"
+                        className={`w-full border-2 focus:border-retro-purple disabled:opacity-60 disabled:cursor-not-allowed ${inlineError ? "border-red-500" : "border-retro-pink"}`}
                         data-testid="input-league-start-date"
                       />
-                      {isLocked ? (
+                      {inlineError ? (
+                        <p
+                          className="text-xs text-red-600 mt-1 retro-font"
+                          data-testid="error-league-start-date"
+                          role="alert"
+                        >
+                          {inlineError}
+                        </p>
+                      ) : isLocked ? (
                         <p className="text-xs text-retro-charcoal/70 mt-1 retro-font">
                           Locked — start date has already passed.
                         </p>

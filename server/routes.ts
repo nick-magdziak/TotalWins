@@ -560,9 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })();
 
         if (existing.leagueStartDate) {
-          const stored = existing.leagueStartDate instanceof Date
-            ? existing.leagueStartDate
-            : new Date(existing.leagueStartDate as any);
+          const stored = existing.leagueStartDate;
           const storedFloor = new Date(Date.UTC(stored.getUTCFullYear(), stored.getUTCMonth(), stored.getUTCDate()));
           if (todayUtcMidnight.getTime() >= storedFloor.getTime()) {
             return res.status(400).json({ message: "League start date is locked because it has already passed" });
@@ -576,9 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           const proposedFloor = new Date(Date.UTC(proposed.getUTCFullYear(), proposed.getUTCMonth(), proposed.getUTCDate()));
 
-          const draftAt = existing.draftScheduledAt
-            ? (existing.draftScheduledAt instanceof Date ? existing.draftScheduledAt : new Date(existing.draftScheduledAt as any))
-            : null;
+          const draftAt = existing.draftScheduledAt;
           if (draftAt) {
             const draftFloor = new Date(Date.UTC(draftAt.getUTCFullYear(), draftAt.getUTCMonth(), draftAt.getUTCDate()));
             if (proposedFloor.getTime() < draftFloor.getTime()) {

@@ -2102,8 +2102,7 @@ export class DatabaseStorage implements IStorage {
     const completedGames = allGames.filter((g) => {
       if (g.status !== "completed") return false;
       if (!startDate) return true;
-      const gd = g.gameDate instanceof Date ? g.gameDate : new Date(g.gameDate as any);
-      return gd.getTime() >= startDate.getTime();
+      return g.gameDate.getTime() >= startDate.getTime();
     });
     const knockoutGames = completedGames.filter((g) => g.wcRound && g.wcRound !== "group_stage" && g.wcRound !== "third_place");
 
