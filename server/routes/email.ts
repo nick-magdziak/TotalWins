@@ -5,6 +5,7 @@ import { storage } from "../storage";
 import { emailService } from "../services/emailService";
 import { notifyUser } from "../lib/realtime";
 import { users, leagues, leagueMembers, draftPicks } from "@shared/schema";
+import { PENDING_PLACEHOLDER } from "../lib/auth.js";
 // Draft order calculation helper
 function getDraftOrder(configuration: string): number[] {
   // For now, return a simple sequential order - this can be enhanced later
@@ -62,15 +63,41 @@ export async function sendLeagueInvite(req: Request, res: Response) {
     );
 
     if (success) {
-      // Best-effort: notify the recipient (if they already have an account)
-      // so their pending-invitations badge updates instantly.
+      // Persist the invitation so it shows up in the recipient's
+      // pending-invitations list once they log in. Mirrors the
+      // "add player without invite" admin path.
       try {
-        const recipient = await storage.getUserByEmail(email);
-        if (recipient) {
-          notifyUser(recipient.id, "pending-invitations:changed");
+        let recipient = await storage.getUserByEmail(email);
+        if (!recipient) {
+          const nameParts = name.trim().split(" ");
+          const firstName = nameParts[0];
+          const lastName = nameParts.slice(1).join(" ") || nameParts[0];
+          recipient = await storage.createUser({
+            email,
+            password: PENDING_PLACEHOLDER,
+            firstName,
+            lastName,
+            displayName: name.trim(),
+            isAdmin: false,
+          });
         }
-      } catch (notifyErr) {
-        console.error("Failed to push invite notification:", notifyErr);
+
+        const existingMember = await storage.getLeagueMember(leagueId, recipient.id);
+        if (!existingMember) {
+          await storage.addLeagueMember({
+            leagueId,
+            userId: recipient.id,
+            draftPosition: null,
+            totalWins: 0,
+            draftNotifications: true,
+            gameNotifications: false,
+            invitationStatus: "pending",
+          });
+        }
+
+        notifyUser(recipient.id, "pending-invitations:changed");
+      } catch (persistErr) {
+        console.error("Failed to persist invitation record:", persistErr);
       }
       res.json({ message: "Invitation sent successfully" });
     } else {
