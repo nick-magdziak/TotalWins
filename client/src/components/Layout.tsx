@@ -197,8 +197,10 @@ export default function Layout({ children }: LayoutProps) {
                       key={league.id}
                       onClick={() => {
                         setCurrentLeagueId(league.id);
+                        // Full reload so every page (which reads the league
+                        // from window.location.search) picks up the change.
                         const currentPath = location.split('?')[0];
-                        navigate(`${currentPath}?league=${league.id}`);
+                        window.location.href = `${currentPath}?league=${league.id}`;
                       }}
                       className={`p-3 cursor-pointer hover:bg-retro-cream ${
                         league.id === currentLeagueId ? "bg-retro-lime/20" : ""
