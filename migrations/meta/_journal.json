@@ -15,6 +15,13 @@
       "when": 1743693600000,
       "tag": "0001_add_draft_scheduled_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776556409959,
+      "tag": "0002_add_email_verification",
+      "breakpoints": true
     }
   ]
 }

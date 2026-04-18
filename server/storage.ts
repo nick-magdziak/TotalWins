@@ -135,22 +135,21 @@ export class DatabaseStorage implements IStorage {
     this.syncRealTimeMLBGames();
   }
 
-  // Grandfather every account that already existed before email
-  // verification shipped. Idempotent: only touches users with a NULL
-  // verified_at, so brand-new signups (which get verified_at=NULL on
-  // creation) are NOT affected because their row is created AFTER this
-  // one-shot startup pass already ran. We additionally guard with a
-  // cutoff so a server restart cannot retroactively verify a user who
-  // signed up after the deploy and hasn't verified yet.
+  // Grandfather every account that already existed BEFORE the
+  // email-verification feature shipped. Uses a fixed cutoff (the deploy
+  // moment) baked into code so this is safe to run on every restart:
+  // users who signed up after the cutoff are NEVER touched, regardless
+  // of how many times the process restarts.
+  private static readonly EMAIL_VERIFICATION_DEPLOY_CUTOFF = new Date(
+    "2026-04-18T00:00:00Z",
+  );
+
   private async backfillEmailVerification() {
     try {
-      // Cutoff = the moment this process started; any account whose
-      // created_at is older than the process start is considered
-      // pre-existing and grandfathered.
-      const cutoff = new Date();
+      const cutoff = DatabaseStorage.EMAIL_VERIFICATION_DEPLOY_CUTOFF;
       await db.execute(sql`
         UPDATE users
-        SET verified_at = COALESCE(created_at, NOW())
+        SET verified_at = COALESCE(created_at, ${cutoff})
         WHERE verified_at IS NULL
           AND created_at IS NOT NULL
           AND created_at < ${cutoff}

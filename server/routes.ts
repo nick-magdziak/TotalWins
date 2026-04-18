@@ -164,7 +164,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await hashPassword(userData.password);
       const user = await storage.createUser({ ...userData, password: hashedPassword });
 
-      // Auto-join league if invite code was provided
+      // We never auto-join a league at signup time anymore: the new
+      // user has not proven email ownership yet, and joining a league
+      // is a verification-gated action. We surface a friendly message
+      // pointing them at verification instead, and they can finish the
+      // join from the same invite link after verifying.
       let joinedLeagueId: string | null = null;
       let joinWarning: string | null = null;
       if (inviteCode) {
@@ -173,26 +177,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!league) {
             joinWarning = "Invite code not found — you can join later from the invite link.";
           } else {
-            const members = await storage.getLeagueMembers(league.id);
-            const alreadyMember = members.some(m => m.userId === user.id);
-            if (alreadyMember) {
-              joinedLeagueId = league.id;
-            } else if (members.length >= league.maxPlayers) {
-              joinWarning = `${league.name} is full — contact the league admin.`;
-            } else {
-              await storage.addLeagueMember({
-                leagueId: league.id,
-                userId: user.id,
-                draftPosition: members.length + 1,
-                totalWins: 0,
-                invitationStatus: "active",
-              });
-              joinedLeagueId = league.id;
-            }
+            joinWarning = `Verify your email, then return to the invite link to join ${league.name}.`;
           }
         } catch (joinError) {
-          console.error("Failed to auto-join league after signup:", joinError);
-          joinWarning = "Could not auto-join the league — you can try again from the invite link.";
+          console.error("Failed to look up league after signup:", joinError);
+          joinWarning = "Could not look up the league — you can try again from the invite link after verifying your email.";
         }
       }
 
