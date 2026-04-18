@@ -801,8 +801,13 @@ export class DatabaseStorage implements IStorage {
       .select({ league: leagues })
       .from(leagueMembers)
       .innerJoin(leagues, eq(leagueMembers.leagueId, leagues.id))
-      .where(eq(leagueMembers.userId, userId));
-    
+      .where(
+        and(
+          eq(leagueMembers.userId, userId),
+          eq(leagueMembers.invitationStatus, "active"),
+        ),
+      );
+
     return result.map(r => r.league);
   }
 
