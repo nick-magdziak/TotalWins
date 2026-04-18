@@ -259,6 +259,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...user, password: undefined });
   });
 
+  // Get pending league invitations for the logged-in user.
+  // IMPORTANT: this must be registered BEFORE the `/api/users/:id` route
+  // below, otherwise Express treats "pending-invitations" as an :id.
+  app.get("/api/users/pending-invitations", async (req, res) => {
+    try {
+      const sessionUserId = req.session.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const invitations = await storage.getUserPendingInvitations(sessionUserId);
+      res.json(invitations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
   // Users — any authenticated user may look up another user's basic public profile
   // (display name, etc.) for member lists; sensitive fields are stripped.
   app.get("/api/users/:id", requireAuth, async (req, res) => {
@@ -467,20 +483,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ member, league });
     } catch (error) {
       res.status(400).json({ message: "Invalid request" });
-    }
-  });
-
-  // Get pending league invitations for the logged-in user
-  app.get("/api/users/pending-invitations", async (req, res) => {
-    try {
-      const sessionUserId = req.session.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const invitations = await storage.getUserPendingInvitations(sessionUserId);
-      res.json(invitations);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch invitations" });
     }
   });
 
