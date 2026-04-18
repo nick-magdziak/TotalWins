@@ -153,7 +153,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup", accountLimiter, async (req, res) => {
     try {
       const { inviteCode, ...rawUserData } = req.body;
-      const userData = insertUserSchema.parse(rawUserData);
+      // Strip server-managed fields so a malicious client cannot
+      // mass-assign them through the public signup endpoint
+      // (e.g. setting verifiedAt or isAdmin to bypass controls).
+      const signupSchema = insertUserSchema.omit({
+        verifiedAt: true,
+        isAdmin: true,
+        resetToken: true,
+        resetTokenExpiresAt: true,
+        pushSubscription: true,
+      });
+      const userData = signupSchema.parse(rawUserData);
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
