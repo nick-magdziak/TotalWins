@@ -894,6 +894,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(standings);
   });
 
+  // Effective league start date used to filter games into standings.
+  // Returns the explicit league start date if set, otherwise falls back to
+  // the sport's earliest synced game date for the season. `source` indicates
+  // which produced the value; both fields are null if neither is available.
+  app.get("/api/leagues/:leagueId/start-date", async (req, res) => {
+    try {
+      const league = await storage.getLeague(req.params.leagueId);
+      if (!league) {
+        return res.status(404).json({ message: "League not found" });
+      }
+      const result = await storage.getLeagueEffectiveStartDate(req.params.leagueId);
+      res.json({
+        startDate: result.startDate ? result.startDate.toISOString() : null,
+        source: result.source,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch league start date" });
+    }
+  });
+
   app.get("/api/leagues/:leagueId/analytics", async (req, res) => {
     try {
       const analytics = await storage.getLeagueAnalytics(req.params.leagueId);

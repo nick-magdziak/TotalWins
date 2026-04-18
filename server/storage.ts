@@ -64,6 +64,7 @@ export interface IStorage {
   getPlayerStandings(leagueId: string): Promise<PlayerStanding[]>;
   getSportSeasonStart(sport: string, season: string): Promise<Date | null>;
   backfillLeagueStartDates(): Promise<void>;
+  getLeagueEffectiveStartDate(leagueId: string): Promise<{ startDate: Date | null; source: "league" | "season" | null }>;
 
   // NFL Teams
   getAllNFLTeams(): Promise<NFLTeam[]>;
@@ -1046,6 +1047,18 @@ export class DatabaseStorage implements IStorage {
       return this.toUtcMidnight(league.leagueStartDate);
     }
     return this.getSportSeasonStart(league.sport, league.season);
+  }
+
+  async getLeagueEffectiveStartDate(
+    leagueId: string,
+  ): Promise<{ startDate: Date | null; source: "league" | "season" | null }> {
+    const league = await this.getLeague(leagueId);
+    if (!league) return { startDate: null, source: null };
+    if (league.leagueStartDate) {
+      return { startDate: this.toUtcMidnight(league.leagueStartDate), source: "league" };
+    }
+    const seasonStart = await this.getSportSeasonStart(league.sport, league.season);
+    return { startDate: seasonStart, source: seasonStart ? "season" : null };
   }
 
   async getPlayerStandings(leagueId: string): Promise<PlayerStanding[]> {

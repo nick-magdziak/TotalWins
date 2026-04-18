@@ -55,6 +55,23 @@ export default function Standings() {
   // The ID we actually pass to standings & game queries
   const activeLeagueId = selectedSeasonId ?? leagueId;
 
+  // Effective league start date — used to render the "Counting wins from ..."
+  // note so players can see why win totals may differ from raw team records.
+  const { data: startDateInfo } = useQuery<{ startDate: string | null; source: "league" | "season" | null }>({
+    queryKey: ["/api/leagues", activeLeagueId, "start-date"],
+    enabled: !!activeLeagueId,
+  });
+
+  const formatStartDateNote = (iso: string) => {
+    // Parse YYYY-MM-DD portion as a local date so the displayed day matches
+    // the admin-selected calendar day regardless of viewer timezone.
+    const datePart = iso.slice(0, 10);
+    const [y, m, d] = datePart.split("-").map(Number);
+    if (!y || !m || !d) return null;
+    const local = new Date(y, m - 1, d);
+    return local.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
   // True when the user is viewing a completed historical season
   const isViewingPastSeason = !!(selectedSeasonId && selectedSeasonId !== leagueId);
 
@@ -429,7 +446,7 @@ export default function Standings() {
           </div>
         )}
 
-        <p className="text-xs text-gray-600 text-center mb-4">
+        <p className="text-xs text-gray-600 text-center mb-1">
           {selectedSeasonId && selectedSeasonId !== leagueId
             ? "Final standings — this season is complete"
             : `Last updated: ${new Date().toLocaleDateString('en-US', { 
@@ -441,7 +458,22 @@ export default function Standings() {
                 timeZoneName: 'short'
               })}`}
         </p>
-        
+
+        {startDateInfo?.startDate && (() => {
+          const formatted = formatStartDateNote(startDateInfo.startDate);
+          if (!formatted) return null;
+          return (
+            <p
+              className="text-xs text-gray-500 text-center mb-4 italic"
+              data-testid="text-counting-wins-from"
+            >
+              Counting wins from {formatted} onward
+            </p>
+          );
+        })()}
+
+        {!startDateInfo?.startDate && <div className="mb-4" />}
+
         <StandingsTable leagueId={activeLeagueId} />
       </section>
 
