@@ -1488,7 +1488,7 @@ export default function Admin() {
                   }
 
                   const disabled = isLocked || isDraftBeforeSeason;
-                  const displayValue = isDraftBeforeSeason && !leagueStartDate ? seasonStartStr : leagueStartDate;
+                  const displayValue = isDraftBeforeSeason ? seasonStartStr : leagueStartDate;
 
                   // Inline validation: compute an error message for the
                   // current input value (independent of save/blur) so the

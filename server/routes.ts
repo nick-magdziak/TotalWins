@@ -574,6 +574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           const proposedFloor = new Date(Date.UTC(proposed.getUTCFullYear(), proposed.getUTCMonth(), proposed.getUTCDate()));
 
+          if (proposedFloor.getTime() < todayUtcMidnight.getTime()) {
+            return res.status(400).json({ message: "League start date cannot be in the past" });
+          }
+
           const draftAt = existing.draftScheduledAt;
           if (draftAt) {
             const draftFloor = new Date(Date.UTC(draftAt.getUTCFullYear(), draftAt.getUTCMonth(), draftAt.getUTCDate()));
