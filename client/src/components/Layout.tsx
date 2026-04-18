@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare } from "lucide-react";
+import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare, MoreHorizontal } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -231,10 +231,32 @@ export default function Layout({ children }: LayoutProps) {
             </DropdownMenu>
           </div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
-            {[...leagueNavItems, ...generalNavItems].map((item) => {
-              // Check if current location matches the item path (handle query parameters)
+          {/* Desktop Navigation
+              Progressive overflow: at md (768+) we show only league items inline
+              and collapse general items + Feedback + Logout into a "MORE" dropdown.
+              At lg (1024+) we promote Create League + Profile to inline buttons.
+              At xl (1280+) we show every item inline and hide the MORE menu.
+              This guarantees every action is always reachable, no matter the width. */}
+          <nav className="hidden md:flex items-center space-x-2 lg:space-x-3 xl:space-x-6">
+            {/* League-specific items (always inline at md+) */}
+            {leagueNavItems.map((item) => {
+              const currentPath = location.split('?')[0];
+              const itemPath = item.path.split('?')[0];
+              const isActive = currentPath === itemPath;
+              return (
+                <Link key={item.path} href={item.path}>
+                  <Button
+                    variant="ghost"
+                    className={`nav-btn relative ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Button>
+                </Link>
+              );
+            })}
+
+            {/* General items: visible only at lg+ inline */}
+            {generalNavItems.map((item) => {
               const currentPath = location.split('?')[0];
               const itemPath = item.path.split('?')[0];
               const isActive = currentPath === itemPath;
@@ -243,7 +265,7 @@ export default function Layout({ children }: LayoutProps) {
                 <Link key={item.path} href={item.path}>
                   <Button
                     variant="ghost"
-                    className={`nav-btn relative ${isActive ? "active" : ""}`}
+                    className={`nav-btn relative hidden lg:inline-flex ${isActive ? "active" : ""}`}
                     data-testid={item.path === "/profile" ? "nav-profile" : undefined}
                   >
                     {item.label}
@@ -260,9 +282,11 @@ export default function Layout({ children }: LayoutProps) {
                 </Link>
               );
             })}
+
+            {/* Feedback + Logout: visible only at xl+ inline */}
             <a
               href="mailto:admin@totalwins.app?subject=Total%20Wins%20Beta%20Feedback"
-              className="nav-btn text-retro-yellow hover:bg-retro-yellow hover:text-retro-charcoal inline-flex items-center px-3 rounded-lg transition-colors"
+              className="nav-btn text-retro-yellow hover:bg-retro-yellow hover:text-retro-charcoal hidden xl:inline-flex items-center px-3 rounded-lg transition-colors"
               data-testid="link-feedback-desktop"
             >
               <MessageSquare className="w-4 h-4 mr-2" />
@@ -271,11 +295,84 @@ export default function Layout({ children }: LayoutProps) {
             <Button
               variant="ghost"
               onClick={handleLogout}
-              className="nav-btn text-retro-orange hover:bg-retro-orange hover:text-white"
+              className="nav-btn text-retro-orange hover:bg-retro-orange hover:text-white hidden xl:inline-flex"
             >
               <LogOut className="w-4 h-4 mr-2" />
               LOGOUT
             </Button>
+
+            {/* MORE overflow menu — visible md → xl-1, contains items hidden at the
+                current breakpoint so nothing is ever truly off-screen. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="nav-btn xl:hidden text-white relative"
+                  data-testid="nav-more"
+                  aria-label="More navigation options"
+                >
+                  <MoreHorizontal className="w-4 h-4 mr-2" />
+                  MORE
+                  {pendingCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-2 h-5 min-w-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center lg:hidden"
+                      data-testid="badge-pending-invitations-more"
+                    >
+                      {pendingCount}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-white border-2 border-retro-teal">
+                {/* Create League + Profile: only listed at md → lg-1 (already inline at lg+) */}
+                {generalNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const showBadge = item.path === "/profile" && pendingCount > 0;
+                  return (
+                    <DropdownMenuItem
+                      key={item.path}
+                      asChild
+                      className="lg:hidden p-0"
+                    >
+                      <Link href={item.path}>
+                        <div className="flex items-center gap-2 px-3 py-2 cursor-pointer w-full retro-font text-retro-charcoal">
+                          <Icon className="w-4 h-4" />
+                          <span className="font-bold">{item.label}</span>
+                          {showBadge && (
+                            <Badge
+                              variant="destructive"
+                              className="ml-auto h-5 min-w-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center"
+                            >
+                              {pendingCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+                {/* Feedback + Logout: always in MORE while it's visible (md → xl-1) */}
+                <DropdownMenuItem asChild className="p-0">
+                  <a
+                    href="mailto:admin@totalwins.app?subject=Total%20Wins%20Beta%20Feedback"
+                    className="flex items-center gap-2 px-3 py-2 cursor-pointer w-full retro-font text-retro-charcoal"
+                    data-testid="link-feedback-more"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="font-bold">FEEDBACK</span>
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="px-3 py-2 cursor-pointer retro-font text-retro-charcoal font-bold"
+                  data-testid="button-logout-more"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  LOGOUT
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           {/* Mobile Menu */}
