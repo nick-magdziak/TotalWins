@@ -45,7 +45,7 @@ export class SportsApiService {
     }
   }
 
-  private parseESPNMLBGames(data: any): Game[] {
+  parseESPNMLBGames(data: any): Game[] {
     const games: Game[] = [];
     
     if (!data.events || !Array.isArray(data.events)) {
@@ -201,7 +201,7 @@ export class SportsApiService {
     }
   }
 
-  private parseESPNGames(espnData: any, week: number, season: string): Game[] {
+  parseESPNGames(espnData: any, week: number, season: string): Game[] {
     const games: Game[] = [];
     
     if (espnData.events) {
@@ -369,7 +369,7 @@ export class SportsApiService {
     return allGames;
   }
 
-  private parseESPNNBAGames(data: any): Game[] {
+  parseESPNNBAGames(data: any): Game[] {
     const games: Game[] = [];
     if (!data.events || !Array.isArray(data.events)) return games;
 

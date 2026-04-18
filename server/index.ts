@@ -120,6 +120,22 @@ app.use((req, res, next) => {
     }
 
     log("ESPN API sports data service initialized (MLB, NFL, NBA & World Cup)");
+
+    // One-time historical games backfill, gated by env flag. Runs in the
+    // background so it does not delay startup. Idempotent: storage.addGame
+    // upserts on game id, so re-running only refreshes scores.
+    if (process.env.BACKFILL_HISTORICAL_GAMES === "true") {
+      (async () => {
+        try {
+          const { runHistoricalGamesBackfill } = await import(
+            "./services/historicalBackfill"
+          );
+          await runHistoricalGamesBackfill();
+        } catch (err) {
+          console.error("Historical games backfill failed:", err);
+        }
+      })();
+    }
     
     // Set up automatic live game updates every 2 minutes during active hours
     const startLiveUpdates = () => {
