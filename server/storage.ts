@@ -1379,14 +1379,18 @@ export class DatabaseStorage implements IStorage {
       // For NFL, get current week's completed games only — scoped to the
       // league's season so we don't pull in the same week from a prior year
       // (e.g. Week 18 exists for both the 2024 and 2025 seasons in the DB).
+      // Note: leagues store season as "YYYY-YY" (e.g. "2025-26") but games
+      // store it as just the start year ("2025"), so we normalize to the
+      // leading 4-digit year for the comparison.
       const currentWeek = this.getCurrentNFLWeek();
+      const seasonYear = (league.season || "").slice(0, 4);
       recentGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.status, "completed"),
           eq(games.sport, league.sport || "NFL"),
-          eq(games.season, league.season),
+          eq(games.season, seasonYear),
           eq(games.week, currentWeek)
         ))
         .orderBy(games.gameDate)
@@ -2132,15 +2136,17 @@ export class DatabaseStorage implements IStorage {
     } else {
       // For NFL, get next week's upcoming scheduled games only — scoped to the
       // league's season to avoid pulling in the same week from a different year.
+      // Normalize "YYYY-YY" league season to the leading year used in games.
       const currentWeek = this.getCurrentNFLWeek();
       const nextWeek = currentWeek + 1;
+      const seasonYear = (league.season || "").slice(0, 4);
       upcomingGames = await db
         .select()
         .from(games)
         .where(and(
           eq(games.status, "scheduled"),
           eq(games.sport, league.sport || "NFL"),
-          eq(games.season, league.season),
+          eq(games.season, seasonYear),
           eq(games.week, nextWeek)
         ))
         .orderBy(games.gameDate)
