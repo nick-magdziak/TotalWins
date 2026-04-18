@@ -13,10 +13,20 @@ try {
   const stored = localStorage.getItem(AUTH_STORAGE_KEY);
   if (stored) {
     currentUser = JSON.parse(stored);
-    // Refresh user data from server in the background to pick up any changes (e.g. isAdmin flag)
+    // Verify the session is still valid with the server.
+    // If the server returns 401/403 (e.g. session expired after restart), clear local state.
     if (currentUser?.id) {
       fetch(`/api/auth/me/${currentUser.id}`)
-        .then(r => r.ok ? r.json() : null)
+        .then(r => {
+          if (r.status === 401 || r.status === 403) {
+            // Session is gone — clear localStorage so the user is prompted to log in again
+            currentUser = null;
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            window.dispatchEvent(new CustomEvent('authStateChanged'));
+            return null;
+          }
+          return r.ok ? r.json() : null;
+        })
         .then(freshUser => {
           if (freshUser) {
             currentUser = freshUser;
@@ -24,7 +34,7 @@ try {
             window.dispatchEvent(new CustomEvent('authStateChanged'));
           }
         })
-        .catch(() => {}); // silently ignore if offline
+        .catch(() => {}); // silently ignore if offline/network error
     }
   }
 } catch (error) {
