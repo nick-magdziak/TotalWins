@@ -909,7 +909,11 @@ export class DatabaseStorage implements IStorage {
 
   // League member methods
   async getLeagueMembers(leagueId: string): Promise<LeagueMember[]> {
-    return await db.select().from(leagueMembers).where(eq(leagueMembers.leagueId, leagueId));
+    return await db
+      .select()
+      .from(leagueMembers)
+      .where(eq(leagueMembers.leagueId, leagueId))
+      .orderBy(leagueMembers.joinedAt);
   }
 
   async addLeagueMember(insertMember: InsertLeagueMember): Promise<LeagueMember> {
