@@ -1943,6 +1943,15 @@ export class DatabaseStorage implements IStorage {
       const gamesPerTeam: Record<string, number> = { NFL: 17, MLB: 162, NBA: 82 };
       const seasonTotal = gamesPerTeam[league.sport] || 0;
 
+      // Use the same start-date-aware standings the Standings page uses, so
+      // the Analytics "Current Wins" column matches it exactly. Remaining
+      // (not-yet-played) games for each team don't depend on the start date,
+      // so max-possible = filteredCurrentWins + remaining.
+      const filteredStandings = await this.getPlayerStandings(leagueId);
+      const winsByUser = new Map<string, number>(
+        filteredStandings.map((s) => [s.userId, s.totalWins]),
+      );
+
       for (const { user } of members) {
         const picks = await this.getUserDraftPicks(leagueId, user.id);
         const teams = await Promise.all(
@@ -1950,18 +1959,18 @@ export class DatabaseStorage implements IStorage {
         );
         const validTeams = teams.filter((t): t is NFLTeam | MLBTeam | NBATeam => Boolean(t));
 
-        const currentWins = validTeams.reduce((sum, t) => sum + (t.wins || 0), 0);
+        const currentWins = winsByUser.get(user.id) ?? 0;
 
         let maxPossibleWins: number;
         if (seasonComplete) {
           // Season is over: no more games remain, max = current wins
           maxPossibleWins = currentWins;
         } else {
-          maxPossibleWins = validTeams.reduce((sum, t) => {
+          const remainingTotal = validTeams.reduce((sum, t) => {
             const gamesPlayed = (t.wins || 0) + (t.losses || 0) + ((t as NFLTeam).ties || 0);
-            const remaining = Math.max(0, seasonTotal - gamesPlayed);
-            return sum + (t.wins || 0) + remaining;
+            return sum + Math.max(0, seasonTotal - gamesPlayed);
           }, 0);
+          maxPossibleWins = currentWins + remainingTotal;
         }
 
         players.push({ userId: user.id, displayName: user.displayName, currentWins, maxPossibleWins });
