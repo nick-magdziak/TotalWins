@@ -69,9 +69,12 @@ async function backfillMLB(seasonYear: string): Promise<number> {
   // MLB regular season runs late March through early October. We deliberately
   // stop at Oct 1 so postseason games are not pulled — standings count only
   // regular-season games.
-  const from = new Date(Date.UTC(year, 2, 20)); // Mar 20
+  // Wide window that fully covers regular-season variations (international
+  // openers in Feb/Mar, postponed makeup games into Oct). Postseason games
+  // are still excluded by the `seasonType === "regular"` filter below.
+  const from = new Date(Date.UTC(year, 1, 20)); // Feb 20
   const todayUtc = new Date();
-  const seasonEnd = new Date(Date.UTC(year, 9, 1)); // Oct 1
+  const seasonEnd = new Date(Date.UTC(year, 9, 15)); // Oct 15
   const to = todayUtc.getTime() < seasonEnd.getTime() ? todayUtc : seasonEnd;
 
   let total = 0;
@@ -95,9 +98,11 @@ async function backfillNBA(leagueSeason: string, gamesSeason: string): Promise<n
   const endYear = parseInt(gamesSeason, 10);
   if (isNaN(endYear)) return 0;
   const startYear = endYear - 1;
-  const from = new Date(Date.UTC(startYear, 9, 15)); // Oct 15 of start year
+  // Wide window so any preseason/late-makeup edge cases are still scanned;
+  // postseason is excluded by the `seasonType === "regular"` filter below.
+  const from = new Date(Date.UTC(startYear, 9, 1)); // Oct 1 of start year
   const todayUtc = new Date();
-  const seasonEnd = new Date(Date.UTC(endYear, 3, 20)); // Apr 20 of end year
+  const seasonEnd = new Date(Date.UTC(endYear, 3, 25)); // Apr 25 of end year
   const to = todayUtc.getTime() < seasonEnd.getTime() ? todayUtc : seasonEnd;
 
   let total = 0;
@@ -204,6 +209,24 @@ export async function runHistoricalGamesBackfill(opts?: {
       else if (t.sport === "NFL") await backfillNFL(t.gamesSeason);
     } catch (err) {
       console.error(`[backfill] ${t.sport} ${t.leagueSeason} failed:`, err);
+    }
+
+    // Post-run completeness validation: re-count regular-season rows now in
+    // the games table for this sport+season and warn when below the
+    // expected full-season total (only meaningful for completed seasons).
+    const after = await storage.getGames(undefined, t.gamesSeason);
+    const regularAfter = after.filter(
+      (g) => g.sport === t.sport && g.seasonType === "regular",
+    ).length;
+    if (regularAfter < expected) {
+      console.warn(
+        `[backfill] WARN ${t.sport} ${t.leagueSeason}: regularGamesStored=${regularAfter} < expected=${expected} ` +
+          `(in-progress season or partial coverage)`,
+      );
+    } else {
+      console.log(
+        `[backfill] OK   ${t.sport} ${t.leagueSeason}: regularGamesStored=${regularAfter} >= expected=${expected}`,
+      );
     }
   }
 
