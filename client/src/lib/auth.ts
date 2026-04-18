@@ -72,8 +72,8 @@ export async function signup(userData: {
   return { user: data.user, joinedLeagueId: data.joinedLeagueId ?? null, joinWarning: data.joinWarning ?? null };
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
-  const response = await apiRequest("POST", "/api/auth/login", { email, password });
+export async function login(email: string, password: string, rememberMe = false): Promise<AuthUser> {
+  const response = await apiRequest("POST", "/api/auth/login", { email, password, rememberMe });
   const data = await response.json();
   setCurrentUser(data.user);
   return data.user;

@@ -24,8 +24,8 @@ export default function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const loginMutation = useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      return login(email, password);
+    mutationFn: async ({ email, password, rememberMe }: { email: string; password: string; rememberMe: boolean }) => {
+      return login(email, password, rememberMe);
     },
     onSuccess: () => {
       toast({
@@ -87,6 +87,7 @@ export default function Login() {
     loginMutation.mutate({
       email: formData.email,
       password: formData.password,
+      rememberMe: formData.rememberMe,
     });
   };
 

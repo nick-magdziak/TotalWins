@@ -30,6 +30,7 @@ const accountLimiter = rateLimit({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 // Middleware: require authenticated session
@@ -153,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
-      const { email, password } = loginSchema.parse(req.body);
+      const { email, password, rememberMe } = loginSchema.parse(req.body);
       
       const user = await storage.getUserByEmail(email);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -179,6 +180,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       req.session.userId = user.id;
+      // Honour "Remember me": 90 days when checked, 30 days otherwise
+      req.session.cookie.maxAge = rememberMe
+        ? 90 * 24 * 60 * 60 * 1000
+        : 30 * 24 * 60 * 60 * 1000;
       res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       res.status(400).json({ message: "Invalid login data" });
