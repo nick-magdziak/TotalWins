@@ -3,7 +3,7 @@ import { type User } from "@shared/schema";
 
 export interface AuthUser extends Omit<User, 'password'> {}
 
-const AUTH_STORAGE_KEY = "total_wins_user";
+export const AUTH_STORAGE_KEY = "total_wins_user";
 
 // Initialize from localStorage
 let currentUser: AuthUser | null = null;
@@ -16,8 +16,13 @@ try {
     // Verify the session is still valid with the server.
     // If the server returns 401/403 (e.g. session expired after restart), clear local state.
     if (currentUser?.id) {
-      fetch(`/api/auth/me/${currentUser.id}`)
+      const validatingId = currentUser.id; // capture to detect race conditions
+      fetch(`/api/auth/me/${validatingId}`)
         .then(r => {
+          // If the user changed while this request was in-flight (e.g. the user
+          // logged in as someone else), ignore the result entirely — acting on
+          // a stale 403 would incorrectly log out the newly-authenticated user.
+          if (!currentUser || currentUser.id !== validatingId) return null;
           if (r.status === 401 || r.status === 403) {
             // Session is gone — clear localStorage so the user is prompted to log in again
             currentUser = null;

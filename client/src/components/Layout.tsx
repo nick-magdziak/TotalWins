@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare, MoreHorizontal } from "lucide-react";
-import { getCurrentUser, logout } from "@/lib/auth";
+import { getCurrentUser, logout, AUTH_STORAGE_KEY } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type League } from "@shared/schema";
@@ -16,7 +16,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [currentLeagueId, setCurrentLeagueId] = useState<string>("");
@@ -32,7 +32,7 @@ export default function Layout({ children }: LayoutProps) {
     
     // Listen for storage events (logout from other tabs, etc.)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'currentUser' || e.key === null) {
+      if (e.key === AUTH_STORAGE_KEY || e.key === null) {
         checkAuth();
       }
     };
@@ -197,9 +197,8 @@ export default function Layout({ children }: LayoutProps) {
                       key={league.id}
                       onClick={() => {
                         setCurrentLeagueId(league.id);
-                        // Update URL to reflect league change for all pages
                         const currentPath = location.split('?')[0];
-                        window.location.href = `${currentPath}?league=${league.id}`;
+                        navigate(`${currentPath}?league=${league.id}`);
                       }}
                       className={`p-3 cursor-pointer hover:bg-retro-cream ${
                         league.id === currentLeagueId ? "bg-retro-lime/20" : ""
