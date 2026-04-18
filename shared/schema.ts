@@ -223,6 +223,8 @@ export type PlayerStanding = {
   userId: string;
   displayName: string;
   totalWins: number;
+  totalLosses: number;
+  totalTies: number;
   teams: (NFLTeam | MLBTeam | NBATeam)[];
   rank: number;
 };

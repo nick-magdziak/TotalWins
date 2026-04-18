@@ -986,15 +986,22 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  /**
+   * Floor a Date | string to UTC midnight so date-only comparisons are
+   * stable regardless of how Drizzle returns the value (date vs timestamp).
+   */
+  private toUtcMidnight(value: Date | string): Date {
+    const d = value instanceof Date ? value : new Date(value);
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  }
+
   async getSportSeasonStart(sport: string, season: string): Promise<Date | null> {
     const [row] = await db
-      .select({ earliest: sql<Date | null>`MIN(${games.gameDate})` })
+      .select({ earliest: sql<Date | string | null>`MIN(${games.gameDate})` })
       .from(games)
       .where(and(eq(games.sport, sport), eq(games.season, season)));
     if (!row?.earliest) return null;
-    const d = row.earliest instanceof Date ? row.earliest : new Date(row.earliest as any);
-    // Floor to UTC midnight so comparisons are date-aligned, not time-aligned.
-    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    return this.toUtcMidnight(row.earliest);
   }
 
   async backfillLeagueStartDates(): Promise<void> {
@@ -1017,10 +1024,7 @@ export class DatabaseStorage implements IStorage {
    */
   private async getEffectiveLeagueStartDate(league: League): Promise<Date | null> {
     if (league.leagueStartDate) {
-      const d = league.leagueStartDate instanceof Date
-        ? league.leagueStartDate
-        : new Date(league.leagueStartDate as any);
-      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      return this.toUtcMidnight(league.leagueStartDate);
     }
     return this.getSportSeasonStart(league.sport, league.season);
   }
@@ -1043,10 +1047,12 @@ export class DatabaseStorage implements IStorage {
     // For WORLD_CUP, use fantasy points from getWorldCupPlayerStandings
     if (league.sport === 'WORLD_CUP') {
       const wcStandings = await this.getWorldCupPlayerStandings(leagueId);
-      return wcStandings.map((s, index) => ({
+      return wcStandings.map((s) => ({
         userId: s.userId,
         displayName: s.displayName,
         totalWins: s.fantasyPoints,
+        totalLosses: 0,
+        totalTies: 0,
         teams: s.teams as unknown as (NFLTeam | MLBTeam | NBATeam)[],
         rank: s.rank,
       }));
@@ -1071,13 +1077,28 @@ export class DatabaseStorage implements IStorage {
           ))
       : [];
 
-    const winsByTeam = new Map<string, number>();
+    // Compute per-team W/L/T counts from the filtered games. Each game
+    // contributes one outcome to the home team and one to the away team.
+    type WLT = { wins: number; losses: number; ties: number };
+    const recordByTeam = new Map<string, WLT>();
+    const bump = (id: string, key: keyof WLT) => {
+      const cur = recordByTeam.get(id) ?? { wins: 0, losses: 0, ties: 0 };
+      cur[key] += 1;
+      recordByTeam.set(id, cur);
+    };
     for (const g of completedGames) {
       const home = g.homeScore ?? 0;
       const away = g.awayScore ?? 0;
-      if (home === away) continue; // ties don't add wins (NFL ties also excluded for parity with prior behavior)
-      const winnerId = home > away ? g.homeTeamId : g.awayTeamId;
-      winsByTeam.set(winnerId, (winsByTeam.get(winnerId) ?? 0) + 1);
+      if (home === away) {
+        bump(g.homeTeamId, "ties");
+        bump(g.awayTeamId, "ties");
+      } else if (home > away) {
+        bump(g.homeTeamId, "wins");
+        bump(g.awayTeamId, "losses");
+      } else {
+        bump(g.awayTeamId, "wins");
+        bump(g.homeTeamId, "losses");
+      }
     }
 
     for (const { member, user } of members) {
@@ -1086,15 +1107,23 @@ export class DatabaseStorage implements IStorage {
         userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
       );
       const validTeams = teams.filter((team): team is NFLTeam | MLBTeam | NBATeam => Boolean(team));
-      const totalWins = validTeams.reduce(
-        (sum, team) => sum + (winsByTeam.get(team.id) ?? 0),
-        0,
-      );
+      let totalWins = 0;
+      let totalLosses = 0;
+      let totalTies = 0;
+      for (const team of validTeams) {
+        const r = recordByTeam.get(team.id);
+        if (!r) continue;
+        totalWins += r.wins;
+        totalLosses += r.losses;
+        totalTies += r.ties;
+      }
 
       standings.push({
         userId: user.id,
         displayName: user.displayName,
         totalWins,
+        totalLosses,
+        totalTies,
         teams: validTeams,
         rank: 0, // Will be calculated after sorting
       });
