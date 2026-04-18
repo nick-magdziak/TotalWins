@@ -52,14 +52,26 @@ async function forEachDay(
   }
 }
 
+// Expected regular-season game counts per sport. Used to detect completeness
+// so the backfill only short-circuits when a season is genuinely fully synced.
+//   * NFL: 32 teams × 17 games / 2 = 272
+//   * MLB: 30 teams × 162 games / 2 = 2430
+//   * NBA: 30 teams × 82 games / 2  = 1230
+const EXPECTED_REGULAR_SEASON_GAMES: Record<string, number> = {
+  NFL: 272,
+  MLB: 2430,
+  NBA: 1230,
+};
+
 async function backfillMLB(seasonYear: string): Promise<number> {
   const year = parseInt(seasonYear, 10);
   if (isNaN(year)) return 0;
-  // MLB regular season runs late March through early October; postseason
-  // through early November. Pull the whole window.
+  // MLB regular season runs late March through early October. We deliberately
+  // stop at Oct 1 so postseason games are not pulled — standings count only
+  // regular-season games.
   const from = new Date(Date.UTC(year, 2, 20)); // Mar 20
   const todayUtc = new Date();
-  const seasonEnd = new Date(Date.UTC(year, 10, 5)); // Nov 5
+  const seasonEnd = new Date(Date.UTC(year, 9, 1)); // Oct 1
   const to = todayUtc.getTime() < seasonEnd.getTime() ? todayUtc : seasonEnd;
 
   let total = 0;
@@ -67,23 +79,25 @@ async function backfillMLB(seasonYear: string): Promise<number> {
     const dateStr = toDateStr(d);
     const data = await fetchJson(`${ESPN_BASE}/baseball/mlb/scoreboard?dates=${dateStr}`);
     if (!data) return;
-    const games = sportsApi.parseESPNMLBGames(data);
+    const games = sportsApi
+      .parseESPNMLBGames(data)
+      .filter((g) => g.seasonType === "regular");
     if (games.length > 0) total += await upsertGames(games);
   });
-  console.log(`[backfill] MLB ${seasonYear}: stored ${total} games`);
+  console.log(`[backfill] MLB ${seasonYear}: stored ${total} regular-season games`);
   return total;
 }
 
 async function backfillNBA(leagueSeason: string, gamesSeason: string): Promise<number> {
   // NBA "2025-26" league season corresponds to ESPN's season=2026 (end year).
-  // The regular season runs mid-October (start year) through mid-April
-  // (end year); playoffs through mid-June.
+  // Regular season runs mid-October (start year) through mid-April (end year).
+  // We stop at Apr 20 so playoffs are not pulled.
   const endYear = parseInt(gamesSeason, 10);
   if (isNaN(endYear)) return 0;
   const startYear = endYear - 1;
   const from = new Date(Date.UTC(startYear, 9, 15)); // Oct 15 of start year
   const todayUtc = new Date();
-  const seasonEnd = new Date(Date.UTC(endYear, 5, 25)); // Jun 25 of end year
+  const seasonEnd = new Date(Date.UTC(endYear, 3, 20)); // Apr 20 of end year
   const to = todayUtc.getTime() < seasonEnd.getTime() ? todayUtc : seasonEnd;
 
   let total = 0;
@@ -91,36 +105,34 @@ async function backfillNBA(leagueSeason: string, gamesSeason: string): Promise<n
     const dateStr = toDateStr(d);
     const data = await fetchJson(`${ESPN_BASE}/basketball/nba/scoreboard?dates=${dateStr}`);
     if (!data) return;
-    const games = sportsApi.parseESPNNBAGames(data);
+    const games = sportsApi
+      .parseESPNNBAGames(data)
+      .filter((g) => g.seasonType === "regular");
     if (games.length > 0) total += await upsertGames(games);
   });
-  console.log(`[backfill] NBA ${leagueSeason} (games season ${gamesSeason}): stored ${total} games`);
+  console.log(
+    `[backfill] NBA ${leagueSeason} (games season ${gamesSeason}): stored ${total} regular-season games`,
+  );
   return total;
 }
 
 async function backfillNFL(gamesSeason: string): Promise<number> {
   // NFL games-season key is the START year ("2025-26" -> "2025"). Regular
-  // season is 18 weeks (seasontype=2); postseason has 5 weeks (seasontype=3).
+  // season is 18 weeks (seasontype=2). Postseason (seasontype=3) is
+  // intentionally NOT pulled so it cannot inflate league win totals.
   let total = 0;
   for (let week = 1; week <= 18; week++) {
     const data = await fetchJson(
       `${ESPN_BASE}/football/nfl/scoreboard?week=${week}&seasontype=2&year=${gamesSeason}`,
     );
     if (data) {
-      const games = sportsApi.parseESPNGames(data, week, gamesSeason);
+      const games = sportsApi
+        .parseESPNGames(data, week, gamesSeason)
+        .filter((g) => g.seasonType === "regular");
       if (games.length > 0) total += await upsertGames(games);
     }
   }
-  for (let week = 1; week <= 5; week++) {
-    const data = await fetchJson(
-      `${ESPN_BASE}/football/nfl/scoreboard?week=${week}&seasontype=3&year=${gamesSeason}`,
-    );
-    if (data) {
-      const games = sportsApi.parseESPNGames(data, week, gamesSeason);
-      if (games.length > 0) total += await upsertGames(games);
-    }
-  }
-  console.log(`[backfill] NFL ${gamesSeason}: stored ${total} games (regular + postseason)`);
+  console.log(`[backfill] NFL ${gamesSeason}: stored ${total} regular-season games`);
   return total;
 }
 
@@ -146,9 +158,9 @@ function normalizeSeasonForGames(sport: string, leagueSeason: string): string {
  * already covered.
  */
 export async function runHistoricalGamesBackfill(opts?: {
-  coverageThreshold?: number;
+  force?: boolean;
 }): Promise<void> {
-  const coverageThreshold = opts?.coverageThreshold ?? 200;
+  const force = opts?.force === true;
   const started = Date.now();
   console.log("[backfill] historical games backfill starting…");
 
@@ -166,16 +178,25 @@ export async function runHistoricalGamesBackfill(opts?: {
   }
 
   for (const t of targets) {
+    // Completeness check: count existing REGULAR-season games for this
+    // sport/season and skip only when we have at least the expected
+    // full-season count. For in-progress seasons this never trips, so the
+    // backfill always runs and stays current.
     const existing = await storage.getGames(undefined, t.gamesSeason);
-    const sportExisting = existing.filter((g) => g.sport === t.sport).length;
-    if (sportExisting >= coverageThreshold) {
+    const regularExisting = existing.filter(
+      (g) => g.sport === t.sport && g.seasonType === "regular",
+    ).length;
+    const expected = EXPECTED_REGULAR_SEASON_GAMES[t.sport] ?? Infinity;
+    if (!force && regularExisting >= expected) {
       console.log(
-        `[backfill] skip ${t.sport} ${t.leagueSeason} — already has ${sportExisting} games (>= ${coverageThreshold})`,
+        `[backfill] skip ${t.sport} ${t.leagueSeason} — already complete ` +
+          `(${regularExisting} >= ${expected} regular-season games)`,
       );
       continue;
     }
     console.log(
-      `[backfill] target ${t.sport} ${t.leagueSeason} (games season ${t.gamesSeason}); existing=${sportExisting}`,
+      `[backfill] target ${t.sport} ${t.leagueSeason} (games season ${t.gamesSeason}); ` +
+        `existing regular=${regularExisting}, expected=${expected}`,
     );
     try {
       if (t.sport === "MLB") await backfillMLB(t.gamesSeason);

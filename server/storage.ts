@@ -1094,6 +1094,7 @@ export class DatabaseStorage implements IStorage {
           .where(and(
             eq(games.sport, league.sport),
             eq(games.season, gamesSeason),
+            eq(games.seasonType, "regular"),
             eq(games.status, "completed"),
             gte(games.gameDate, startDate),
           ))

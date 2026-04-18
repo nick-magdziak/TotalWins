@@ -228,6 +228,7 @@ export class SportsApiService {
           sport: "NFL",
           week,
           season,
+          seasonType: this.mapESPNSeasonType(event.season?.type ?? espnData.season?.type),
           homeTeamId: this.mapESPNTeamToId(homeTeam.team.abbreviation),
           awayTeamId: this.mapESPNTeamToId(awayTeam.team.abbreviation),
           homeScore: homeTeam.score != null ? Number(homeTeam.score) : null,
