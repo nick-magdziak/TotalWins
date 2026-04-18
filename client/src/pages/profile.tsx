@@ -575,10 +575,16 @@ export default function Profile() {
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-retro-pink to-retro-purple text-white font-bold retro-font"
-                    disabled={acceptInvitationMutation.isPending}
+                    disabled={acceptInvitationMutation.isPending || !currentUser?.verifiedAt}
                     onClick={() => acceptInvitationMutation.mutate(league.id)}
+                    title={!currentUser?.verifiedAt ? "Verify your email first to accept invitations" : undefined}
+                    data-testid={`button-accept-invitation-${league.id}`}
                   >
-                    {acceptInvitationMutation.isPending ? "JOINING..." : "ACCEPT"}
+                    {acceptInvitationMutation.isPending
+                      ? "JOINING..."
+                      : !currentUser?.verifiedAt
+                      ? "VERIFY EMAIL"
+                      : "ACCEPT"}
                   </Button>
                 </div>
               );

@@ -130,8 +130,34 @@ export class DatabaseStorage implements IStorage {
     this.initializeWorldCupGames();
     this.initializeSampleGameData();
     this.initializeDemoLeagues();
+    this.backfillEmailVerification();
     // Sync real MLB games after initialization
     this.syncRealTimeMLBGames();
+  }
+
+  // Grandfather every account that already existed before email
+  // verification shipped. Idempotent: only touches users with a NULL
+  // verified_at, so brand-new signups (which get verified_at=NULL on
+  // creation) are NOT affected because their row is created AFTER this
+  // one-shot startup pass already ran. We additionally guard with a
+  // cutoff so a server restart cannot retroactively verify a user who
+  // signed up after the deploy and hasn't verified yet.
+  private async backfillEmailVerification() {
+    try {
+      // Cutoff = the moment this process started; any account whose
+      // created_at is older than the process start is considered
+      // pre-existing and grandfathered.
+      const cutoff = new Date();
+      await db.execute(sql`
+        UPDATE users
+        SET verified_at = COALESCE(created_at, NOW())
+        WHERE verified_at IS NULL
+          AND created_at IS NOT NULL
+          AND created_at < ${cutoff}
+      `);
+    } catch (error) {
+      console.error("Error backfilling email verification:", error);
+    }
   }
 
   private async syncRealTimeMLBGames() {

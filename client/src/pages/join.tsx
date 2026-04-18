@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useIsVerified } from "@/hooks/use-verified";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
@@ -97,6 +98,7 @@ export default function Join() {
   };
 
   const isFull = preview ? preview.memberCount >= preview.maxPlayers : false;
+  const isVerifiedUser = useIsVerified();
   const spotsLeft = preview ? preview.maxPlayers - preview.memberCount : 0;
 
   return (
@@ -189,11 +191,23 @@ export default function Join() {
                     </p>
                     <Button
                       onClick={() => joinMutation.mutate()}
-                      disabled={isFull || joinMutation.isPending}
+                      disabled={isFull || joinMutation.isPending || !isVerifiedUser}
                       className="w-full bg-gradient-to-r from-retro-pink to-retro-purple text-white font-bold text-lg retro-font hover:scale-105 transform transition-all duration-200 neon-glow"
+                      data-testid="button-join-league"
                     >
-                      {joinMutation.isPending ? "JOINING..." : isFull ? "LEAGUE FULL" : "JOIN LEAGUE"}
+                      {joinMutation.isPending
+                        ? "JOINING..."
+                        : isFull
+                        ? "LEAGUE FULL"
+                        : !isVerifiedUser
+                        ? "VERIFY EMAIL TO JOIN"
+                        : "JOIN LEAGUE"}
                     </Button>
+                    {!isVerifiedUser && (
+                      <p className="text-center text-yellow-700 text-xs">
+                        Verify your email first. Check your inbox for the link, or use the resend button at the top of the page.
+                      </p>
+                    )}
                     <Link href="/standings">
                       <Button variant="ghost" className="w-full text-gray-400 text-sm">Cancel</Button>
                     </Link>

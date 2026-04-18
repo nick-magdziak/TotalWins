@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
+import { useIsVerified } from "@/hooks/use-verified";
 import { Trophy, Users, Calendar, Zap, Shuffle, Settings, Globe } from "lucide-react";
 import { DRAFT_CONFIGURATIONS, type DraftConfiguration } from "@shared/draftConfig";
 
@@ -31,6 +32,7 @@ export default function CreateLeague() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const currentUser = getCurrentUser();
+  const isVerified = useIsVerified();
 
   const form = useForm<CreateLeagueForm>({
     resolver: zodResolver(createLeagueSchema),
@@ -382,12 +384,18 @@ export default function CreateLeague() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createLeagueMutation.isPending}
+                  disabled={createLeagueMutation.isPending || !isVerified}
                   className="flex-1 bg-gradient-to-r from-retro-teal to-retro-lime hover:from-retro-lime hover:to-retro-teal text-white font-bold retro-font"
+                  data-testid="button-create-league"
                 >
                   {createLeagueMutation.isPending ? "Creating..." : "Create League"}
                 </Button>
               </div>
+              {!isVerified && (
+                <p className="text-sm text-yellow-700 mt-2 text-center">
+                  Please verify your email before creating a league. Check your inbox for the verification link or use the "Resend verification email" button at the top of the page.
+                </p>
+              )}
             </form>
           </Form>
         </CardContent>
