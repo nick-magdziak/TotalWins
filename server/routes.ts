@@ -814,6 +814,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const newLeague = await storage.rolloverLeague(req.params.id, newSeason, userId, memberUserIds);
+      logAudit({
+        actorUserId: userId,
+        leagueId: req.params.id,
+        action: "league.rollover",
+        targetType: "league",
+        targetId: newLeague?.id ?? req.params.id,
+        metadata: { newSeason, memberCount: memberUserIds?.length ?? null, newLeagueId: newLeague?.id ?? null },
+      });
       res.json(newLeague);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Rollover failed";
