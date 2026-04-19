@@ -968,6 +968,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         totalWins: 0
       });
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId: req.params.leagueId,
+        action: "league.member.add",
+        targetType: "user",
+        targetId: userId,
+        metadata: { method: "admin.add-member" },
+      });
       res.json(member);
     } catch (error) {
       res.status(400).json({ message: "Failed to add member" });
@@ -1291,6 +1299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Draft is not currently active" });
       }
       await storage.updateLeague(leagueId, { draftStatus: "paused" });
+      logAudit({ actorUserId: req.session.userId ?? null, leagueId, action: "league.draft.pause", targetType: "league", targetId: leagueId });
       res.json({ success: true, message: "Draft paused successfully" });
     } catch (error) {
       console.error("Error pausing draft:", error);
@@ -1314,6 +1323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Draft is not currently paused" });
       }
       await storage.updateLeague(leagueId, { draftStatus: "active" });
+      logAudit({ actorUserId: req.session.userId ?? null, leagueId, action: "league.draft.resume", targetType: "league", targetId: leagueId });
       res.json({ success: true, message: "Draft resumed successfully" });
     } catch (error) {
       console.error("Error resuming draft:", error);
@@ -2032,6 +2042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { worldCupDataService } = await import("./services/worldCupService");
       await worldCupDataService.syncWorldCupGames();
+      logAudit({ actorUserId: req.session.userId ?? null, action: "sport.worldcup.sync" });
       res.json({ message: "World Cup games synced successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to sync World Cup games" });
@@ -2044,6 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { SportsDataService } = await import("./sportsDataService");
       const sportsService = new SportsDataService(storage);
       await sportsService.updateMLBStandings();
+      logAudit({ actorUserId: req.session.userId ?? null, action: "sport.mlb.standings.update" });
       const result = { success: true, message: "MLB standings updated successfully" };
       
       if (result.success) {
@@ -2068,6 +2080,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sync team win/loss records from ESPN standings API
       const { sportsApi } = await import("./services/sportsApi");
       const standingsResult = await sportsApi.syncTeamStandingsFromESPN();
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        action: "sport.live_scores.sync",
+        metadata: { standingsUpdated: standingsResult.updated, standingsErrors: standingsResult.errors },
+      });
       
       res.json({ 
         message: "Live scores synced successfully",
