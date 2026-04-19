@@ -25,6 +25,8 @@ import {
   users,
   emailVerificationTokens,
   type EmailVerificationToken,
+  auditLog,
+  type AuditLogEntry,
   leagues,
   leagueMembers,
   nflTeams,
@@ -49,6 +51,9 @@ export interface IStorage {
   getEmailVerificationTokenByHash(tokenHash: string): Promise<EmailVerificationToken | undefined>;
   consumeEmailVerificationToken(id: string): Promise<void>;
   countRecentVerificationTokens(userId: string, since: Date): Promise<number>;
+
+  // Audit log
+  getLeagueAuditLog(leagueId: string, limit: number): Promise<Array<AuditLogEntry & { actorDisplayName: string | null }>>;
 
   // Leagues
   getLeague(id: string): Promise<League | undefined>;
@@ -820,6 +825,30 @@ export class DatabaseStorage implements IStorage {
         gte(emailVerificationTokens.createdAt, since),
       ));
     return rows.length;
+  }
+
+  async getLeagueAuditLog(
+    leagueId: string,
+    limit: number,
+  ): Promise<Array<AuditLogEntry & { actorDisplayName: string | null }>> {
+    const rows = await db
+      .select({
+        id: auditLog.id,
+        actorUserId: auditLog.actorUserId,
+        leagueId: auditLog.leagueId,
+        action: auditLog.action,
+        targetType: auditLog.targetType,
+        targetId: auditLog.targetId,
+        metadata: auditLog.metadata,
+        createdAt: auditLog.createdAt,
+        actorDisplayName: users.displayName,
+      })
+      .from(auditLog)
+      .leftJoin(users, eq(auditLog.actorUserId, users.id))
+      .where(eq(auditLog.leagueId, leagueId))
+      .orderBy(desc(auditLog.createdAt))
+      .limit(limit);
+    return rows as Array<AuditLogEntry & { actorDisplayName: string | null }>;
   }
 
   // League methods

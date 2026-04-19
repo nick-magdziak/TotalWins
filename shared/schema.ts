@@ -44,6 +44,19 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
 
 export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 
+export const auditLog = pgTable("audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  actorUserId: varchar("actor_user_id").references(() => users.id),
+  leagueId: varchar("league_id"),
+  action: text("action").notNull(),
+  targetType: text("target_type"),
+  targetId: varchar("target_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AuditLogEntry = typeof auditLog.$inferSelect;
+
 export const leagues = pgTable("leagues", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),

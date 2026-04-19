@@ -8,6 +8,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
 import { notifyUser } from "./lib/realtime";
+import { logAudit } from "./lib/audit.js";
 
 // Rate limiter: aggressive throttle for auth endpoints to prevent brute-force
 const authLimiter = rateLimit({
@@ -717,10 +718,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const before = await storage.getLeague(req.params.id);
       const league = await storage.updateLeague(req.params.id, updates);
       if (!league) {
         return res.status(404).json({ message: "League not found" });
       }
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId: league.id,
+        action: "league.settings.update",
+        targetType: "league",
+        targetId: league.id,
+        metadata: { changedKeys: Object.keys(updates), before, after: league },
+      });
       res.json(league);
     } catch (error) {
       console.error("PATCH /api/leagues/:id error:", error);
@@ -1002,9 +1012,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ message: "Member not found" });
       }
+      logAudit({
+        actorUserId: requesterId,
+        leagueId: req.params.leagueId,
+        action: isSelfRemoval ? "league.member.leave" : "league.member.remove",
+        targetType: "user",
+        targetId: req.params.userId,
+        metadata: { isSelfRemoval },
+      });
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to remove member from league" });
+    }
+  });
+
+  // Audit log — restricted to platform admins and the league creator.
+  // Returns the most recent N entries with the actor's display name joined in.
+  app.get("/api/leagues/:leagueId/audit-log", requireAuth, async (req, res) => {
+    try {
+      const requesterId = req.session.userId!;
+      const [requester, league] = await Promise.all([
+        storage.getUser(requesterId),
+        storage.getLeague(req.params.leagueId),
+      ]);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      const isAllowed = !!requester?.isAdmin || league.createdBy === requesterId;
+      if (!isAllowed) {
+        return res.status(403).json({ message: "Only league admins can view the audit log" });
+      }
+      const rawLimit = Number(req.query.limit);
+      const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 200) : 100;
+      const entries = await storage.getLeagueAuditLog(req.params.leagueId, limit);
+      res.json(entries);
+    } catch (error) {
+      console.error("GET /api/leagues/:leagueId/audit-log error:", error);
+      res.status(500).json({ message: "Failed to fetch audit log" });
     }
   });
 
@@ -1133,6 +1175,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const pick = await storage.addDraftPick(pickData);
+
+      // Audit only commissioner-on-behalf-of-other picks; self-picks are
+      // already captured implicitly in the draft_picks table.
+      if (pickData.userId !== requestingUserId) {
+        logAudit({
+          actorUserId: requestingUserId,
+          leagueId: req.params.leagueId,
+          action: "league.draft.pick_for_other",
+          targetType: "user",
+          targetId: pickData.userId ?? null,
+          metadata: {
+            teamId: pickData.teamId,
+            pickNumber: pickData.pickNumber,
+            round: pickData.round,
+            sport: pickData.sport,
+          },
+        });
+      }
 
       // Auto-complete: mark the draft as "completed" in the DB when all picks are done
       try {
@@ -1343,6 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentSeason = (now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1).toString();
       const { week = 18, season = currentSeason } = req.body;
       await sportsApi.syncGamesForWeek(week, season);
+      logAudit({ actorUserId: req.session.userId ?? null, action: "sport.scores.sync", metadata: { week, season } });
       res.json({ message: "Scores synced successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to sync scores" });
@@ -1352,6 +1413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/update-records", async (req, res) => {
     try {
       await sportsApi.updateTeamRecords();
+      logAudit({ actorUserId: req.session.userId ?? null, action: "sport.records.update" });
       res.json({ message: "Team records updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update team records" });
@@ -1361,6 +1423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/sync-mlb-games", async (req, res) => {
     try {
       await sportsApi.syncMLBGames();
+      logAudit({ actorUserId: req.session.userId ?? null, action: "sport.mlb.sync" });
       res.json({ message: "MLB games synced successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to sync MLB games" });
@@ -1429,6 +1492,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       notifyUser(user.id, "pending-invitations:changed");
 
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: "league.member.add",
+        targetType: "user",
+        targetId: user.id,
+        metadata: { email, name, status: "pending", method: "no-invite" },
+      });
+
       res.json({ message: "Player added successfully", userId: user.id });
     } catch (error) {
       console.error("Add player no invite error:", error);
@@ -1444,6 +1516,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const { leagueId, orderedUserIds } = schema.parse(req.body);
       await storage.saveDraftOrder(leagueId, orderedUserIds);
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: "league.draft.save_order",
+        targetType: "league",
+        targetId: leagueId,
+        metadata: { orderedUserIds },
+      });
       res.json({ message: "Draft order saved successfully" });
     } catch (error) {
       console.error("Save draft order error:", error);
@@ -1554,7 +1634,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateUserPrivileges(userId, isAdmin);
-      
+
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        action: "user.privileges.update",
+        targetType: "user",
+        targetId: userId,
+        metadata: { isAdmin },
+      });
+
       res.json({ success: true, message: "Privileges updated successfully" });
     } catch (error) {
       console.error("Error updating privileges:", error);
@@ -1573,6 +1661,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.removeLeagueMember(leagueId, userId);
       
       if (success) {
+        logAudit({
+          actorUserId: req.session.userId ?? null,
+          leagueId,
+          action: "league.member.remove",
+          targetType: "user",
+          targetId: userId,
+          metadata: { via: "admin.remove-player" },
+        });
         res.json({ success: true, message: "Player removed successfully" });
       } else {
         res.status(404).json({ error: "Player not found in league" });
@@ -1592,7 +1688,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.resetDraft(leagueId);
-      
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: "league.draft.reset",
+        targetType: "league",
+        targetId: leagueId,
+      });
       res.json({ success: true, message: "Draft reset successfully" });
     } catch (error) {
       console.error("Error resetting draft:", error);
@@ -1628,6 +1730,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateLeague(leagueId, { draftStatus: "active" });
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: "league.draft.start",
+        targetType: "league",
+        targetId: leagueId,
+        metadata: { via: "league-scoped" },
+      });
 
       // Send draft notification to the first player
       try {
@@ -1704,6 +1814,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateLeague(leagueId, { draftStatus: "active" });
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: "league.draft.start",
+        targetType: "league",
+        targetId: leagueId,
+        metadata: { via: "admin.start-draft" },
+      });
       
       // Send draft notification to the first player
       try {
@@ -1763,7 +1881,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateLeague(leagueId, { draftStatus: "pending" });
-      
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: "league.draft.stop",
+        targetType: "league",
+        targetId: leagueId,
+      });
       res.json({ success: true, message: "Draft stopped successfully" });
     } catch (error) {
       console.error("Error stopping draft:", error);
@@ -1781,6 +1905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!league) return res.status(404).json({ error: "League not found" });
       if (league.draftStatus !== "active") return res.status(400).json({ error: "Draft is not currently active" });
       await storage.updateLeague(leagueId, { draftStatus: "paused" });
+      logAudit({ actorUserId: req.session.userId ?? null, leagueId, action: "league.draft.pause", targetType: "league", targetId: leagueId });
       res.json({ success: true, message: "Draft paused successfully" });
     } catch (error) {
       console.error("Error pausing draft:", error);
@@ -1796,6 +1921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!league) return res.status(404).json({ error: "League not found" });
       if (league.draftStatus !== "paused") return res.status(400).json({ error: "Draft is not currently paused" });
       await storage.updateLeague(leagueId, { draftStatus: "active" });
+      logAudit({ actorUserId: req.session.userId ?? null, leagueId, action: "league.draft.resume", targetType: "league", targetId: leagueId });
       res.json({ success: true, message: "Draft resumed successfully" });
     } catch (error) {
       console.error("Error resuming draft:", error);
@@ -1814,6 +1940,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.undoLastDraftPick(leagueId);
       
       if (success) {
+        logAudit({
+          actorUserId: req.session.userId ?? null,
+          leagueId,
+          action: "league.draft.undo_pick",
+          targetType: "league",
+          targetId: leagueId,
+        });
         res.json({ success: true, message: "Last pick undone successfully" });
       } else {
         res.status(404).json({ error: "No picks to undo" });
