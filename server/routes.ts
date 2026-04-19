@@ -1042,6 +1042,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Platform-wide audit log — restricted to platform admins (mounted under /api/admin).
+  // Lists global entries (default: leagueId IS NULL) such as user.privileges.update,
+  // sport.scores.sync, sport.records.update, sport.mlb.sync, etc. Use scope=all to
+  // include league-scoped entries too. Supports filtering by action substring,
+  // actorUserId, and a created-at date range.
+  app.get("/api/admin/audit-log", async (req, res) => {
+    try {
+      const rawLimit = Number(req.query.limit);
+      const limit = Number.isFinite(rawLimit)
+        ? Math.min(Math.max(Math.floor(rawLimit), 1), 500)
+        : 100;
+      const scopeParam = String(req.query.scope ?? "global");
+      const scope: "global" | "all" = scopeParam === "all" ? "all" : "global";
+      const action = typeof req.query.action === "string" && req.query.action.trim()
+        ? req.query.action.trim()
+        : undefined;
+      const actorUserId = typeof req.query.actor === "string" && req.query.actor.trim()
+        ? req.query.actor.trim()
+        : undefined;
+      const parseDate = (v: unknown): Date | undefined => {
+        if (typeof v !== "string" || !v) return undefined;
+        const d = new Date(v);
+        return Number.isNaN(d.getTime()) ? undefined : d;
+      };
+      const since = parseDate(req.query.since);
+      const until = parseDate(req.query.until);
+
+      const entries = await storage.getGlobalAuditLog({
+        scope,
+        action,
+        actorUserId,
+        since,
+        until,
+        limit,
+      });
+      res.json(entries);
+    } catch (error) {
+      console.error("GET /api/admin/audit-log error:", error);
+      res.status(500).json({ message: "Failed to fetch audit log" });
+    }
+  });
+
   // Audit log — restricted to platform admins and the league creator.
   // Returns the most recent N entries with the actor's display name joined in.
   app.get("/api/leagues/:leagueId/audit-log", requireAuth, async (req, res) => {

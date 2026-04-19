@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, lt, lte, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lt, lte, inArray, isNull, ilike, type SQL } from "drizzle-orm";
 import { db } from "./db";
 import { hashPassword } from "./lib/auth.js";
 import { getDraftConfigByKey } from "../shared/draftConfig.js";
@@ -54,6 +54,14 @@ export interface IStorage {
 
   // Audit log
   getLeagueAuditLog(leagueId: string, limit: number): Promise<Array<AuditLogEntry & { actorDisplayName: string | null }>>;
+  getGlobalAuditLog(filters: {
+    scope?: "global" | "all";
+    action?: string;
+    actorUserId?: string;
+    since?: Date;
+    until?: Date;
+    limit: number;
+  }): Promise<Array<AuditLogEntry & { actorDisplayName: string | null }>>;
 
   // Leagues
   getLeague(id: string): Promise<League | undefined>;
@@ -848,6 +856,56 @@ export class DatabaseStorage implements IStorage {
       .where(eq(auditLog.leagueId, leagueId))
       .orderBy(desc(auditLog.createdAt))
       .limit(limit);
+    return rows as Array<AuditLogEntry & { actorDisplayName: string | null }>;
+  }
+
+  async getGlobalAuditLog(filters: {
+    scope?: "global" | "all";
+    action?: string;
+    actorUserId?: string;
+    since?: Date;
+    until?: Date;
+    limit: number;
+  }): Promise<Array<AuditLogEntry & { actorDisplayName: string | null }>> {
+    const conditions: SQL[] = [];
+    if ((filters.scope ?? "global") === "global") {
+      conditions.push(isNull(auditLog.leagueId));
+    }
+    if (filters.action) {
+      conditions.push(ilike(auditLog.action, `%${filters.action}%`));
+    }
+    if (filters.actorUserId) {
+      conditions.push(eq(auditLog.actorUserId, filters.actorUserId));
+    }
+    if (filters.since) {
+      conditions.push(gte(auditLog.createdAt, filters.since));
+    }
+    if (filters.until) {
+      conditions.push(lte(auditLog.createdAt, filters.until));
+    }
+
+    const baseQuery = db
+      .select({
+        id: auditLog.id,
+        actorUserId: auditLog.actorUserId,
+        leagueId: auditLog.leagueId,
+        action: auditLog.action,
+        targetType: auditLog.targetType,
+        targetId: auditLog.targetId,
+        metadata: auditLog.metadata,
+        createdAt: auditLog.createdAt,
+        actorDisplayName: users.displayName,
+      })
+      .from(auditLog)
+      .leftJoin(users, eq(auditLog.actorUserId, users.id));
+
+    const filtered = conditions.length > 0
+      ? baseQuery.where(and(...conditions))
+      : baseQuery;
+
+    const rows = await filtered
+      .orderBy(desc(auditLog.createdAt))
+      .limit(filters.limit);
     return rows as Array<AuditLogEntry & { actorDisplayName: string | null }>;
   }
 

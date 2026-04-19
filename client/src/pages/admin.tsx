@@ -36,12 +36,13 @@ import {
   Trophy,
   Copy,
   Link2,
-  Mail
+  Mail,
+  ShieldAlert
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { type LeagueMember, type League, type DraftStatus } from "@shared/schema";
+import { type LeagueMember, type League, type DraftStatus, type AuditLogEntry } from "@shared/schema";
 import { DRAFT_CONFIGURATIONS, getDraftConfigByKey, type DraftConfiguration } from "@shared/draftConfig";
 
 export default function Admin() {
@@ -66,7 +67,19 @@ export default function Admin() {
   const [showRolloverDialog, setShowRolloverDialog] = useState(false);
   const [newSeasonLabel, setNewSeasonLabel] = useState("");
   const [rolloverMemberIds, setRolloverMemberIds] = useState<string[]>([]);
-  
+  const [auditAction, setAuditAction] = useState("");
+  const [auditActor, setAuditActor] = useState("");
+  const [auditSince, setAuditSince] = useState("");
+  const [auditUntil, setAuditUntil] = useState("");
+  const [auditScope, setAuditScope] = useState<"global" | "all">("global");
+  const [auditFilters, setAuditFilters] = useState<{
+    action: string;
+    actor: string;
+    since: string;
+    until: string;
+    scope: "global" | "all";
+  }>({ action: "", actor: "", since: "", until: "", scope: "global" });
+
   // Get league ID from URL params or default to first league
   const urlParams = new URLSearchParams(window.location.search);
   const urlLeagueId = urlParams.get('league');
@@ -95,6 +108,50 @@ export default function Admin() {
       return Promise.all(usersPromises);
     },
     enabled: !!leagueId
+  });
+
+  const auditQueryKey = [
+    "/api/admin/audit-log",
+    {
+      scope: auditFilters.scope,
+      action: auditFilters.action,
+      actor: auditFilters.actor,
+      since: auditFilters.since,
+      until: auditFilters.until,
+    },
+  ] as const;
+
+  const {
+    data: globalAuditEntries,
+    isLoading: auditLoading,
+    isFetching: auditFetching,
+    error: auditError,
+  } = useQuery<Array<AuditLogEntry & { actorDisplayName: string | null }>>({
+    queryKey: auditQueryKey,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("scope", auditFilters.scope);
+      params.set("limit", "200");
+      if (auditFilters.action) params.set("action", auditFilters.action);
+      if (auditFilters.actor) params.set("actor", auditFilters.actor);
+      if (auditFilters.since) {
+        const d = new Date(auditFilters.since);
+        if (!Number.isNaN(d.getTime())) params.set("since", d.toISOString());
+      }
+      if (auditFilters.until) {
+        const d = new Date(auditFilters.until);
+        if (!Number.isNaN(d.getTime())) {
+          d.setHours(23, 59, 59, 999);
+          params.set("until", d.toISOString());
+        }
+      }
+      const res = await fetch(`/api/admin/audit-log?${params.toString()}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`Failed to load audit log (${res.status})`);
+      return res.json();
+    },
+    enabled: !!currentUser?.isAdmin,
   });
 
   const { data: draftStatus } = useQuery<DraftStatus>({
@@ -1798,6 +1855,228 @@ export default function Admin() {
           </Card>
         </div>
       </div>
+
+      {/* Platform-Wide Audit Log (visible to platform admins only) */}
+      {currentUser?.isAdmin && (
+        <section className="mt-8" data-testid="section-global-audit-log">
+          <Card className="bg-white rounded-2xl retro-border shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h3 className="text-retro-purple text-xl font-bold retro-font">
+                  <ShieldAlert className="inline mr-2" />
+                  PLATFORM AUDIT LOG
+                </h3>
+                <p className="text-xs text-retro-charcoal/70">
+                  {auditFilters.scope === "global"
+                    ? "Showing actions taken outside any single league"
+                    : "Showing all admin actions across the platform"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                <div>
+                  <Label className="block text-retro-charcoal font-bold text-xs mb-1">
+                    Action contains
+                  </Label>
+                  <Input
+                    value={auditAction}
+                    onChange={(e) => setAuditAction(e.target.value)}
+                    placeholder="e.g. sport.scores"
+                    className="border-2 border-retro-pink rounded-lg"
+                    data-testid="input-audit-action"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-retro-charcoal font-bold text-xs mb-1">
+                    Actor user ID
+                  </Label>
+                  <Input
+                    value={auditActor}
+                    onChange={(e) => setAuditActor(e.target.value)}
+                    placeholder="user id"
+                    className="border-2 border-retro-pink rounded-lg"
+                    data-testid="input-audit-actor"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-retro-charcoal font-bold text-xs mb-1">
+                    Since
+                  </Label>
+                  <Input
+                    type="date"
+                    value={auditSince}
+                    onChange={(e) => setAuditSince(e.target.value)}
+                    className="border-2 border-retro-pink rounded-lg"
+                    data-testid="input-audit-since"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-retro-charcoal font-bold text-xs mb-1">
+                    Until
+                  </Label>
+                  <Input
+                    type="date"
+                    value={auditUntil}
+                    onChange={(e) => setAuditUntil(e.target.value)}
+                    className="border-2 border-retro-pink rounded-lg"
+                    data-testid="input-audit-until"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-retro-charcoal font-bold text-xs mb-1">
+                    Scope
+                  </Label>
+                  <Select
+                    value={auditScope}
+                    onValueChange={(v) => setAuditScope(v === "all" ? "all" : "global")}
+                  >
+                    <SelectTrigger
+                      className="border-2 border-retro-pink rounded-lg"
+                      data-testid="select-audit-scope"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="global">Outside leagues only</SelectItem>
+                      <SelectItem value="all">All actions</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <Button
+                  onClick={() =>
+                    setAuditFilters({
+                      action: auditAction.trim(),
+                      actor: auditActor.trim(),
+                      since: auditSince,
+                      until: auditUntil,
+                      scope: auditScope,
+                    })
+                  }
+                  className="bg-retro-purple text-white hover:bg-retro-pink font-bold retro-font"
+                  data-testid="button-audit-apply"
+                >
+                  APPLY FILTERS
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAuditAction("");
+                    setAuditActor("");
+                    setAuditSince("");
+                    setAuditUntil("");
+                    setAuditScope("global");
+                    setAuditFilters({
+                      action: "",
+                      actor: "",
+                      since: "",
+                      until: "",
+                      scope: "global",
+                    });
+                  }}
+                  className="border-retro-charcoal text-retro-charcoal hover:bg-retro-cream"
+                  data-testid="button-audit-clear"
+                >
+                  CLEAR
+                </Button>
+                {(auditLoading || auditFetching) && (
+                  <span className="text-xs text-retro-charcoal/60">Loading...</span>
+                )}
+              </div>
+
+              {auditError ? (
+                <div className="text-sm text-red-600">
+                  Failed to load audit entries.
+                </div>
+              ) : auditLoading ? (
+                <div className="text-sm text-retro-charcoal/70">Loading audit entries...</div>
+              ) : !globalAuditEntries || globalAuditEntries.length === 0 ? (
+                <div
+                  className="text-sm text-retro-charcoal/70 italic"
+                  data-testid="text-audit-empty"
+                >
+                  No audit entries match the current filters.
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-retro-pink/40 rounded-lg">
+                  <table className="w-full text-sm">
+                    <thead className="bg-retro-cream text-retro-charcoal">
+                      <tr className="text-left">
+                        <th className="p-2 font-bold">When</th>
+                        <th className="p-2 font-bold">Action</th>
+                        <th className="p-2 font-bold">Actor</th>
+                        <th className="p-2 font-bold">Target</th>
+                        <th className="p-2 font-bold">League</th>
+                        <th className="p-2 font-bold">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {globalAuditEntries.map((entry) => (
+                        <tr
+                          key={entry.id}
+                          className="border-t border-retro-pink/30 align-top"
+                          data-testid={`row-audit-${entry.id}`}
+                        >
+                          <td className="p-2 whitespace-nowrap font-mono text-xs">
+                            {entry.createdAt
+                              ? new Date(entry.createdAt as unknown as string).toLocaleString()
+                              : "—"}
+                          </td>
+                          <td className="p-2 font-mono text-xs">
+                            <span className="bg-retro-yellow/40 px-1.5 py-0.5 rounded">
+                              {entry.action}
+                            </span>
+                          </td>
+                          <td className="p-2">
+                            <div className="font-bold">
+                              {entry.actorDisplayName || "system"}
+                            </div>
+                            {entry.actorUserId && (
+                              <div className="text-[10px] text-retro-charcoal/60 font-mono">
+                                {entry.actorUserId}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-2 text-xs">
+                            {entry.targetType ? (
+                              <>
+                                <div>{entry.targetType}</div>
+                                {entry.targetId && (
+                                  <div className="text-[10px] text-retro-charcoal/60 font-mono">
+                                    {entry.targetId}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-retro-charcoal/50">—</span>
+                            )}
+                          </td>
+                          <td className="p-2 text-xs font-mono">
+                            {entry.leagueId || (
+                              <span className="text-retro-charcoal/50 italic">global</span>
+                            )}
+                          </td>
+                          <td className="p-2 text-xs">
+                            {entry.metadata ? (
+                              <pre className="whitespace-pre-wrap break-words max-w-xs text-[11px] bg-gray-50 p-1 rounded">
+                                {JSON.stringify(entry.metadata, null, 0)}
+                              </pre>
+                            ) : (
+                              <span className="text-retro-charcoal/50">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       {/* Privilege Management Dialog */}
       <Dialog open={showPrivilegeDialog} onOpenChange={setShowPrivilegeDialog}>
