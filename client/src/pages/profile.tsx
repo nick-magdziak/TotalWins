@@ -921,7 +921,7 @@ export default function Profile() {
               <div className="flex items-center gap-2">
                 <UserCog className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  {currentUser?.isAdmin ? "Administrator" : "Standard User"}
+                  {currentUser?.isAdmin ? "Super Admin" : "Standard User"}
                 </span>
               </div>
             </div>

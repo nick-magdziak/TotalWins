@@ -1276,7 +1276,7 @@ export default function Admin() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge className={`${memberData.user?.isAdmin ? 'bg-retro-purple text-white' : 'bg-retro-lime text-retro-charcoal'}`}>
-                          {memberData.user?.isAdmin ? 'ADMIN' : 'PLAYER'}
+                          {memberData.user?.isAdmin ? 'SUPER ADMIN' : 'PLAYER'}
                         </Badge>
                         <Badge className={memberData.invitationStatus === "pending" ? "bg-orange-500 text-white" : "bg-retro-teal text-white"}>
                           {memberData.invitationStatus === "pending" ? "PENDING" : "ACTIVE"}
@@ -1864,12 +1864,12 @@ export default function Admin() {
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h3 className="text-retro-purple text-xl font-bold retro-font">
                   <ShieldAlert className="inline mr-2" />
-                  PLATFORM AUDIT LOG
+                  SUPER ADMIN AUDIT LOG
                 </h3>
                 <p className="text-xs text-retro-charcoal/70">
                   {auditFilters.scope === "global"
                     ? "Showing actions taken outside any single league"
-                    : "Showing all admin actions across the platform"}
+                    : "Showing all Super Admin actions across the platform"}
                 </p>
               </div>
 
@@ -2115,7 +2115,7 @@ export default function Admin() {
                   className="w-full bg-retro-purple hover:bg-retro-pink text-white font-bold py-3 rounded-lg retro-font"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  SET AS ADMIN
+                  SET AS SUPER ADMIN
                 </Button>
                 
                 <Button
