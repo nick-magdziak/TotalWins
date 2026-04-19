@@ -1864,7 +1864,7 @@ export default function Admin() {
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h3 className="text-retro-purple text-xl font-bold retro-font">
                   <ShieldAlert className="inline mr-2" />
-                  SUPER ADMIN AUDIT LOG
+                  SUPER ADMIN PLATFORM AUDIT LOG
                 </h3>
                 <p className="text-xs text-retro-charcoal/70">
                   {auditFilters.scope === "global"
@@ -2125,7 +2125,7 @@ export default function Admin() {
                   className="w-full border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white font-bold py-3 rounded-lg retro-font"
                 >
                   <User className="w-4 h-4 mr-2" />
-                  SET AS PLAYER
+                  REMOVE SUPER ADMIN
                 </Button>
 
                 {(() => {
