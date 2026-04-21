@@ -555,7 +555,7 @@ export default function Admin() {
 
   const addPlayerNoInviteMutation = useMutation({
     mutationFn: async ({ email, name }: { email: string; name: string }) => {
-      const response = await fetch("/api/admin/add-player-no-invite", {
+      const response = await fetch("/api/leagues/add-player-no-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, leagueId }),

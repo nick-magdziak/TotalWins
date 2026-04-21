@@ -1503,9 +1503,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/email/invite", sendLeagueInvite);
   app.post("/api/email/draft-notification", sendDraftNotification);
 
-  // Add player without sending invite email
-  app.post("/api/admin/add-player-no-invite", async (req, res) => {
+  // Add player without sending invite email.
+  // NOTE: mounted outside /api/admin so league commissioners (createdBy) can use it
+  // without being platform Super Admins. Authorization is enforced inline.
+  app.post("/api/leagues/add-player-no-invite", async (req, res) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const schema = z.object({
         email: z.string().email(),
         name: z.string().min(1),
@@ -1515,6 +1521,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const league = await storage.getLeague(leagueId);
       if (!league) return res.status(404).json({ message: "League not found" });
+
+      const requestingUser = await storage.getUser(req.session.userId);
+      const isAuthorized = requestingUser?.isAdmin || league.createdBy === req.session.userId;
+      if (!isAuthorized) {
+        return res.status(403).json({ message: "Only the league commissioner can add players" });
+      }
 
       // Check if user already exists
       let user = await storage.getUserByEmail(email);
