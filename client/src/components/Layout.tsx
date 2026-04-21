@@ -6,7 +6,7 @@ import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, Message
 import { getCurrentUser, logout, AUTH_STORAGE_KEY } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { type League } from "@shared/schema";
+import { type League, type DraftStatus } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { useRealtimeInvitations } from "@/hooks/use-realtime";
 import totalWinsLogo from "@assets/TotalWinsLogo_PureYellow.png";
@@ -104,11 +104,23 @@ export default function Layout({ children }: LayoutProps) {
   // Always derive the effective league ID from the resolved currentLeague, never from the raw state default
   const effectiveLeagueId = currentLeague?.id ?? "";
 
+  // Poll the current league's draft status so we can flag the DRAFT nav item
+  // when it's the logged-in user's turn to pick.
+  const { data: draftStatus } = useQuery<DraftStatus>({
+    queryKey: ["/api/leagues", effectiveLeagueId, "draft", "status"],
+    enabled: !!effectiveLeagueId && !!currentUser?.id,
+    refetchInterval: 3000,
+  });
+  const isUserTurn = !!draftStatus?.isActive
+    && !draftStatus?.isPaused
+    && !!currentUser?.displayName
+    && draftStatus?.currentPlayer === currentUser.displayName;
+
   // League-specific navigation items with current league context
   const leagueNavItems = [
-    { path: `/standings?league=${effectiveLeagueId}`, label: "STANDINGS", icon: Trophy },
-    { path: `/draft?league=${effectiveLeagueId}`, label: "DRAFT", icon: Users },
-    ...(isLeagueAdmin ? [{ path: `/admin?league=${effectiveLeagueId}`, label: "ADMIN", icon: Settings }] : []),
+    { path: `/standings?league=${effectiveLeagueId}`, label: "STANDINGS", icon: Trophy, showTurnBadge: false },
+    { path: `/draft?league=${effectiveLeagueId}`, label: "DRAFT", icon: Users, showTurnBadge: isUserTurn },
+    ...(isLeagueAdmin ? [{ path: `/admin?league=${effectiveLeagueId}`, label: "ADMIN", icon: Settings, showTurnBadge: false }] : []),
   ];
 
   // General navigation items (not league-specific)
@@ -251,6 +263,15 @@ export default function Layout({ children }: LayoutProps) {
                     className={`nav-btn relative ${isActive ? "active" : ""}`}
                   >
                     {item.label}
+                    {item.showTurnBadge && (
+                      <Badge
+                        variant="destructive"
+                        className="ml-2 h-5 min-w-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center"
+                        data-testid="badge-draft-turn-desktop"
+                      >
+                        1
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
               );
@@ -414,6 +435,15 @@ export default function Layout({ children }: LayoutProps) {
                           >
                             <Icon className="w-5 h-5" />
                             <span className="font-medium retro-font">{item.label}</span>
+                            {item.showTurnBadge && (
+                              <Badge
+                                variant="destructive"
+                                className="ml-auto h-5 min-w-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center"
+                                data-testid="badge-draft-turn-mobile"
+                              >
+                                1
+                              </Badge>
+                            )}
                           </div>
                         </Link>
                       );
