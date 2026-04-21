@@ -1307,13 +1307,17 @@ export class DatabaseStorage implements IStorage {
       let totalWins = 0;
       let totalLosses = 0;
       let totalTies = 0;
-      for (const team of validTeams) {
-        const r = recordByTeam.get(team.id);
-        if (!r) continue;
+      // Override each team's W/L/T with the league-cutoff-filtered counts so
+      // the per-team chips on the standings UI reflect only games that count
+      // for this league (i.e. games on/after the league start date), not the
+      // team's full season record.
+      const filteredTeams = validTeams.map((team) => {
+        const r = recordByTeam.get(team.id) ?? { wins: 0, losses: 0, ties: 0 };
         totalWins += r.wins;
         totalLosses += r.losses;
         totalTies += r.ties;
-      }
+        return { ...team, wins: r.wins, losses: r.losses, ties: r.ties };
+      });
 
       standings.push({
         userId: user.id,
@@ -1321,7 +1325,7 @@ export class DatabaseStorage implements IStorage {
         totalWins,
         totalLosses,
         totalTies,
-        teams: validTeams,
+        teams: filteredTeams,
         rank: 0, // Will be calculated after sorting
       });
     }
