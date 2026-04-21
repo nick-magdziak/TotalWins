@@ -71,7 +71,7 @@ export interface IStorage {
   getUserLeagues(userId: string): Promise<League[]>;
   getSeasonHistory(leagueId: string): Promise<League[]>;
   rolloverLeague(leagueId: string, newSeason: string, createdBy: string, memberUserIds?: string[]): Promise<League>;
-  getLeagueSeasonGameStatus(leagueId: string): Promise<{ totalGames: number; completedGames: number; pendingGames: number; isComplete: boolean }>;
+  getLeagueSeasonGameStatus(leagueId: string): Promise<{ totalGames: number; completedGames: number; pendingGames: number; isComplete: boolean; seasonEndDate: string | null }>;
 
   // League Members
   getLeagueMembers(leagueId: string): Promise<LeagueMember[]>;
@@ -1023,26 +1023,47 @@ export class DatabaseStorage implements IStorage {
     return newLeague;
   }
 
-  async getLeagueSeasonGameStatus(leagueId: string): Promise<{ totalGames: number; completedGames: number; pendingGames: number; isComplete: boolean }> {
+  async getLeagueSeasonGameStatus(leagueId: string): Promise<{ totalGames: number; completedGames: number; pendingGames: number; isComplete: boolean; seasonEndDate: string | null }> {
     const league = await this.getLeague(leagueId);
-    if (!league) return { totalGames: 0, completedGames: 0, pendingGames: 0, isComplete: false };
+    if (!league) return { totalGames: 0, completedGames: 0, pendingGames: 0, isComplete: false, seasonEndDate: null };
 
     const sport = league.sport || "NFL";
-    // Count all synced games for this sport
-    const allGames = await db.select().from(games).where(eq(games.sport, sport));
-    if (allGames.length === 0) {
-      // No games synced yet — treat as not complete
-      return { totalGames: 0, completedGames: 0, pendingGames: 0, isComplete: false };
-    }
 
+    // Count synced games for this sport+season for informational purposes only.
+    const allGames = await db
+      .select()
+      .from(games)
+      .where(and(eq(games.sport, sport), eq(games.season, league.season)));
     const completedGames = allGames.filter(g => g.status === "completed").length;
     const pendingGames = allGames.filter(g => g.status === "scheduled" || g.status === "in_progress").length;
+
+    // Season-completion gate is calendar-based. Counting only the games we've
+    // synced is misleading because ESPN sync only covers a recent window —
+    // mid-season we'd incorrectly think the season was over once those few
+    // synced games finished. Instead, compare today against a known
+    // post-regular-season cutoff date for each sport.
+    //   NFL "YYYY-YY": regular season ends ~early Jan → unlock after March 1 of end year
+    //   MLB "YYYY":    regular season ends ~late Sep   → unlock after November 1 of season year
+    //   NBA "YYYY-YY": playoffs end ~mid June          → unlock after August 1 of end year
+    //   WORLD_CUP:     finals ~mid July of end year    → unlock after September 1 of end year
+    const startYear = parseInt(league.season.split("-")[0], 10);
+    const endYear = league.season.includes("-") ? startYear + 1 : startYear;
+    let endDate: Date | null;
+    switch (sport) {
+      case "NFL":       endDate = new Date(endYear, 2, 1); break;   // March 1
+      case "MLB":       endDate = new Date(endYear, 10, 1); break;  // November 1
+      case "NBA":       endDate = new Date(endYear, 7, 1); break;   // August 1
+      case "WORLD_CUP": endDate = new Date(endYear, 8, 1); break;   // September 1
+      default:          endDate = null;
+    }
+    const isComplete = endDate !== null && new Date() > endDate;
 
     return {
       totalGames: allGames.length,
       completedGames,
       pendingGames,
-      isComplete: pendingGames === 0 && completedGames > 0,
+      isComplete,
+      seasonEndDate: endDate ? endDate.toISOString() : null,
     };
   }
 

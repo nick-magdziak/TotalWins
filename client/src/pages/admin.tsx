@@ -165,6 +165,7 @@ export default function Admin() {
     completedGames: number;
     pendingGames: number;
     isComplete: boolean;
+    seasonEndDate: string | null;
   }>({
     queryKey: ["/api/leagues", leagueId, "season-complete"],
     queryFn: () => fetch(`/api/leagues/${leagueId}/season-complete`).then(r => r.json()),
@@ -1760,17 +1761,17 @@ export default function Admin() {
                     <Trophy className="w-4 h-4 mr-2" />
                     START NEW SEASON
                   </Button>
-                  {seasonGameStatus && !seasonGameStatus.isComplete ? (
-                    <p className="text-xs text-amber-600 mt-1 text-center font-medium">
-                      {seasonGameStatus.pendingGames} game{seasonGameStatus.pendingGames !== 1 ? 's' : ''} still pending — available when all games are complete
-                    </p>
-                  ) : seasonGameStatus?.isComplete ? (
+                  {seasonGameStatus?.isComplete ? (
                     <p className="text-xs text-green-600 mt-1 text-center font-medium">
-                      All {seasonGameStatus.completedGames} games complete — ready to start a new season
+                      Season complete — ready to start a new season
+                    </p>
+                  ) : seasonGameStatus?.seasonEndDate ? (
+                    <p className="text-xs text-amber-600 mt-1 text-center font-medium">
+                      Available after {new Date(seasonGameStatus.seasonEndDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                   ) : (
                     <p className="text-xs text-gray-500 mt-1 text-center">
-                      Available when all season games are processed
+                      Available when the regular season ends
                     </p>
                   )}
                 </div>
