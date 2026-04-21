@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, TrendingUp, Globe, ChevronDown } from "lucide-react";
 import StandingsTable from "@/components/StandingsTable";
-import { type Game, type League, type WCGroupStanding, type WCPlayerStanding } from "@shared/schema";
+import { type Game, type League, type PlayerStanding, type WCGroupStanding, type WCPlayerStanding } from "@shared/schema";
 import { CURRENT_SEASON, NFL_TEAM_COLORS, MLB_TEAM_COLORS, NBA_TEAM_COLORS, WC_CONFEDERATION_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
 import { FlagImage } from "@/lib/flagUtils";
@@ -60,6 +60,15 @@ export default function Standings() {
   const { data: startDateInfo } = useQuery<{ startDate: string | null; source: "league" | "season" | null }>({
     queryKey: ["/api/leagues", activeLeagueId, "start-date"],
     enabled: !!activeLeagueId,
+  });
+
+  // Mirror the standings query so we can surface the actual data freshness
+  // timestamp ("Last updated") instead of just rendering the current clock.
+  // React Query dedupes this with the StandingsTable query.
+  const { dataUpdatedAt: standingsUpdatedAt } = useQuery<PlayerStanding[]>({
+    queryKey: ["/api/leagues", activeLeagueId, "standings"],
+    enabled: !!activeLeagueId,
+    refetchInterval: 30000,
   });
 
   const formatStartDateNote = (iso: string) => {
@@ -449,14 +458,16 @@ export default function Standings() {
         <p className="text-xs text-gray-600 text-center mb-1">
           {selectedSeasonId && selectedSeasonId !== leagueId
             ? "Final standings — this season is complete"
-            : `Last updated: ${new Date().toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZoneName: 'short'
-              })}`}
+            : standingsUpdatedAt
+              ? `Last updated: ${new Date(standingsUpdatedAt).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  timeZoneName: 'short'
+                })}`
+              : "Loading standings…"}
         </p>
 
         {startDateInfo?.startDate && (() => {

@@ -82,6 +82,8 @@ export default function Draft() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "draft"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "standings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "world-cup/standings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       toast({
         title: "Team drafted successfully!",
