@@ -77,6 +77,7 @@ export interface IStorage {
   getLeagueMembers(leagueId: string): Promise<LeagueMember[]>;
   getLeagueMember(leagueId: string, userId: string): Promise<LeagueMember | undefined>;
   addLeagueMember(member: InsertLeagueMember): Promise<LeagueMember>;
+  setLeagueMemberCommissioner(leagueId: string, userId: string, isCommissioner: boolean): Promise<boolean>;
   removeLeagueMember(leagueId: string, userId: string): Promise<boolean>;
   updateLeagueMemberPreferences(leagueId: string, userId: string, preferences: { draftNotifications?: boolean; gameNotifications?: boolean; }): Promise<boolean>;
   getUserPendingInvitations(userId: string): Promise<Array<{ league: League; member: LeagueMember }>>;
@@ -1084,6 +1085,14 @@ export class DatabaseStorage implements IStorage {
   async removeLeagueMember(leagueId: string, userId: string): Promise<boolean> {
     const result = await db
       .delete(leagueMembers)
+      .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async setLeagueMemberCommissioner(leagueId: string, userId: string, isCommissioner: boolean): Promise<boolean> {
+    const result = await db
+      .update(leagueMembers)
+      .set({ isCommissioner })
       .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)));
     return result.rowCount ? result.rowCount > 0 : false;
   }

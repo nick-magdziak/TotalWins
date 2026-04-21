@@ -586,10 +586,11 @@ export default function Admin() {
   });
 
   const updatePrivilegesMutation = useMutation({
-    mutationFn: async ({ userId, isAdmin }: { userId: string; isAdmin: boolean }) => {
-      return apiRequest("POST", "/api/admin/update-privileges", { 
-        userId, 
-        isAdmin 
+    mutationFn: async ({ userId, isCommissioner }: { userId: string; isCommissioner: boolean }) => {
+      return apiRequest("POST", "/api/leagues/set-commissioner", {
+        leagueId,
+        userId,
+        isCommissioner,
       });
     },
     onSuccess: () => {
@@ -681,11 +682,11 @@ export default function Admin() {
     setShowPrivilegeDialog(true);
   };
 
-  const handlePrivilegeUpdate = (isAdmin: boolean) => {
+  const handlePrivilegeUpdate = (isCommissioner: boolean) => {
     if (selectedMember?.userId) {
-      updatePrivilegesMutation.mutate({ 
-        userId: selectedMember.userId, 
-        isAdmin 
+      updatePrivilegesMutation.mutate({
+        userId: selectedMember.userId,
+        isCommissioner,
       });
     }
   };
@@ -1276,9 +1277,15 @@ export default function Admin() {
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className={`${memberData.user?.isAdmin ? 'bg-retro-purple text-white' : 'bg-retro-lime text-retro-charcoal'}`}>
-                          {memberData.user?.isAdmin ? 'SUPER ADMIN' : 'PLAYER'}
-                        </Badge>
+                        {(() => {
+                          const isCreator = currentLeague?.createdBy === memberData.userId;
+                          const isCommish = isCreator || (memberData as LeagueMember).isCommissioner;
+                          return (
+                            <Badge className={isCommish ? 'bg-retro-purple text-white' : 'bg-retro-lime text-retro-charcoal'}>
+                              {isCommish ? 'ADMIN' : 'PLAYER'}
+                            </Badge>
+                          );
+                        })()}
                         <Badge className={memberData.invitationStatus === "pending" ? "bg-orange-500 text-white" : "bg-retro-teal text-white"}>
                           {memberData.invitationStatus === "pending" ? "PENDING" : "ACTIVE"}
                         </Badge>
@@ -2105,29 +2112,40 @@ export default function Admin() {
                   {membersWithUserData?.find(m => m.id === selectedMember.id)?.user?.email || "No email available"}
                 </p>
                 <p className="text-retro-charcoal/70 text-sm">
-                  Set privileges for this player
+                  Set this player's role in the league
                 </p>
               </div>
 
               <div className="space-y-3">
-                <Button
-                  onClick={() => handlePrivilegeUpdate(true)}
-                  disabled={updatePrivilegesMutation.isPending || removePlayerMutation.isPending}
-                  className="w-full bg-retro-purple hover:bg-retro-pink text-white font-bold py-3 rounded-lg retro-font"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  SET AS SUPER ADMIN
-                </Button>
-                
-                <Button
-                  onClick={() => handlePrivilegeUpdate(false)}
-                  disabled={updatePrivilegesMutation.isPending || removePlayerMutation.isPending}
-                  variant="outline"
-                  className="w-full border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white font-bold py-3 rounded-lg retro-font"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  REMOVE SUPER ADMIN
-                </Button>
+                {(() => {
+                  const selectedMemberData = membersWithUserData?.find(m => m.id === selectedMember.id) as (LeagueMember & { user?: any }) | undefined;
+                  const isCreator = currentLeague?.createdBy === selectedMember.userId;
+                  const isCommish = isCreator || selectedMemberData?.isCommissioner;
+                  const busy = updatePrivilegesMutation.isPending || removePlayerMutation.isPending;
+                  return (
+                    <>
+                      <Button
+                        onClick={() => handlePrivilegeUpdate(true)}
+                        disabled={busy || isCommish}
+                        className="w-full bg-retro-purple hover:bg-retro-pink text-white font-bold py-3 rounded-lg retro-font disabled:opacity-50"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        MAKE ADMIN
+                      </Button>
+
+                      <Button
+                        onClick={() => handlePrivilegeUpdate(false)}
+                        disabled={busy || !isCommish || isCreator}
+                        variant="outline"
+                        className="w-full border-retro-teal text-retro-teal hover:bg-retro-teal hover:text-white font-bold py-3 rounded-lg retro-font disabled:opacity-50"
+                        title={isCreator ? "The league creator is always the admin" : undefined}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        REMOVE ADMIN
+                      </Button>
+                    </>
+                  );
+                })()}
 
                 {(() => {
                   const memberData = membersWithUserData?.find(m => m.id === selectedMember.id);

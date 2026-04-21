@@ -85,6 +85,7 @@ export const leagueMembers = pgTable("league_members", {
   draftNotifications: boolean("draft_notifications").default(true),
   gameNotifications: boolean("game_notifications").default(false),
   invitationStatus: text("invitation_status").notNull().default("active"), // active, pending
+  isCommissioner: boolean("is_commissioner").notNull().default(false),
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 

@@ -117,10 +117,11 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-// Helper: authorize a league-scoped action for the league commissioner (createdBy)
-// or a platform Super Admin. Returns the league when authorized, otherwise sends
-// the appropriate 401/403/404 response and returns null. Caller must short-circuit
-// when null is returned.
+// Helper: authorize a league-scoped action for a league commissioner (the
+// creator OR any member with isCommissioner = true) or a platform Super Admin.
+// Returns the league when authorized, otherwise sends the appropriate
+// 401/403/404 response and returns null. Caller must short-circuit when null
+// is returned.
 async function authorizeLeagueCommissioner(
   req: Request,
   res: Response,
@@ -140,12 +141,15 @@ async function authorizeLeagueCommissioner(
     return null;
   }
   const user = await storage.getUser(req.session.userId);
-  const authorized = user?.isAdmin || league.createdBy === req.session.userId;
-  if (!authorized) {
-    res.status(403).json({ message: "Only the league commissioner can perform this action" });
-    return null;
+  if (user?.isAdmin || league.createdBy === req.session.userId) {
+    return { league };
   }
-  return { league };
+  const member = await storage.getLeagueMember(leagueId, req.session.userId);
+  if (member?.isCommissioner) {
+    return { league };
+  }
+  res.status(403).json({ message: "Only a league commissioner can perform this action" });
+  return null;
 }
 
 async function buildDraftEmailData(leagueId: string, sport: string) {
@@ -1608,6 +1612,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Add player no invite error:", error);
       res.status(400).json({ message: "Failed to add player" });
+    }
+  });
+
+  // Toggle league commissioner status for a member.
+  // The league creator (createdBy) is always a commissioner and cannot be demoted.
+  app.post("/api/leagues/set-commissioner", async (req, res) => {
+    try {
+      const schema = z.object({
+        leagueId: z.string(),
+        userId: z.string(),
+        isCommissioner: z.boolean(),
+      });
+      const { leagueId, userId, isCommissioner } = schema.parse(req.body);
+      const auth = await authorizeLeagueCommissioner(req, res, leagueId);
+      if (!auth) return;
+      const { league } = auth;
+
+      if (league.createdBy === userId && !isCommissioner) {
+        return res.status(400).json({ message: "The league creator cannot be removed as commissioner" });
+      }
+
+      const success = await storage.setLeagueMemberCommissioner(leagueId, userId, isCommissioner);
+      if (!success) {
+        return res.status(404).json({ message: "Player not found in league" });
+      }
+
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        leagueId,
+        action: isCommissioner ? "league.commissioner.grant" : "league.commissioner.revoke",
+        targetType: "user",
+        targetId: userId,
+      });
+
+      res.json({ success: true, isCommissioner });
+    } catch (error) {
+      console.error("Set commissioner error:", error);
+      res.status(400).json({ message: "Failed to update commissioner status" });
     }
   });
 
