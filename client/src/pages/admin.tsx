@@ -2235,11 +2235,17 @@ export default function Admin() {
                     <SelectValue placeholder="Select team for player..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableTeams?.map((team: any) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {currentLeague?.sport === 'WORLD_CUP' ? team.name : `${team.city} ${team.name}`}
-                      </SelectItem>
-                    ))}
+                    {[...(availableTeams ?? [])]
+                      .sort((a: any, b: any) => {
+                        const aLabel = currentLeague?.sport === 'WORLD_CUP' ? a.name : `${a.city} ${a.name}`;
+                        const bLabel = currentLeague?.sport === 'WORLD_CUP' ? b.name : `${b.city} ${b.name}`;
+                        return aLabel.localeCompare(bLabel);
+                      })
+                      .map((team: any) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {currentLeague?.sport === 'WORLD_CUP' ? team.name : `${team.city} ${team.name}`}
+                        </SelectItem>
+                      ))}
                     {(!availableTeams || availableTeams.length === 0) && (
                       <SelectItem value="no-teams" disabled>
                         No teams available

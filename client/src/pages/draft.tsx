@@ -478,7 +478,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }) || [];
+                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -516,7 +516,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }) || [];
+                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -557,7 +557,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }) || [];
+                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -595,7 +595,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }) || [];
+                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -636,7 +636,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }) || [];
+                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -674,7 +674,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }) || [];
+                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
