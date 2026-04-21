@@ -107,12 +107,28 @@ export default function Draft() {
   });
 
   const handleTeamSelect = (teamId: string) => {
-    if (!drafted.has(teamId) && isCurrentUserTurn) {
-      const team = teams?.find(t => t.id === teamId);
-      if (team) {
-        setSelectedTeamForDraft(team);
-        setShowDraftConfirmation(true);
-      }
+    if (drafted.has(teamId)) {
+      toast({
+        title: "Team already drafted",
+        description: "This team has already been picked.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!isCurrentUserTurn) {
+      toast({
+        title: "Not your turn",
+        description: draftStatus?.currentPlayer
+          ? `It's currently ${draftStatus.currentPlayer}'s pick.`
+          : "Please wait for your turn to draft.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const team = teams?.find(t => t.id === teamId);
+    if (team) {
+      setSelectedTeamForDraft(team);
+      setShowDraftConfirmation(true);
     }
   };
 
@@ -490,7 +506,7 @@ export default function Draft() {
                                 <button
                                   key={team.id}
                                   onClick={() => handleTeamSelect(team.id)}
-                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  disabled={drafted.has(team.id) || draftPickMutation.isPending}
                                   className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                                     drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                                   }`}
@@ -528,7 +544,7 @@ export default function Draft() {
                                 <button
                                   key={team.id}
                                   onClick={() => handleTeamSelect(team.id)}
-                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  disabled={drafted.has(team.id) || draftPickMutation.isPending}
                                   className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                                     drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                                   }`}
@@ -569,7 +585,7 @@ export default function Draft() {
                                 <button
                                   key={team.id}
                                   onClick={() => handleTeamSelect(team.id)}
-                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  disabled={drafted.has(team.id) || draftPickMutation.isPending}
                                   className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                                     drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                                   }`}
@@ -607,7 +623,7 @@ export default function Draft() {
                                 <button
                                   key={team.id}
                                   onClick={() => handleTeamSelect(team.id)}
-                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  disabled={drafted.has(team.id) || draftPickMutation.isPending}
                                   className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                                     drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                                   }`}
@@ -648,7 +664,7 @@ export default function Draft() {
                                 <button
                                   key={team.id}
                                   onClick={() => handleTeamSelect(team.id)}
-                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  disabled={drafted.has(team.id) || draftPickMutation.isPending}
                                   className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                                     drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                                   }`}
@@ -686,7 +702,7 @@ export default function Draft() {
                                 <button
                                   key={team.id}
                                   onClick={() => handleTeamSelect(team.id)}
-                                  disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                                  disabled={drafted.has(team.id) || draftPickMutation.isPending}
                                   className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                                     drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                                   }`}
@@ -726,7 +742,7 @@ export default function Draft() {
                       <button
                         key={team.id}
                         onClick={() => handleTeamSelect(team.id)}
-                        disabled={drafted.has(team.id) || !isCurrentUserTurn || draftPickMutation.isPending}
+                        disabled={drafted.has(team.id) || draftPickMutation.isPending}
                         className={`w-full p-3 rounded-lg text-left font-bold transition-all duration-200 cursor-pointer ${
                           drafted.has(team.id) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"
                         }`}
