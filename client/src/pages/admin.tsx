@@ -314,7 +314,7 @@ export default function Admin() {
 
   const saveDraftOrderMutation = useMutation({
     mutationFn: async (orderedUserIds: string[]) => {
-      return apiRequest("POST", "/api/admin/save-draft-order", { leagueId, orderedUserIds });
+      return apiRequest("POST", "/api/leagues/save-draft-order", { leagueId, orderedUserIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
@@ -613,7 +613,7 @@ export default function Admin() {
 
   const removePlayerMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest("POST", "/api/admin/remove-player", { 
+      return apiRequest("POST", "/api/leagues/remove-player", { 
         leagueId,
         userId 
       });
@@ -783,7 +783,7 @@ export default function Admin() {
 
   const resetDraftMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/reset-draft", { leagueId });
+      return apiRequest("POST", "/api/leagues/reset-draft", { leagueId });
     },
     onSuccess: () => {
       setShowResetConfirmDialog(false);
@@ -804,7 +804,7 @@ export default function Admin() {
 
   const undoLastPickMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/undo-last-pick", { leagueId });
+      return apiRequest("POST", "/api/leagues/undo-last-pick", { leagueId });
     },
     onSuccess: () => {
       toast({

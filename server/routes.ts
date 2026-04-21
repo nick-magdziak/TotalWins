@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { sportsApi } from "./services/sportsApi";
-import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues, type NFLTeam, type MLBTeam, type NBATeam } from "@shared/schema";
+import { insertUserSchema, insertLeagueSchema, insertDraftPickSchema, leagues, type NFLTeam, type MLBTeam, type NBATeam, type League } from "@shared/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
@@ -115,6 +115,37 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction): Pr
   } catch (err) {
     next(err);
   }
+}
+
+// Helper: authorize a league-scoped action for the league commissioner (createdBy)
+// or a platform Super Admin. Returns the league when authorized, otherwise sends
+// the appropriate 401/403/404 response and returns null. Caller must short-circuit
+// when null is returned.
+async function authorizeLeagueCommissioner(
+  req: Request,
+  res: Response,
+  leagueId: string | undefined,
+): Promise<{ league: League } | null> {
+  if (!req.session.userId) {
+    res.status(401).json({ message: "Authentication required" });
+    return null;
+  }
+  if (!leagueId) {
+    res.status(400).json({ message: "League ID required" });
+    return null;
+  }
+  const league = await storage.getLeague(leagueId);
+  if (!league) {
+    res.status(404).json({ message: "League not found" });
+    return null;
+  }
+  const user = await storage.getUser(req.session.userId);
+  const authorized = user?.isAdmin || league.createdBy === req.session.userId;
+  if (!authorized) {
+    res.status(403).json({ message: "Only the league commissioner can perform this action" });
+    return null;
+  }
+  return { league };
 }
 
 async function buildDraftEmailData(leagueId: string, sport: string) {
@@ -1580,13 +1611,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/save-draft-order", async (req, res) => {
+  app.post("/api/leagues/save-draft-order", async (req, res) => {
     try {
       const schema = z.object({
         leagueId: z.string(),
         orderedUserIds: z.array(z.string()).min(1),
       });
       const { leagueId, orderedUserIds } = schema.parse(req.body);
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       await storage.saveDraftOrder(leagueId, orderedUserIds);
       logAudit({
         actorUserId: req.session.userId ?? null,
@@ -1722,13 +1754,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/remove-player", async (req, res) => {
+  app.post("/api/leagues/remove-player", async (req, res) => {
     try {
       const { leagueId, userId } = req.body;
       
       if (!leagueId || !userId) {
         return res.status(400).json({ error: "Invalid request data" });
       }
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       
       const success = await storage.removeLeagueMember(leagueId, userId);
       
@@ -1751,13 +1784,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/reset-draft", async (req, res) => {
+  app.post("/api/leagues/reset-draft", async (req, res) => {
     try {
       const { leagueId } = req.body;
       
       if (!leagueId) {
         return res.status(400).json({ error: "Invalid request data" });
       }
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       
       await storage.resetDraft(leagueId);
       logAudit({
@@ -1774,14 +1808,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // League-specific draft start endpoint (called by client) — admin only
-  app.post("/api/leagues/:leagueId/draft/start", requireAdmin, async (req, res) => {
+  // League-specific draft start endpoint (called by client) — commissioner or Super Admin
+  app.post("/api/leagues/:leagueId/draft/start", async (req, res) => {
     try {
       const { leagueId } = req.params;
       
-      if (!leagueId) {
-        return res.status(400).json({ error: "League ID required" });
-      }
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       
       // Validate player count matches draft configuration
       const league = await storage.getLeague(leagueId);
@@ -1859,13 +1891,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/start-draft", async (req, res) => {
+  app.post("/api/leagues/start-draft", async (req, res) => {
     try {
       const { leagueId } = req.body;
       
       if (!leagueId) {
         return res.status(400).json({ error: "League ID required" });
       }
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       
       // Validate player count matches draft configuration
       const league = await storage.getLeague(leagueId);
@@ -1944,13 +1977,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/stop-draft", async (req, res) => {
+  app.post("/api/leagues/stop-draft", async (req, res) => {
     try {
       const { leagueId } = req.body;
       
       if (!leagueId) {
         return res.status(400).json({ error: "League ID required" });
       }
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       
       await storage.updateLeague(leagueId, { draftStatus: "pending" });
       logAudit({
@@ -1967,14 +2001,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin-prefixed aliases for pause/resume (global admins);
+  // Pause/resume — commissioner or Super Admin;
   // league-scoped routes at /api/leagues/:leagueId/draft/{pause|resume} also exist
-  app.post("/api/admin/pause-draft", requireAdmin, async (req, res) => {
+  app.post("/api/leagues/pause-draft", async (req, res) => {
     try {
       const { leagueId } = req.body;
-      if (!leagueId) return res.status(400).json({ error: "League ID required" });
-      const league = await storage.getLeague(leagueId);
-      if (!league) return res.status(404).json({ error: "League not found" });
+      const auth = await authorizeLeagueCommissioner(req, res, leagueId);
+      if (!auth) return;
+      const { league } = auth;
       if (league.draftStatus !== "active") return res.status(400).json({ error: "Draft is not currently active" });
       await storage.updateLeague(leagueId, { draftStatus: "paused" });
       logAudit({ actorUserId: req.session.userId ?? null, leagueId, action: "league.draft.pause", targetType: "league", targetId: leagueId });
@@ -1985,12 +2019,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/resume-draft", requireAdmin, async (req, res) => {
+  app.post("/api/leagues/resume-draft", async (req, res) => {
     try {
       const { leagueId } = req.body;
-      if (!leagueId) return res.status(400).json({ error: "League ID required" });
-      const league = await storage.getLeague(leagueId);
-      if (!league) return res.status(404).json({ error: "League not found" });
+      const auth = await authorizeLeagueCommissioner(req, res, leagueId);
+      if (!auth) return;
+      const { league } = auth;
       if (league.draftStatus !== "paused") return res.status(400).json({ error: "Draft is not currently paused" });
       await storage.updateLeague(leagueId, { draftStatus: "active" });
       logAudit({ actorUserId: req.session.userId ?? null, leagueId, action: "league.draft.resume", targetType: "league", targetId: leagueId });
@@ -2001,13 +2035,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/undo-last-pick", async (req, res) => {
+  app.post("/api/leagues/undo-last-pick", async (req, res) => {
     try {
       const { leagueId } = req.body;
       
       if (!leagueId) {
         return res.status(400).json({ error: "Invalid request data" });
       }
+      if (!(await authorizeLeagueCommissioner(req, res, leagueId))) return;
       
       const success = await storage.undoLastDraftPick(leagueId);
       
