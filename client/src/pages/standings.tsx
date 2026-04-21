@@ -464,7 +464,7 @@ export default function Standings() {
           if (!formatted) return null;
           return (
             <p
-              className="text-xs text-gray-500 text-center mb-4 italic"
+              className="text-xs text-gray-600 text-center mb-4 italic"
               data-testid="text-counting-wins-from"
             >
               Counting wins from {formatted} onward
