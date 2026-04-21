@@ -1253,11 +1253,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // class of bug where a stale localStorage `currentUser` on the client
       // disagrees with the server session and triggers a spurious 403.
       const requestingUserId = req.session.userId!;
+      const resolvedUserId =
+        (typeof req.body?.userId === "string" && req.body.userId.length > 0)
+          ? req.body.userId
+          : requestingUserId;
       const pickData = insertDraftPickSchema.parse({
         ...req.body,
-        userId: req.body?.userId ?? requestingUserId,
+        userId: resolvedUserId,
         leagueId: req.params.leagueId
       });
+      // Belt-and-suspenders: never allow a pick with no owner to land in the
+      // table, even if Zod parsing somehow lets a falsy userId through. A
+      // NULL user_id orphans the team and silently hides it from standings.
+      if (!pickData.userId) {
+        return res.status(400).json({ message: "Draft pick is missing a user. Please refresh and try again." });
+      }
 
       // Authorisation: site admins and the league creator may submit picks for any
       // user (manual entry / commissioner override). All other callers must be a
