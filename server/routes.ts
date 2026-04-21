@@ -695,7 +695,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.patch("/api/leagues/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/leagues/:id", async (req, res) => {
+    const auth = await authorizeLeagueCommissioner(req, res, req.params.id);
+    if (!auth) return;
     try {
       const updates = req.body;
       // Convert draftScheduledAt string to Date if provided
@@ -704,22 +706,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate leagueStartDate updates: must be on/after the league's draft
-      // date and the sport's actual season start, and cannot be edited once the
-      // currently stored start date has already passed.
+      // date and the sport's actual season start. Once the draft is completed
+      // and the saved start date has already passed, the date is locked to
+      // prevent retroactively excluding games that have already counted.
       if (Object.prototype.hasOwnProperty.call(updates, "leagueStartDate")) {
-        const existing = await storage.getLeague(req.params.id);
-        if (!existing) return res.status(404).json({ message: "League not found" });
+        const existing = auth.league;
 
         const todayUtcMidnight = (() => {
           const n = new Date();
           return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
         })();
 
-        if (existing.leagueStartDate) {
+        if (existing.leagueStartDate && existing.draftStatus === "completed") {
           const stored = existing.leagueStartDate;
           const storedFloor = new Date(Date.UTC(stored.getUTCFullYear(), stored.getUTCMonth(), stored.getUTCDate()));
           if (todayUtcMidnight.getTime() >= storedFloor.getTime()) {
-            return res.status(400).json({ message: "League start date is locked because it has already passed" });
+            return res.status(400).json({ message: "League start date is locked because the league has already started" });
           }
         }
 

@@ -1528,9 +1528,12 @@ export default function Admin() {
                     ? `${seasonStartDateObj.getUTCFullYear()}-${String(seasonStartDateObj.getUTCMonth() + 1).padStart(2, "0")}-${String(seasonStartDateObj.getUTCDate()).padStart(2, "0")}`
                     : "";
 
-                  // Locked once the saved start date has already passed.
+                  // Locked once the draft is completed AND the saved start date
+                  // has already passed (i.e. the league is truly under way).
+                  // While the draft is still pending/active, commissioners can
+                  // still adjust the start date.
                   let isLocked = false;
-                  if (currentLeague?.leagueStartDate) {
+                  if (currentLeague?.leagueStartDate && currentLeague?.draftStatus === "completed") {
                     const saved = new Date(currentLeague.leagueStartDate as unknown as string);
                     const savedFloor = new Date(Date.UTC(saved.getUTCFullYear(), saved.getUTCMonth(), saved.getUTCDate()));
                     isLocked = todayUtc.getTime() >= savedFloor.getTime();
@@ -1608,7 +1611,7 @@ export default function Admin() {
                         </p>
                       ) : isLocked ? (
                         <p className="text-xs text-retro-charcoal/70 mt-1 retro-font">
-                          Locked — start date has already passed.
+                          Locked — the league has already started.
                         </p>
                       ) : isDraftBeforeSeason ? (
                         <p className="text-xs text-retro-charcoal/70 mt-1 retro-font">
