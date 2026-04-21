@@ -72,8 +72,12 @@ export default function Draft() {
       const pickNumber = (draftPicks?.length || 0) + 1;
       const round = Math.ceil(pickNumber / 8); // Assuming 8 players
       
+      // Intentionally omit userId — the server fills it in from the
+      // authenticated session. Sending it from the client is fragile because
+      // a stale localStorage user can disagree with the server session and
+      // trigger a "You can only draft for yourself" 403 even though the
+      // logged-in user is a valid league member.
       return apiRequest("POST", `/api/leagues/${leagueId}/draft/picks`, {
-        userId: currentUser?.id,
         teamId,
         pickNumber,
         round,
@@ -91,8 +95,23 @@ export default function Draft() {
       });
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : "";
-      if (msg.toLowerCase().includes("paused")) {
+      const raw = error instanceof Error ? error.message : "";
+      // apiRequest throws "<status>: <body>" where body is usually
+      // {"message":"..."}. Pull out the human-readable message so the toast
+      // shows the real reason instead of a generic "try again".
+      let serverMessage = "";
+      const colonIdx = raw.indexOf(": ");
+      const bodyText = colonIdx >= 0 ? raw.slice(colonIdx + 2) : raw;
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed && typeof parsed.message === "string") {
+          serverMessage = parsed.message;
+        }
+      } catch {
+        serverMessage = bodyText;
+      }
+
+      if (serverMessage.toLowerCase().includes("paused")) {
         toast({
           title: "Draft is paused",
           description: "The draft is currently paused. Please wait for the commissioner to resume.",
@@ -101,7 +120,7 @@ export default function Draft() {
       } else {
         toast({
           title: "Draft failed",
-          description: "Failed to draft team. Please try again.",
+          description: serverMessage || "Failed to draft team. Please try again.",
           variant: "destructive",
         });
       }

@@ -1248,15 +1248,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "The draft is currently paused. Please wait for the commissioner to resume." });
       }
 
+      // Default userId to the authenticated session user when the client
+      // omits it (the live draft page never supplies it). This avoids the
+      // class of bug where a stale localStorage `currentUser` on the client
+      // disagrees with the server session and triggers a spurious 403.
+      const requestingUserId = req.session.userId!;
       const pickData = insertDraftPickSchema.parse({
         ...req.body,
+        userId: req.body?.userId ?? requestingUserId,
         leagueId: req.params.leagueId
       });
 
       // Authorisation: site admins and the league creator may submit picks for any
       // user (manual entry / commissioner override). All other callers must be a
       // member of the league and may only draft for themselves.
-      const requestingUserId = req.session.userId!;
       const requestingUser = await storage.getUser(requestingUserId);
       const isLeagueAdmin = !!requestingUser?.isAdmin || league.createdBy === requestingUserId;
       if (!isLeagueAdmin) {
