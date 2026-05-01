@@ -1,0 +1,98 @@
+I want to refactor this app so the public website and the live sports score updater are separated into two deployment targets.
+
+Current problem:
+The web server currently both serves the app and runs background sports sync jobs/intervals. I want to move all score syncing/background worker logic out of the web server so I can deploy the website as Autoscale, while keeping a small Reserved VM worker for near-instant live score updates.
+
+Please make the following changes:
+
+1. Refactor server/index.ts so it is website/API only
+- Remove startup sports sync calls from server/index.ts.
+- Remove the recurring 2-minute sports sync interval from server/index.ts.
+- server/index.ts should only initialize the Express app, register routes, serve the frontend, and start the HTTP server.
+- Do not change the normal website/API behavior.
+
+2. Remove background score interval from server/routes.ts
+- Find the 30-minute interval that calls something like:
+  sportsApi.syncGamesForWeek(3, "2025")
+- Remove it from routes.ts.
+- routes.ts should register API routes only, not run background worker loops.
+
+3. Create a dedicated live score worker
+Create a new file:
+
+scripts/live-score-worker.ts
+
+This worker should:
+- Import the same sports services currently used by the web server.
+- Run the same sports sync operations that are currently being triggered in server/index.ts, including:
+  - updateMLBStandings()
+  - updateNFLStandings()
+  - updateNBAStandings()
+  - sportsApi.syncMLBGames()
+  - sportsApi.syncNBAGames()
+  - sportsApi.syncCurrentNFLGames()
+  - sportsApi.syncNextWeekNFLGames()
+  - sportsApi.syncTeamStandingsFromESPN()
+- Run once immediately on startup.
+- Then loop continuously.
+- During live-game periods or when live games are detected, sync every 1–2 minutes.
+- Outside active game windows, sync less often, such as every 30–60 minutes.
+- Add clear logging so I can see when sync starts, when it finishes, and any errors.
+- Catch errors so one failed sync does not crash the worker permanently.
+- The worker should write to the same Postgres/Neon database using DATABASE_URL.
+
+If it is difficult to detect live games perfectly, implement a simple safe version first:
+- Sync every 2 minutes for now.
+- Add TODO comments showing where live-game-aware throttling can be added later.
+
+4. Add package.json scripts
+Add scripts similar to:
+
+"start": existing web app start command
+"worker:live-scores": command to run scripts/live-score-worker.ts
+
+Use the existing TypeScript runtime setup in this project, likely tsx, so the worker can be started with something like:
+
+npm run worker:live-scores
+
+Do not break the existing start/build/check scripts.
+
+5. Fix draft pick sport safety
+When creating draft picks, do not trust the client-provided sport value.
+Find the draft pick creation route. It currently builds pickData from req.body, userId, and leagueId.
+Change it so the draft pick sport is always set from the league’s sport:
+
+sport: league.sport
+
+This prevents MLB/NBA/World Cup picks from accidentally being saved as NFL due to schema defaults or bad client data.
+
+6. Fix or rename the admin update-records endpoint
+The current /api/admin/update-records endpoint appears NFL-biased because it calls updateTeamRecords(), which updates the NFL team table.
+Please either:
+
+Option A, preferred:
+Change /api/admin/update-records so it calls sportsApi.syncTeamStandingsFromESPN(), because that correctly routes NFL/MLB/NBA records to the right sport-specific tables.
+
+Or Option B:
+Rename/restrict the endpoint so it is clearly NFL-only, such as /api/admin/update-nfl-records.
+
+Prefer Option A unless there is a strong reason not to.
+
+7. Preserve near-instant score updates
+Do not replace the current 2-minute live update behavior with a low-frequency scheduled job only.
+The goal is:
+- Website deployment: Autoscale
+- Live score worker deployment: Reserved VM or always-on worker
+- Shared database: existing DATABASE_URL
+
+The worker should preserve the near-instant score update feel by continuing to sync around every 1–2 minutes during active periods.
+
+8. Verify
+After making the changes:
+- Run TypeScript check/lint if available.
+- Make sure npm run start still starts only the web app.
+- Make sure npm run worker:live-scores starts only the live score worker.
+- Confirm there are no remaining setInterval sports-sync loops inside server/index.ts or server/routes.ts.
+- Confirm the website still reads standings from the database as before.
+
+Please implement these changes carefully and summarize exactly which files you modified.

@@ -1257,10 +1257,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (typeof req.body?.userId === "string" && req.body.userId.length > 0)
           ? req.body.userId
           : requestingUserId;
+      // Always derive `sport` from the league, never the client. Trusting the
+      // client here means an MLB/NBA/World Cup pick can land in the table
+      // tagged "NFL" (the schema default) if a stale build sends the wrong
+      // value, which then breaks standings filtering by sport.
       const pickData = insertDraftPickSchema.parse({
         ...req.body,
         userId: resolvedUserId,
-        leagueId: req.params.leagueId
+        leagueId: req.params.leagueId,
+        sport: league.sport,
       });
       // Belt-and-suspenders: never allow a pick with no owner to land in the
       // table, even if Zod parsing somehow lets a falsy userId through. A
@@ -1524,9 +1529,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/update-records", async (req, res) => {
     try {
-      await sportsApi.updateTeamRecords();
-      logAudit({ actorUserId: req.session.userId ?? null, action: "sport.records.update" });
-      res.json({ message: "Team records updated successfully" });
+      // Use the multi-sport ESPN standings syncer so NFL/MLB/NBA records all
+      // get refreshed into their sport-specific tables. The legacy
+      // updateTeamRecords() only touched the NFL table, which silently left
+      // MLB/NBA records stale on every "Update Records" admin click.
+      const result = await sportsApi.syncTeamStandingsFromESPN();
+      logAudit({
+        actorUserId: req.session.userId ?? null,
+        action: "sport.records.update",
+        metadata: { updated: result.updated, errors: result.errors },
+      });
+      res.json({
+        message: "Team records updated successfully",
+        updated: result.updated,
+        errors: result.errors,
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to update team records" });
     }
@@ -2301,15 +2318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  // Set up periodic score updates (every 30 minutes during season)
-  setInterval(async () => {
-    try {
-      await sportsApi.syncGamesForWeek(3, "2025"); // Current week - 2025-26 NFL season
-      console.log("Automatic NFL score sync completed");
-    } catch (error) {
-      console.error("Automatic NFL score sync failed:", error);
-    }
-  }, 30 * 60 * 1000); // 30 minutes
+  // Background score syncing has been moved to scripts/live-score-worker.ts
+  // so the web server can be deployed as Autoscale without spawning sync
+  // loops in every instance. Run `npm run worker:live-scores` to start it.
 
   return httpServer;
 }

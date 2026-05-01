@@ -79,98 +79,13 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
   setupRealtime(server, sessionMiddleware);
 
-  // Initialize ESPN API sports data service
-  try {
-    const { SportsDataService } = await import("./sportsDataService");
-    const { storage } = await import("./storage");
-    const { sportsApi } = await import("./services/sportsApi");
-    const sportsService = new SportsDataService(storage);
-    
-    // Initial data update on startup
-    await sportsService.updateMLBStandings();
-    await sportsService.updateNFLStandings();
-    await sportsService.updateNBAStandings();
-    await sportsApi.syncMLBGames();
-    await sportsApi.syncNBAGames();
-    await sportsApi.syncCurrentNFLGames();
-    await sportsApi.syncNextWeekNFLGames();
-
-    // Sync team win/loss records directly from ESPN standings — more reliable
-    // than computing from our partial games table
-    await sportsApi.syncTeamStandingsFromESPN();
-
-    // World Cup sync
-    try {
-      const { worldCupDataService } = await import("./services/worldCupService");
-      await worldCupDataService.syncWorldCupGames();
-      log("World Cup data service initialized");
-    } catch (wcError) {
-      console.error("Failed to initialize World Cup data service:", wcError);
-    }
-
-    // Run an immediate game sync so upcoming/recent games are ready before the first interval fires
-    try {
-      await sportsApi.syncMLBGames();
-      await sportsApi.syncNBAGames();
-      await sportsApi.syncCurrentNFLGames();
-      await sportsApi.syncNextWeekNFLGames();
-      log("Initial MLB, NBA, and NFL game sync complete");
-    } catch (initSyncError) {
-      console.error("Initial game sync error:", initSyncError);
-    }
-
-    log("ESPN API sports data service initialized (MLB, NFL, NBA & World Cup)");
-
-    // One-time historical games backfill, gated by env flag. Runs in the
-    // background so it does not delay startup. Idempotent: storage.addGame
-    // upserts on game id, so re-running only refreshes scores.
-    if (process.env.BACKFILL_HISTORICAL_GAMES === "true") {
-      (async () => {
-        try {
-          const { runHistoricalGamesBackfill } = await import(
-            "./services/historicalBackfill"
-          );
-          await runHistoricalGamesBackfill();
-        } catch (err) {
-          console.error("Historical games backfill failed:", err);
-        }
-      })();
-    }
-    
-    // Set up automatic live game updates every 2 minutes during active hours
-    const startLiveUpdates = () => {
-      setInterval(async () => {
-        try {
-          // Only sync during reasonable hours (6 AM to 2 AM ET)
-          const now = new Date();
-          const hour = now.getHours();
-          if (hour >= 6 || hour <= 2) {
-            await sportsApi.syncMLBGames();
-            await sportsApi.syncNBAGames();
-            await sportsApi.syncCurrentNFLGames();
-            await sportsApi.syncNextWeekNFLGames();
-            // Sync World Cup during tournament period (June-July 2026)
-            const month = now.getMonth() + 1;
-            const year = now.getFullYear();
-            if (year === 2026 && month >= 6 && month <= 7) {
-              const { worldCupDataService } = await import("./services/worldCupService");
-              await worldCupDataService.syncWorldCupGames();
-            }
-            console.log("🔄 Auto-synced live MLB, NBA, NFL, and World Cup games");
-          }
-        } catch (error) {
-          console.error("Auto-sync error:", error);
-        }
-      }, 120000); // 2 minutes
-    };
-    
-    // Start live updates after initial sync
-    startLiveUpdates();
-    log("Live game auto-sync enabled (2 minute intervals)");
-    
-  } catch (error) {
-    console.error("Failed to initialize sports data service:", error);
-  }
+  // NOTE: All ESPN sports-data syncing (MLB/NFL/NBA/World Cup standings &
+  // games) has been moved out of the web server into a dedicated worker
+  // process at scripts/live-score-worker.ts. The website is now safe to
+  // deploy as Autoscale, while the worker runs as a Reserved VM / always-on
+  // process and writes to the same Postgres database via DATABASE_URL.
+  //
+  // To run the worker locally:  npm run worker:live-scores
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
