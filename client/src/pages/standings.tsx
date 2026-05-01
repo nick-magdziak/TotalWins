@@ -57,7 +57,7 @@ export default function Standings() {
 
   // Effective league start date — used to render the "Counting wins from ..."
   // note so players can see why win totals may differ from raw team records.
-  const { data: startDateInfo } = useQuery<{ startDate: string | null; source: "league" | "season" | null }>({
+  const { data: startDateInfo } = useQuery<{ startDate: string | null; source: "league" | "season" | null; seasonStart: string | null }>({
     queryKey: ["/api/leagues", activeLeagueId, "start-date"],
     enabled: !!activeLeagueId,
   });
@@ -470,9 +470,23 @@ export default function Standings() {
               : "Loading standings…"}
         </p>
 
-        {startDateInfo?.startDate && (() => {
-          const formatted = formatStartDateNote(startDateInfo.startDate);
-          if (!formatted) return null;
+        {(() => {
+          // Hide the "Counting wins from..." note when the league effectively
+          // starts at (or before) the sport's season start — in that case the
+          // note is redundant since wins are counted from day one of the season.
+          const formatted = startDateInfo?.startDate
+            ? formatStartDateNote(startDateInfo.startDate)
+            : null;
+          const leagueStartDay = startDateInfo?.startDate?.slice(0, 10) ?? null;
+          const seasonStartDay = startDateInfo?.seasonStart?.slice(0, 10) ?? null;
+          const startsAtOrBeforeSeason =
+            startDateInfo?.source === "season" ||
+            (leagueStartDay !== null &&
+              seasonStartDay !== null &&
+              leagueStartDay <= seasonStartDay);
+          if (!formatted || startsAtOrBeforeSeason) {
+            return <div className="mb-4" />;
+          }
           return (
             <p
               className="text-xs text-gray-600 text-center mb-4 italic"
@@ -482,8 +496,6 @@ export default function Standings() {
             </p>
           );
         })()}
-
-        {!startDateInfo?.startDate && <div className="mb-4" />}
 
         <StandingsTable leagueId={activeLeagueId} />
       </section>

@@ -1162,9 +1162,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "League not found" });
       }
       const result = await storage.getLeagueEffectiveStartDate(req.params.leagueId);
+      const seasonStart = await storage.getSportSeasonStart(league.sport, league.season);
       res.json({
         startDate: result.startDate ? result.startDate.toISOString() : null,
         source: result.source,
+        seasonStart: seasonStart ? seasonStart.toISOString() : null,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch league start date" });
