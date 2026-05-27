@@ -120,7 +120,19 @@ async function runOneCycle(label: string): Promise<void> {
     tasks.push(["NFL standings",        () => sportsService.updateNFLStandings()]);
     tasks.push(["NFL games (current)",  () => sportsApi.syncCurrentNFLGames()]);
     tasks.push(["NFL games (next wk)",  () => sportsApi.syncNextWeekNFLGames()]);
-    tasks.push(["ESPN team standings",  () => sportsApi.syncTeamStandingsFromESPN()]);
+  }
+
+  // ESPN team-record endpoint covers all three sports in one helper, so we
+  // call it once with the subset of sports that are currently in season.
+  const inSeasonSports: Array<"NFL" | "MLB" | "NBA"> = [];
+  if (nflOn) inSeasonSports.push("NFL");
+  if (mlbOn) inSeasonSports.push("MLB");
+  if (nbaOn) inSeasonSports.push("NBA");
+  if (inSeasonSports.length > 0) {
+    tasks.push([
+      `ESPN team standings (${inSeasonSports.join(",")})`,
+      () => sportsApi.syncTeamStandingsFromESPN(inSeasonSports),
+    ]);
   }
 
   if (isWorldCupTournamentWindow(now)) {

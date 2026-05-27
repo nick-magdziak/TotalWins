@@ -523,13 +523,20 @@ export class SportsApiService {
    * Sync team win/loss records directly from ESPN's team API.
    * This is more reliable than computing from our games table (which is partial).
    */
-  async syncTeamStandingsFromESPN(): Promise<{ updated: number; errors: number }> {
+  async syncTeamStandingsFromESPN(
+    sports?: Array<'NFL' | 'MLB' | 'NBA'>
+  ): Promise<{ updated: number; errors: number }> {
     const toESPNAbbr = (id: string) => id.replace(/-MLB$/, '').replace(/-NBA$/, '');
-    const endpoints: { sport: 'NFL' | 'MLB' | 'NBA'; path: string }[] = [
+    const allEndpoints: { sport: 'NFL' | 'MLB' | 'NBA'; path: string }[] = [
       { sport: 'NFL', path: 'football/nfl' },
       { sport: 'MLB', path: 'baseball/mlb' },
       { sport: 'NBA', path: 'basketball/nba' },
     ];
+    // When a sport filter is provided, hit only those endpoints — used by
+    // the live-score worker to skip off-season sports entirely.
+    const endpoints = sports
+      ? allEndpoints.filter(e => sports.includes(e.sport))
+      : allEndpoints;
 
     let updated = 0;
     let errors = 0;
