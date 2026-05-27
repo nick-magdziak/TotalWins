@@ -2388,6 +2388,21 @@ export class DatabaseStorage implements IStorage {
       seasonYear = (league.season || "").slice(0, 4);
     }
     const now = new Date();
+
+    // Calendar safety net — never declare the regular season "over" while we're
+    // still inside the sport's normal regular-season window. This protects
+    // against false positives when the live-score worker stops syncing and the
+    // games table goes stale (no future games scheduled ≠ season over).
+    //   MLB regular season: late March → late September
+    //   NBA regular season: mid-October → mid-April
+    const month = now.getMonth(); // 0 = Jan
+    const insideRegularSeasonWindow =
+      (sport === 'MLB' && month >= 2 /* Mar */ && month <= 8 /* Sep */) ||
+      (sport === 'NBA' && (month >= 9 /* Oct */ || month <= 3 /* Apr */));
+    if (insideRegularSeasonWindow) {
+      return { regularSeasonEnded: false, sport };
+    }
+
     const horizon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
     const future = await db
