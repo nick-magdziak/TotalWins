@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { InstallAppCard } from "@/components/InstallAppCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1063,6 +1064,9 @@ export default function Profile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Install App (PWA) */}
+        <InstallAppCard />
 
         {/* Push Notifications */}
         <Card>

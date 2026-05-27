@@ -1,100 +1,65 @@
 import { useEffect, useState } from "react";
 import { Download, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  canPromptInstall,
+  isIOSDevice,
+  isStandalone,
+  subscribeToInstallChanges,
+  triggerInstall,
+} from "@/lib/pwaInstall";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+const DISMISS_KEY = "tw_install_dismissed_permanent";
 
-const DISMISS_KEY = "tw_install_dismissed_at";
-const DISMISS_DAYS = 7;
-
-function isDismissedRecently(): boolean {
+function isPermanentlyDismissed(): boolean {
   if (typeof localStorage === "undefined") return false;
-  const at = Number(localStorage.getItem(DISMISS_KEY) || 0);
-  return !!at && Date.now() - at < DISMISS_DAYS * 24 * 60 * 60 * 1000;
-}
-
-function detectIOS(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  // iPad on iOS 13+ reports as Mac; check touchpoints to disambiguate.
-  const iPadOS =
-    /Macintosh/.test(ua) && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1;
-  return /iPad|iPhone|iPod/.test(ua) || iPadOS;
+  return localStorage.getItem(DISMISS_KEY) === "1";
 }
 
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [, force] = useState(0);
   const [installed, setInstalled] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
-  const [iosMode, setIosMode] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const isStandalone =
-      window.matchMedia?.("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
-    if (isStandalone) {
+    if (isStandalone()) {
       setInstalled(true);
       return;
     }
-
-    if (isDismissedRecently()) return;
-
-    // iOS Safari never fires beforeinstallprompt, so surface a manual
-    // "Add to Home Screen" hint on iOS only.
-    if (detectIOS()) {
-      setIosMode(true);
+    if (isPermanentlyDismissed()) {
+      setDismissed(true);
       return;
     }
-
-    const onBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      // Re-check dismiss TTL inside the handler so a late or duplicate
-      // event after dismissal can't pop the banner back up.
-      if (isDismissedRecently()) return;
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-    const onInstalled = () => {
-      setInstalled(true);
-      setDeferredPrompt(null);
-      setIosMode(false);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    const unsub = subscribeToInstallChanges(() => force((n) => n + 1));
+    const onInstalled = () => setInstalled(true);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      unsub();
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
 
-  if (installed) return null;
-  if (!deferredPrompt && !iosMode) return null;
+  if (installed || dismissed) return null;
+
+  const iosMode = isIOSDevice();
+  const canPrompt = canPromptInstall();
+  // Only render when we actually have something to offer.
+  if (!canPrompt && !iosMode) return null;
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "dismissed") {
-        localStorage.setItem(DISMISS_KEY, String(Date.now()));
-      }
-    } catch {
-      // ignore — browser may have already consumed the prompt
-    } finally {
-      setDeferredPrompt(null);
+    const outcome = await triggerInstall();
+    if (outcome === "dismissed") {
+      // User said "no" to the native dialog — treat that as permanent too.
+      localStorage.setItem(DISMISS_KEY, "1");
+      setDismissed(true);
     }
   };
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    setDeferredPrompt(null);
-    setIosMode(false);
-    setShowIOSHelp(false);
+    localStorage.setItem(DISMISS_KEY, "1");
+    setDismissed(true);
   };
 
   return (
@@ -118,7 +83,7 @@ export function InstallPrompt() {
             Faster launch, reliable notifications
           </div>
         </div>
-        {iosMode ? (
+        {iosMode && !canPrompt ? (
           <Button
             size="sm"
             onClick={() => setShowIOSHelp((v) => !v)}
@@ -148,7 +113,7 @@ export function InstallPrompt() {
           ×
         </button>
       </div>
-      {iosMode && showIOSHelp && (
+      {iosMode && !canPrompt && showIOSHelp && (
         <div className="mt-3 pt-3 border-t border-white/15 text-xs text-white/85 leading-relaxed">
           <div className="flex items-start gap-2">
             <Share className="h-4 w-4 mt-0.5 flex-shrink-0 text-retro-yellow" />
