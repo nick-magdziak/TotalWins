@@ -114,6 +114,8 @@ export interface IStorage {
   updateGame(gameId: string, updates: Partial<Game>): Promise<Game | undefined>;
   addGame(game: InsertGame): Promise<Game>;
   getRecentCompletedGames(limit: number): Promise<Game[]>;
+  hasGamesInProgress(): Promise<boolean>;
+  hasUpcomingRegularSeasonGames(sport: string, withinDays?: number): Promise<boolean>;
 
   // World Cup
   getAllWorldCupTeams(): Promise<WorldCupTeam[]>;
@@ -1568,6 +1570,44 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return game;
+  }
+
+  /**
+   * Returns true when at least one game (any sport) is currently in
+   * progress. Used by the live-score worker to decide between the
+   * 2-minute "live" sync interval and the 15-minute "idle" interval.
+   */
+  async hasGamesInProgress(): Promise<boolean> {
+    const rows = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(eq(games.status, "in_progress"))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  /**
+   * Returns true when there is at least one scheduled regular-season game
+   * for the given sport within the next `withinDays` (default 14). Used by
+   * the worker as a games-table-based signal that the sport is actively in
+   * season. Callers are expected to OR this with a calendar window check
+   * (see worker's inCalendarSeasonWindow) so that a temporarily empty games
+   * table can never cause a true in-season sport to be skipped.
+   */
+  async hasUpcomingRegularSeasonGames(sport: string, withinDays: number = 14): Promise<boolean> {
+    const now = new Date();
+    const horizon = new Date(now.getTime() + withinDays * 24 * 60 * 60 * 1000);
+    const rows = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(and(
+        eq(games.sport, sport),
+        eq(games.seasonType, "regular"),
+        gte(games.gameDate, now),
+        lte(games.gameDate, horizon),
+      ))
+      .limit(1);
+    return rows.length > 0;
   }
 
   private getCurrentNFLWeek(): number {

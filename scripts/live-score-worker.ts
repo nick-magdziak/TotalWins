@@ -22,17 +22,15 @@ import { worldCupDataService } from "../server/services/worldCupService";
 
 const sportsService = new SportsDataService(storage);
 
-// Sync cadence. We keep the same near-instant feel the web server used to
-// provide (~2 minute heartbeat). Outside reasonable hours we throttle to once
-// an hour to be polite to ESPN.
-//
-// TODO: live-game-aware throttling — when there is at least one in-progress
-// game in the database, drop the interval to ~60s; when no games are live,
-// stretch it to 10–15 minutes. The hooks for `getGames(undefined, season)`
-// already exist in storage; wire them up here once we have a clean
-// "is there a game live right now" helper across all four sports.
+// Sync cadence — three tiers:
+//   live    : at least one game is in progress → 2 min (near-instant feel)
+//   idle    : no live games → 15 min (most of the day)
+//   quiet   : 2 AM – 6 AM local server time → 1 hr (overnight)
 const ACTIVE_INTERVAL_MS = 2 * 60 * 1000;       // 2 minutes
+const IDLE_INTERVAL_MS   = 15 * 60 * 1000;      // 15 minutes
 const QUIET_INTERVAL_MS  = 60 * 60 * 1000;      // 1 hour (overnight)
+
+type Sport = "MLB" | "NBA" | "NFL";
 
 function log(...args: unknown[]) {
   const ts = new Date().toISOString();
@@ -52,25 +50,80 @@ function isQuietHours(now: Date): boolean {
   return hour >= 2 && hour < 6;
 }
 
+/**
+ * Calendar-based safety net for whether a sport is plausibly in its
+ * regular season right now. Mirrors the logic in storage.getRegularSeasonStatus
+ * so we never skip a sport during its actual season window — even if the
+ * games table is empty/stale.
+ *   MLB regular season: late March → late September   (months 2..8)
+ *   NBA regular season: mid-October → mid-April       (months 9..11, 0..3)
+ *   NFL regular season: September → early January     (months 8..11, 0)
+ */
+function inCalendarSeasonWindow(sport: Sport, now: Date): boolean {
+  const m = now.getMonth(); // 0 = Jan
+  if (sport === "MLB") return m >= 2 && m <= 8;
+  if (sport === "NBA") return m >= 9 || m <= 3;
+  if (sport === "NFL") return m >= 8 || m === 0;
+  return true;
+}
+
+/**
+ * Returns true when we should sync the given sport on this cycle.
+ * Conservative — defaults to true on any uncertainty so we never silently
+ * stop syncing a sport that's actually in season.
+ */
+async function isInSeason(sport: Sport, now: Date): Promise<boolean> {
+  // Within the sport's calendar window → always in season.
+  if (inCalendarSeasonWindow(sport, now)) return true;
+
+  // Outside the calendar window: only consider it in season if there are
+  // upcoming regular-season games scheduled in the games table.
+  try {
+    return await storage.hasUpcomingRegularSeasonGames(sport, 14);
+  } catch (err) {
+    log(`isInSeason(${sport}) check failed; defaulting to in-season:`, err);
+    return true;
+  }
+}
+
 async function runOneCycle(label: string): Promise<void> {
   const startedAt = Date.now();
+  const now = new Date();
   log(`▶ ${label}: sync starting`);
+
+  // Per-sport in-season check up front so we know which sports to skip
+  // entirely this cycle (no API call, no DB write).
+  const [mlbOn, nbaOn, nflOn] = await Promise.all([
+    isInSeason("MLB", now),
+    isInSeason("NBA", now),
+    isInSeason("NFL", now),
+  ]);
+
+  if (!mlbOn) log("  ⊘ skipping MLB: off-season");
+  if (!nbaOn) log("  ⊘ skipping NBA: off-season");
+  if (!nflOn) log("  ⊘ skipping NFL: off-season");
 
   // Each sport is wrapped in its own try/catch so one failure doesn't skip
   // the rest of the cycle. The worker as a whole should never exit on a
   // transient ESPN error.
-  const tasks: Array<[string, () => Promise<unknown>]> = [
-    ["MLB standings",       () => sportsService.updateMLBStandings()],
-    ["NFL standings",       () => sportsService.updateNFLStandings()],
-    ["NBA standings",       () => sportsService.updateNBAStandings()],
-    ["MLB games",           () => sportsApi.syncMLBGames()],
-    ["NBA games",           () => sportsApi.syncNBAGames()],
-    ["NFL games (current)", () => sportsApi.syncCurrentNFLGames()],
-    ["NFL games (next wk)", () => sportsApi.syncNextWeekNFLGames()],
-    ["ESPN team standings", () => sportsApi.syncTeamStandingsFromESPN()],
-  ];
+  const tasks: Array<[string, () => Promise<unknown>]> = [];
 
-  if (isWorldCupTournamentWindow(new Date())) {
+  if (mlbOn) {
+    tasks.push(["MLB standings", () => sportsService.updateMLBStandings()]);
+    tasks.push(["MLB games",     () => sportsApi.syncMLBGames()]);
+  }
+  if (nbaOn) {
+    tasks.push(["NBA standings", () => sportsService.updateNBAStandings()]);
+    tasks.push(["NBA games",     () => sportsApi.syncNBAGames()]);
+  }
+  if (nflOn) {
+    tasks.push(["NFL standings",        () => sportsService.updateNFLStandings()]);
+    tasks.push(["NFL games (current)",  () => sportsApi.syncCurrentNFLGames()]);
+    tasks.push(["NFL games (next wk)",  () => sportsApi.syncNextWeekNFLGames()]);
+    tasks.push(["ESPN team standings",  () => sportsApi.syncTeamStandingsFromESPN()]);
+  }
+
+  if (isWorldCupTournamentWindow(now)) {
     tasks.push(["World Cup games", () => worldCupDataService.syncWorldCupGames()]);
   }
 
@@ -84,7 +137,7 @@ async function runOneCycle(label: string): Promise<void> {
   }
 
   const elapsedMs = Date.now() - startedAt;
-  log(`■ ${label}: sync complete in ${(elapsedMs / 1000).toFixed(1)}s`);
+  log(`■ ${label}: sync complete in ${(elapsedMs / 1000).toFixed(1)}s (${tasks.length} tasks)`);
 }
 
 async function main(): Promise<void> {
@@ -130,9 +183,37 @@ async function main(): Promise<void> {
   // setInterval so a slow cycle can never overlap with the next one.
   const tick = async () => {
     const now = new Date();
-    const intervalMs = isQuietHours(now) ? QUIET_INTERVAL_MS : ACTIVE_INTERVAL_MS;
+
+    // Choose the interval BEFORE running the cycle so the log line is
+    // accurate, and so we don't pay the cost of a live-game check during
+    // quiet hours when we're already throttled to 1 hr regardless.
+    let intervalMs: number;
+    let label: string;
+
+    if (isQuietHours(now)) {
+      intervalMs = QUIET_INTERVAL_MS;
+      label = "quiet-hours (1h)";
+    } else {
+      let live = false;
+      try {
+        live = await storage.hasGamesInProgress();
+      } catch (err) {
+        // Defensive: a DB hiccup shouldn't push us off-cadence. Assume live
+        // (the safer choice) and continue.
+        log("hasGamesInProgress() failed; assuming live:", err);
+        live = true;
+      }
+      if (live) {
+        intervalMs = ACTIVE_INTERVAL_MS;
+        label = "active — live games detected (2m)";
+      } else {
+        intervalMs = IDLE_INTERVAL_MS;
+        label = "idle — no live games (15m)";
+      }
+    }
+
     try {
-      await runOneCycle(isQuietHours(now) ? "quiet-hours" : "active");
+      await runOneCycle(label);
     } catch (err) {
       // Defensive: runOneCycle already swallows per-task errors, but if the
       // wrapper itself ever throws we still want to keep ticking.
@@ -142,7 +223,7 @@ async function main(): Promise<void> {
   };
 
   setTimeout(tick, ACTIVE_INTERVAL_MS);
-  log(`live loop scheduled (active=${ACTIVE_INTERVAL_MS / 1000}s, quiet=${QUIET_INTERVAL_MS / 1000}s)`);
+  log(`live loop scheduled (active=${ACTIVE_INTERVAL_MS / 1000}s, idle=${IDLE_INTERVAL_MS / 1000}s, quiet=${QUIET_INTERVAL_MS / 1000}s)`);
 }
 
 // Graceful shutdown so deployment platforms can rotate the worker cleanly.
