@@ -17,6 +17,7 @@ import CreateLeague from "@/pages/create-league";
 import Join from "@/pages/join";
 import NotFound from "@/pages/not-found";
 import VerifyEmailBanner from "@/components/VerifyEmailBanner";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 function Router() {
   return (
@@ -46,6 +47,7 @@ function App() {
           <VerifyEmailBanner />
           <Router />
         </Layout>
+        <InstallPrompt />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

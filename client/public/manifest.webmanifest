@@ -1,0 +1,26 @@
+{
+  "name": "Total Wins",
+  "short_name": "Total Wins",
+  "description": "NFL, MLB and NBA wins pool — draft your teams and track standings live.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#ff1493",
+  "icons": [
+    {
+      "src": "/total-wins-icon.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/total-wins-icon.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["sports", "games", "entertainment"]
+}
