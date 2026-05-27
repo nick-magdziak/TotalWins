@@ -113,7 +113,7 @@ export class SportsApiService {
     const espnToMLBMap: { [key: string]: string } = {
       'LAD': 'LAD',
       'SF': 'SF-MLB', 
-      'BOS': 'BOS-MLB',
+      'BOS': 'BOS',
       'NYY': 'NYY',
       'ATL': 'ATL-MLB',
       'PHI': 'PHI-MLB',
@@ -141,8 +141,8 @@ export class SportsApiService {
       'SEA': 'SEA-MLB',
       'MIA': 'MIA-MLB',
       'NYM': 'NYM',
-      'WAS': 'WAS-MLB',
-      'WSH': 'WAS-MLB', // Washington alternate
+      'WAS': 'WSH',
+      'WSH': 'WSH', // Washington Nationals
       'ATH': 'OAK' // Athletics (Oakland)
     };
 
