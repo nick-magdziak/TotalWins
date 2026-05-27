@@ -525,6 +525,16 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeDemoLeagues() {
     try {
+      const DEMO_USER_ID = "62f5c618-a04f-4b08-92e6-f7266c4ed7be";
+
+      // Demo leagues are owned by a fixed demo user that only exists in dev.
+      // In production (or any environment where that user isn't present) the
+      // foreign key on leagues.created_by will fail, so skip seeding entirely.
+      const demoUser = await db.select().from(users).where(eq(users.id, DEMO_USER_ID)).limit(1);
+      if (demoUser.length === 0) {
+        return;
+      }
+
       // Force fresh demo leagues - delete existing ones first
       await db.delete(draftPicks).where(
         sql`league_id IN ('demo-league-1', 'demo-league-2', 'demo-league-3')`
