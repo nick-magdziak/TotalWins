@@ -8,23 +8,24 @@ export class SportsApiService {
     this.apiKey = process.env.SPORTS_API_KEY || process.env.ESPN_API_KEY || "demo_key";
   }
 
-  async fetchMLBGames(): Promise<Game[]> {
+  async fetchMLBGames(daysBack: number = 1, daysForward: number = 2): Promise<Game[]> {
     try {
       const allGames: Game[] = [];
-      
+
       // ESPN's default no-date endpoint returns the last completed day, not today.
       // Always fetch by explicit ET date to get today's scheduled games correctly.
       // ET (EDT) = UTC-4 in April/May, UTC-5 in standard time.
       const etOffsetMs = 4 * 60 * 60 * 1000; // EDT = UTC-4
       const etNow = new Date(Date.now() - etOffsetMs);
       const toDateStr = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '');
-      
-      const dates = [
-        new Date(etNow.getTime() - 86400000), // yesterday ET (update completed scores)
-        new Date(etNow.getTime()),             // today ET
-        new Date(etNow.getTime() + 86400000),  // tomorrow ET
-        new Date(etNow.getTime() + 2 * 86400000), // day after ET
-      ];
+
+      // Build inclusive [etNow - daysBack, etNow + daysForward] window. Default
+      // is the original behavior (yesterday + today + tomorrow + day-after).
+      // Wider windows are used by the worker startup to fill gaps after outages.
+      const dates: Date[] = [];
+      for (let offset = -daysBack; offset <= daysForward; offset++) {
+        dates.push(new Date(etNow.getTime() + offset * 86400000));
+      }
 
       for (const date of dates) {
         const dateStr = toDateStr(date);
@@ -328,32 +329,36 @@ export class SportsApiService {
     }
   }
 
-  async syncMLBGames(): Promise<void> {
+  async syncMLBGames(daysBack: number = 1, daysForward: number = 2): Promise<void> {
     try {
       console.log('Syncing MLB games from ESPN API...');
-      const games = await this.fetchMLBGames();
-      
+      const games = await this.fetchMLBGames(daysBack, daysForward);
+
       for (const game of games) {
         const existingGame = await storage.getGames(undefined, game.season)
           .then(games => games.find(g => g.id === game.id));
-        
+
         if (existingGame) {
           await storage.updateGame(game.id, game);
         } else {
           await storage.addGame(game);
         }
       }
-      
-      console.log(`Synced ${games.length} MLB games`);
+
+      console.log(`Synced ${games.length} MLB games (window: -${daysBack}d / +${daysForward}d)`);
     } catch (error) {
       console.error('Error syncing MLB games:', error);
     }
   }
 
-  async fetchNBAGames(): Promise<Game[]> {
+  async fetchNBAGames(daysBack: number = 1, daysForward: number = 1): Promise<Game[]> {
     const allGames: Game[] = [];
     try {
-      const dates = [new Date(), new Date(Date.now() + 86400000), new Date(Date.now() - 86400000)];
+      const now = Date.now();
+      const dates: Date[] = [];
+      for (let offset = -daysBack; offset <= daysForward; offset++) {
+        dates.push(new Date(now + offset * 86400000));
+      }
       for (const date of dates) {
         const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
         const response = await fetch(
@@ -428,10 +433,10 @@ export class SportsApiService {
     return map[team.abbreviation] || team.abbreviation;
   }
 
-  async syncNBAGames(): Promise<void> {
+  async syncNBAGames(daysBack: number = 1, daysForward: number = 1): Promise<void> {
     try {
       console.log('🏀 Syncing NBA games from ESPN API...');
-      const games = await this.fetchNBAGames();
+      const games = await this.fetchNBAGames(daysBack, daysForward);
       for (const game of games) {
         const existingGame = await storage.getGames(undefined, game.season)
           .then(gs => gs.find(g => g.id === game.id));
@@ -441,7 +446,7 @@ export class SportsApiService {
           await storage.addGame(game);
         }
       }
-      console.log(`🏀 Synced ${games.length} NBA games`);
+      console.log(`🏀 Synced ${games.length} NBA games (window: -${daysBack}d / +${daysForward}d)`);
     } catch (error) {
       console.error('Error syncing NBA games:', error);
     }

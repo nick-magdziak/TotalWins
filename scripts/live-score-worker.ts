@@ -95,6 +95,20 @@ async function main(): Promise<void> {
   // first interval fires.
   await runOneCycle("startup");
 
+  // Gap backfill: if the worker has been down for a while, the regular
+  // sync (yesterday/today/tomorrow only) leaves a hole in the games table
+  // that the standings query then under-counts. On every startup, pull a
+  // wider window (30 days back) once so any gap heals automatically.
+  // Cheap: ~30 ESPN calls per sport, only at boot time.
+  try {
+    log("▶ startup backfill: 30-day MLB/NBA games window");
+    await sportsApi.syncMLBGames(30, 2);
+    await sportsApi.syncNBAGames(30, 1);
+    log("■ startup backfill: complete");
+  } catch (err) {
+    log("startup backfill failed:", err instanceof Error ? err.message : err);
+  }
+
   // Optional one-shot historical backfill, gated by env flag. Used to live
   // in the web server. Runs in the background so the live loop isn't blocked.
   if (process.env.BACKFILL_HISTORICAL_GAMES === "true") {
