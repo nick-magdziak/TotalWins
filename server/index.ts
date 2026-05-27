@@ -13,6 +13,13 @@ declare module "express-session" {
 }
 
 const app = express();
+
+// Replit Autoscale (and most managed hosts) terminate TLS at a proxy and
+// forward plain HTTP to the app. Without this, Express thinks the request
+// is insecure and refuses to set cookies marked `secure: true`, which
+// silently breaks session-based login in production.
+app.set("trust proxy", 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
