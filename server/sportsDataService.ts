@@ -90,9 +90,25 @@ export class SportsDataService {
   async updateMLBStandings(): Promise<void> {
     try {
       console.log('🔴 LIVE DATA FETCHING: Starting real-time MLB standings update...');
-      
-      // Try multiple live data sources in order of reliability
-      const liveDataFetched = await this.fetchFromMLBStatsAPI() || 
+
+      // PRIMARY: derive standings from our own games table. We already sync
+      // every MLB game via sportsApi.syncMLBGames; the games table is the
+      // single source of truth and is always self-consistent with league
+      // standings. The upstream MLB Stats API and ESPN Standings API have
+      // both been returning empty payloads since the 2026 season opened, so
+      // those used to fall through to a hardcoded 2025 fallback that wrote
+      // wrong totals into mlb_teams.wins (showing last year's records on
+      // every team-records page). Computing from games eliminates that bug.
+      const derived = await this.deriveStandingsFromGames('MLB');
+      if (derived.length > 0) {
+        console.log(`✅ SUCCESS: Derived MLB standings for ${derived.length} teams from games table`);
+        await this.updateTeamsInDatabase(derived);
+        return;
+      }
+
+      // External-API fallback chain — only used when our games table is
+      // empty (e.g. very early in the season before the worker has run).
+      const liveDataFetched = await this.fetchFromMLBStatsAPI() ||
                               await this.fetchFromESPNAPI() ||
                               await this.fetchFromMLBOfficial();
 
@@ -101,7 +117,7 @@ export class SportsDataService {
         return;
       }
 
-      // Fallback to validated data only if all live sources fail
+      // Last-resort fallback to hardcoded validated data
       console.warn('⚠️ FALLBACK: All live APIs failed, using last known validated data...');
       await this.apply2025ValidationData();
       return;
@@ -113,10 +129,91 @@ export class SportsDataService {
     }
   }
 
+  /**
+   * Derive per-team wins/losses for the current season by tallying
+   * completed regular-season games out of our own games table. Sport-
+   * agnostic; works for MLB and NBA. NFL has its own dedicated path that
+   * also tracks ties, so it's not handled here.
+   */
+  private async deriveStandingsFromGames(sport: 'MLB' | 'NBA'): Promise<{ teamId: string; wins: number; losses: number }[]> {
+    // Determine which season string the games table uses for "current".
+    // MLB uses the calendar year; NBA tags games with the end-year of the
+    // season (so 2025-26 → "2026").
+    const now = new Date();
+    let gamesSeason: string;
+    if (sport === 'MLB') {
+      gamesSeason = String(now.getFullYear());
+    } else {
+      // NBA: Oct–Dec belongs to next year's season label; Jan–Sep is current year
+      const y = now.getFullYear();
+      gamesSeason = now.getMonth() >= 9 ? String(y + 1) : String(y);
+    }
+
+    // Seed the tally with every canonical team at 0-0 so that teams which
+    // haven't played a completed game yet (or that we missed in upstream
+    // sync) get their record reset, instead of silently retaining stale
+    // values from a previous fallback cycle.
+    const tally = new Map<string, { wins: number; losses: number }>();
+    const canonicalTeams = sport === 'MLB'
+      ? await this.storage.getAllMLBTeams()
+      : await this.storage.getAllNBATeams();
+    for (const t of canonicalTeams) {
+      tally.set(t.id, { wins: 0, losses: 0 });
+    }
+
+    const allGames = await this.storage.getGames(undefined, gamesSeason);
+    const relevant = allGames.filter(g =>
+      g.sport === sport &&
+      g.status === 'completed' &&
+      // Treat null/undefined season_type as 'regular' so legacy rows
+      // written before the season_type column existed are still counted.
+      (g.seasonType ?? 'regular') === 'regular' &&
+      g.homeScore != null &&
+      g.awayScore != null
+    );
+
+    const bumpWin = (id: string) => {
+      const cur = tally.get(id);
+      if (cur) cur.wins += 1; // ignore unknown team IDs not in our roster
+    };
+    const bumpLoss = (id: string) => {
+      const cur = tally.get(id);
+      if (cur) cur.losses += 1;
+    };
+    for (const g of relevant) {
+      const home = g.homeScore ?? 0;
+      const away = g.awayScore ?? 0;
+      if (home === away) continue; // MLB/NBA regular season have no ties
+      if (home > away) { bumpWin(g.homeTeamId); bumpLoss(g.awayTeamId); }
+      else             { bumpWin(g.awayTeamId); bumpLoss(g.homeTeamId); }
+    }
+
+    return Array.from(tally.entries()).map(([teamId, r]) => ({
+      teamId, wins: r.wins, losses: r.losses,
+    }));
+  }
+
   async updateNBAStandings(): Promise<void> {
     try {
       console.log('🏀 LIVE DATA FETCHING: Starting real-time NBA standings update...');
-      
+
+      // PRIMARY: derive from our own games table (same reasoning as MLB —
+      // ESPN's NBA Standings API was also returning empty, dropping us into
+      // hardcoded 2025-26 March data on every cycle).
+      const derived = await this.deriveStandingsFromGames('NBA');
+      if (derived.length > 0) {
+        console.log(`✅ SUCCESS: Derived NBA standings for ${derived.length} teams from games table`);
+        for (const team of derived) {
+          try {
+            await this.storage.updateNBATeamRecord(team.teamId, team.wins, team.losses);
+          } catch (err) {
+            console.error(`Failed to update NBA team ${team.teamId}:`, err);
+          }
+        }
+        return;
+      }
+
+      // Fallback: external API
       const liveDataFetched = await this.fetchFromNBAAPI();
 
       if (liveDataFetched) {
