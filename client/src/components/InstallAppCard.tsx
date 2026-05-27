@@ -27,6 +27,10 @@ export function InstallAppCard() {
 
   const iosMode = isIOSDevice();
   const canPrompt = canPromptInstall();
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const isFirefox = /Firefox\//i.test(ua) || /FxiOS\//i.test(ua);
+  const isFirefoxAndroid = isFirefox && /Android/i.test(ua);
+  const isFirefoxDesktop = isFirefox && !isFirefoxAndroid && !/FxiOS/i.test(ua);
 
   return (
     <Card data-testid="install-app-card">
@@ -76,7 +80,44 @@ export function InstallAppCard() {
               </div>
             )}
 
-            {!canPrompt && !iosMode && (
+            {!canPrompt && !iosMode && isFirefoxDesktop && (
+              <div className="rounded-lg border border-muted bg-muted/30 p-3 text-sm text-muted-foreground">
+                <p className="mb-1">
+                  <strong>Firefox on desktop doesn't support installing web apps.</strong>{" "}
+                  To install Total Wins, try one of these instead:
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <strong>Chrome, Edge, Brave or Opera (desktop):</strong>{" "}
+                    open Total Wins and click the install icon on the right
+                    edge of the address bar.
+                  </li>
+                  <li>
+                    <strong>Phone:</strong> open Total Wins in Chrome (Android)
+                    or Safari (iPhone) — you'll see an install or "Add to Home
+                    Screen" option.
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            {!canPrompt && !iosMode && isFirefoxAndroid && (
+              <div className="rounded-lg border border-muted bg-muted/30 p-3 text-sm text-muted-foreground">
+                <p className="mb-1">
+                  <strong>On Firefox for Android:</strong>
+                </p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Tap the <strong>⋮</strong> menu in the top-right.</li>
+                  <li>Choose <strong>Install</strong> (or <em>Add to Home screen</em>).</li>
+                </ol>
+                <p className="mt-2 text-xs">
+                  For the best experience (reliable push notifications,
+                  full-screen mode), we recommend Chrome on Android.
+                </p>
+              </div>
+            )}
+
+            {!canPrompt && !iosMode && !isFirefox && (
               <div className="rounded-lg border border-muted bg-muted/30 p-3 text-sm text-muted-foreground">
                 <p className="mb-1">
                   Your browser doesn't show an install button right here, but
