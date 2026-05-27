@@ -1297,10 +1297,15 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    const picksByUser = await this.getAllLeagueDraftPicks(leagueId);
+    const allPicksFlat: DraftPick[] = [];
+    for (const arr of Array.from(picksByUser.values())) allPicksFlat.push(...arr);
+    const teamMap = await this.getTeamsByIds(allPicksFlat);
+
     for (const { member, user } of members) {
-      const userPicks = await this.getUserDraftPicks(leagueId, user.id);
-      const teams = await Promise.all(
-        userPicks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
+      const userPicks = picksByUser.get(user.id) ?? [];
+      const teams = userPicks.map((pick) =>
+        teamMap.get(`${pick.sport}:${pick.teamId}`),
       );
       const validTeams = teams.filter((team): team is NFLTeam | MLBTeam | NBATeam => Boolean(team));
       let totalWins = 0;
@@ -1454,6 +1459,77 @@ export class DatabaseStorage implements IStorage {
       .from(draftPicks)
       .where(and(eq(draftPicks.leagueId, leagueId), eq(draftPicks.userId, userId)))
       .orderBy(draftPicks.pickNumber);
+  }
+
+  private async getAllLeagueDraftPicks(leagueId: string): Promise<Map<string, DraftPick[]>> {
+    const allPicks = await db
+      .select()
+      .from(draftPicks)
+      .where(eq(draftPicks.leagueId, leagueId))
+      .orderBy(draftPicks.pickNumber);
+    const byUser = new Map<string, DraftPick[]>();
+    for (const pick of allPicks) {
+      if (!pick.userId) continue;
+      const arr = byUser.get(pick.userId);
+      if (arr) arr.push(pick);
+      else byUser.set(pick.userId, [pick]);
+    }
+    return byUser;
+  }
+
+  private async getTeamsByIds(
+    picks: { teamId: string | null; sport: string | null }[],
+  ): Promise<Map<string, NFLTeam | MLBTeam | NBATeam | WorldCupTeam>> {
+    const bySport = new Map<string, Set<string>>();
+    for (const p of picks) {
+      if (!p.teamId || !p.sport) continue;
+      let set = bySport.get(p.sport);
+      if (!set) {
+        set = new Set();
+        bySport.set(p.sport, set);
+      }
+      set.add(p.teamId);
+    }
+
+    const result = new Map<string, NFLTeam | MLBTeam | NBATeam | WorldCupTeam>();
+    const tasks: Promise<void>[] = [];
+    Array.from(bySport.entries()).forEach(([sport, idSet]) => {
+      const ids: string[] = Array.from(idSet);
+      if (ids.length === 0) return;
+      const key = (id: string) => `${sport}:${id}`;
+      switch (sport) {
+        case 'NFL':
+          tasks.push(
+            db.select().from(nflTeams).where(inArray(nflTeams.id, ids as any)).then((rows) => {
+              for (const r of rows) result.set(key(r.id), r);
+            }),
+          );
+          break;
+        case 'MLB':
+          tasks.push(
+            db.select().from(mlbTeams).where(inArray(mlbTeams.id, ids as any)).then((rows) => {
+              for (const r of rows) result.set(key(r.id), r);
+            }),
+          );
+          break;
+        case 'NBA':
+          tasks.push(
+            db.select().from(nbaTeams).where(inArray(nbaTeams.id, ids as any)).then((rows) => {
+              for (const r of rows) result.set(key(r.id), r);
+            }),
+          );
+          break;
+        case 'WORLD_CUP':
+          tasks.push(
+            db.select().from(worldCupTeams).where(inArray(worldCupTeams.id, ids as any)).then((rows) => {
+              for (const r of rows) result.set(key(r.id), r);
+            }),
+          );
+          break;
+      }
+    });
+    await Promise.all(tasks);
+    return result;
   }
 
   async getDraftStatus(leagueId: string): Promise<DraftStatus> {
@@ -2111,9 +2187,10 @@ export class DatabaseStorage implements IStorage {
     if (league.sport === 'WORLD_CUP') {
       const wcStandings = await this.getWorldCupPlayerStandings(leagueId);
       const allWCGames = (await this.getWorldCupGames()).filter(g => g.season === league.season);
+      const picksByUser = await this.getAllLeagueDraftPicks(leagueId);
 
       for (const s of wcStandings) {
-        const picks = await this.getUserDraftPicks(leagueId, s.userId);
+        const picks = picksByUser.get(s.userId) ?? [];
         const teamIds = picks.map(p => p.teamId!);
 
         let maxAdditional = 0;
@@ -2154,10 +2231,15 @@ export class DatabaseStorage implements IStorage {
         filteredStandings.map((s) => [s.userId, s.totalWins]),
       );
 
+      const picksByUser = await this.getAllLeagueDraftPicks(leagueId);
+      const allPicksFlat: DraftPick[] = [];
+      for (const arr of Array.from(picksByUser.values())) allPicksFlat.push(...arr);
+      const teamMap = await this.getTeamsByIds(allPicksFlat);
+
       for (const { user } of members) {
-        const picks = await this.getUserDraftPicks(leagueId, user.id);
-        const teams = await Promise.all(
-          picks.map(pick => this.getTeamBySport(pick.teamId!, pick.sport!))
+        const picks = picksByUser.get(user.id) ?? [];
+        const teams = picks.map((pick) =>
+          teamMap.get(`${pick.sport}:${pick.teamId}`),
         );
         const validTeams = teams.filter((t): t is NFLTeam | MLBTeam | NBATeam => Boolean(t));
 
@@ -2333,11 +2415,19 @@ export class DatabaseStorage implements IStorage {
 
     const standings: WCPlayerStanding[] = [];
 
+    const picksByUser = await this.getAllLeagueDraftPicks(leagueId);
+    const allPicksFlat: DraftPick[] = [];
+    for (const arr of Array.from(picksByUser.values())) allPicksFlat.push(...arr);
+    // World Cup picks may have null sport from earlier seeds; normalize so the
+    // bulk loader queries the world_cup_teams table.
+    const wcPicksForLookup = allPicksFlat.map((p) => ({ teamId: p.teamId, sport: 'WORLD_CUP' }));
+    const teamMap = await this.getTeamsByIds(wcPicksForLookup);
+
     for (const { member, user } of members) {
-      const picks = await this.getUserDraftPicks(leagueId, user.id);
+      const picks = picksByUser.get(user.id) ?? [];
       const teamIds = picks.map((p) => p.teamId!);
 
-      const teams = await Promise.all(teamIds.map((id) => this.getWorldCupTeam(id)));
+      const teams = teamIds.map((id) => teamMap.get(`WORLD_CUP:${id}`) as WorldCupTeam | undefined);
       const validTeams = teams.filter((t): t is WorldCupTeam => !!t);
 
       let fantasyPoints = 0;
