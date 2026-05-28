@@ -8,6 +8,7 @@ import { setupRealtime } from "./lib/realtime";
 import { sportsApi } from "./services/sportsApi";
 import { SportsDataService } from "./sportsDataService";
 import { storage } from "./storage";
+import { worldCupDataService } from "./services/worldCupService";
 
 declare module "express-session" {
   interface SessionData {
@@ -96,16 +97,55 @@ app.use((req, res, next) => {
   if (process.env.DISABLE_WEB_SYNC !== "true") {
     const sportsDataService = new SportsDataService(storage);
 
+    // Calendar-window helpers — mirror the worker's inCalendarSeasonWindow.
+    // Only sync sports that are actually in their regular season so we don't
+    // waste ESPN calls or DB writes during off-season months.
+    const isMLBSeason  = (m: number) => m >= 2 && m <= 8;           // Mar–Sep
+    const isNBASeason  = (m: number) => m >= 9 || m <= 3;           // Oct–Apr
+    const isNFLSeason  = (m: number) => m >= 8 || m === 0;          // Sep–Jan
+    const isWorldCup   = (now: Date) =>
+      now.getFullYear() === 2026 && now.getMonth() >= 5 && now.getMonth() <= 6; // Jun–Jul 2026
+
+    const buildSyncTasks = (now: Date, svc: SportsDataService) => {
+      const m = now.getMonth();
+      const tasks: Array<Promise<unknown>> = [];
+      const active: string[] = [];
+
+      if (isMLBSeason(m)) {
+        active.push("MLB");
+        tasks.push(sportsApi.syncMLBGames(1, 2), svc.updateMLBStandings());
+      }
+      if (isNBASeason(m)) {
+        active.push("NBA");
+        tasks.push(sportsApi.syncNBAGames(1, 1), svc.updateNBAStandings());
+      }
+      if (isNFLSeason(m)) {
+        active.push("NFL");
+        tasks.push(
+          sportsApi.syncCurrentNFLGames(),
+          sportsApi.syncNextWeekNFLGames(),
+          svc.updateNFLStandings(),
+        );
+      }
+      if (isWorldCup(now)) {
+        active.push("WC");
+        tasks.push(worldCupDataService.syncWorldCupGames());
+      }
+
+      return { tasks, active };
+    };
+
     // Initial sync shortly after startup so the first page load shows fresh data.
     setTimeout(async () => {
       try {
-        log("auto-sync: initial MLB/NBA/NFL game + standings sync");
-        await Promise.all([
-          sportsApi.syncMLBGames(1, 2),
-          sportsApi.syncNBAGames(1, 1),
-          sportsDataService.updateMLBStandings(),
-          sportsDataService.updateNBAStandings(),
-        ]);
+        const now = new Date();
+        const { tasks, active } = buildSyncTasks(now, sportsDataService);
+        if (tasks.length === 0) {
+          log("auto-sync: all sports off-season, skipping initial sync");
+          return;
+        }
+        log(`auto-sync: initial sync — ${active.join(", ")}`);
+        await Promise.all(tasks);
         log("auto-sync: initial sync complete");
       } catch (err) {
         log("auto-sync: initial sync error:", err);
@@ -119,12 +159,10 @@ app.use((req, res, next) => {
         const hour = now.getHours();
         // Skip the 2–6 AM quiet window to reduce unnecessary ESPN load overnight.
         if (hour >= 2 && hour < 6) return;
-        await Promise.all([
-          sportsApi.syncMLBGames(1, 2),
-          sportsApi.syncNBAGames(1, 1),
-          sportsDataService.updateMLBStandings(),
-          sportsDataService.updateNBAStandings(),
-        ]);
+        const { tasks, active } = buildSyncTasks(now, sportsDataService);
+        if (tasks.length === 0) return; // all sports off-season
+        log(`auto-sync: ${active.join(", ")}`);
+        await Promise.all(tasks);
       } catch (err) {
         log("auto-sync error:", err);
       }
