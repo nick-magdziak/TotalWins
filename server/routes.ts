@@ -441,8 +441,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const requesterId = req.session.userId;
     const requester = requesterId ? await storage.getUser(requesterId) : null;
     const isSelfOrAdmin = requesterId === user.id || !!requester?.isAdmin;
-    // Strip sensitive fields when the requester is not the user themselves or an admin
-    const safeUser = isSelfOrAdmin
+
+    // Also expose email to league commissioners/creators who share a league with this user
+    let isLeagueCommissioner = false;
+    if (requesterId && !isSelfOrAdmin) {
+      const targetLeagues = await storage.getUserLeagues(user.id);
+      for (const league of targetLeagues) {
+        if (league.createdBy === requesterId) {
+          isLeagueCommissioner = true;
+          break;
+        }
+        const membership = await storage.getLeagueMember(league.id, requesterId);
+        if (membership?.isCommissioner) {
+          isLeagueCommissioner = true;
+          break;
+        }
+      }
+    }
+
+    // Strip sensitive fields when the requester is not the user themselves, a global admin,
+    // or a commissioner of a shared league
+    const safeUser = (isSelfOrAdmin || isLeagueCommissioner)
       ? { ...user, password: undefined }
       : {
           ...user,
