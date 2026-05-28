@@ -86,22 +86,36 @@ async function isInSeason(sport: Sport, now: Date): Promise<boolean> {
   }
 }
 
-async function runOneCycle(label: string): Promise<void> {
+async function runOneCycle(
+  label: string,
+  sportsToSync?: { MLB: boolean; NBA: boolean; NFL: boolean },
+): Promise<void> {
   const startedAt = Date.now();
   const now = new Date();
   log(`▶ ${label}: sync starting`);
 
   // Per-sport in-season check up front so we know which sports to skip
   // entirely this cycle (no API call, no DB write).
-  const [mlbOn, nbaOn, nflOn] = await Promise.all([
+  const [mlbInSeason, nbaInSeason, nflInSeason] = await Promise.all([
     isInSeason("MLB", now),
     isInSeason("NBA", now),
     isInSeason("NFL", now),
   ]);
 
-  if (!mlbOn) log("  ⊘ skipping MLB: off-season");
-  if (!nbaOn) log("  ⊘ skipping NBA: off-season");
-  if (!nflOn) log("  ⊘ skipping NFL: off-season");
+  // Per-sport cadence filter: when the caller supplies `sportsToSync`,
+  // a sport only runs this cycle if it's in season AND flagged to sync.
+  // This is what lets MLB sit on the 15-min idle cadence while NFL syncs
+  // every 2 min during a Monday Night Football game.
+  const mlbOn = mlbInSeason && (sportsToSync?.MLB ?? true);
+  const nbaOn = nbaInSeason && (sportsToSync?.NBA ?? true);
+  const nflOn = nflInSeason && (sportsToSync?.NFL ?? true);
+
+  if (!mlbInSeason) log("  ⊘ skipping MLB: off-season");
+  else if (!mlbOn)  log("  ⊘ skipping MLB: idle cadence (no live game)");
+  if (!nbaInSeason) log("  ⊘ skipping NBA: off-season");
+  else if (!nbaOn)  log("  ⊘ skipping NBA: idle cadence (no live game)");
+  if (!nflInSeason) log("  ⊘ skipping NFL: off-season");
+  else if (!nflOn)  log("  ⊘ skipping NFL: idle cadence (no live game)");
 
   // Each sport is wrapped in its own try/catch so one failure doesn't skip
   // the rest of the cycle. The worker as a whole should never exit on a
@@ -191,6 +205,16 @@ async function main(): Promise<void> {
     })();
   }
 
+  // Per-sport "next idle sync due" timestamps. When a sport is on the
+  // idle cadence (no live games of its own) but the worker is ticking
+  // every 2 min because some *other* sport is live, we still want the
+  // idle sport's standings/games to refresh at least every 15 min.
+  // Initialized to "due now" so each sport gets one sync on the first
+  // post-startup tick.
+  let mlbDueAt = Date.now();
+  let nbaDueAt = Date.now();
+  let nflDueAt = Date.now();
+
   // Continuous loop. We use a self-rescheduling setTimeout instead of
   // setInterval so a slow cycle can never overlap with the next one.
   const tick = async () => {
@@ -202,30 +226,70 @@ async function main(): Promise<void> {
     let intervalMs: number;
     let label: string;
 
+    let sportsToSync: { MLB: boolean; NBA: boolean; NFL: boolean } | undefined;
+
     if (isQuietHours(now)) {
       intervalMs = QUIET_INTERVAL_MS;
       label = "quiet-hours (1h)";
+      // During quiet hours we still sync everything that's in season,
+      // just at the 1-hour cadence. Leave sportsToSync undefined so
+      // runOneCycle treats all sports as eligible.
     } else {
-      let live = false;
+      // Per-sport live-game check. A sport with at least one in-progress
+      // game runs on the 2-minute "active" cadence this tick; sports with
+      // nothing live fall back to the 15-minute idle cadence even if
+      // another sport is live right now.
+      let mlbLive = false, nbaLive = false, nflLive = false;
       try {
-        live = await storage.hasGamesInProgress();
+        [mlbLive, nbaLive, nflLive] = await Promise.all([
+          storage.hasGamesInProgressBySport("MLB"),
+          storage.hasGamesInProgressBySport("NBA"),
+          storage.hasGamesInProgressBySport("NFL"),
+        ]);
       } catch (err) {
-        // Defensive: a DB hiccup shouldn't push us off-cadence. Assume live
-        // (the safer choice) and continue.
-        log("hasGamesInProgress() failed; assuming live:", err);
-        live = true;
+        // Defensive: a DB hiccup shouldn't push us off-cadence. Assume
+        // everything is live (the safer choice) and continue.
+        log("hasGamesInProgressBySport() failed; assuming all live:", err);
+        mlbLive = nbaLive = nflLive = true;
       }
-      if (live) {
+
+      const anyLive = mlbLive || nbaLive || nflLive;
+      if (anyLive) {
         intervalMs = ACTIVE_INTERVAL_MS;
-        label = "active — live games detected (2m)";
+        const liveSports = [
+          mlbLive ? "MLB" : null,
+          nbaLive ? "NBA" : null,
+          nflLive ? "NFL" : null,
+        ].filter(Boolean).join(",");
+        const idleSports = [
+          !mlbLive ? "MLB" : null,
+          !nbaLive ? "NBA" : null,
+          !nflLive ? "NFL" : null,
+        ].filter(Boolean).join(",") || "none";
+        label = `active — live: [${liveSports}] idle-this-tick: [${idleSports}] (2m)`;
+        // Only the live sports sync at this 2-min tick. The idle sports
+        // will still sync, but only on ticks where the elapsed time has
+        // crossed the 15-min idle threshold.
+        sportsToSync = {
+          MLB: mlbLive || mlbDueAt <= now.getTime(),
+          NBA: nbaLive || nbaDueAt <= now.getTime(),
+          NFL: nflLive || nflDueAt <= now.getTime(),
+        };
       } else {
         intervalMs = IDLE_INTERVAL_MS;
-        label = "idle — no live games (15m)";
+        label = "idle — no live games anywhere (15m)";
       }
     }
 
     try {
-      await runOneCycle(label);
+      await runOneCycle(label, sportsToSync);
+      // Advance the per-sport "next idle sync due" timestamps for sports
+      // that actually ran this cycle. Sports that were held off until
+      // their idle cadence keep their existing due time.
+      const advancedAt = Date.now();
+      if (!sportsToSync || sportsToSync.MLB) mlbDueAt = advancedAt + IDLE_INTERVAL_MS;
+      if (!sportsToSync || sportsToSync.NBA) nbaDueAt = advancedAt + IDLE_INTERVAL_MS;
+      if (!sportsToSync || sportsToSync.NFL) nflDueAt = advancedAt + IDLE_INTERVAL_MS;
     } catch (err) {
       // Defensive: runOneCycle already swallows per-task errors, but if the
       // wrapper itself ever throws we still want to keep ticking.

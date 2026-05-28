@@ -115,6 +115,7 @@ export interface IStorage {
   addGame(game: InsertGame): Promise<Game>;
   getRecentCompletedGames(limit: number): Promise<Game[]>;
   hasGamesInProgress(): Promise<boolean>;
+  hasGamesInProgressBySport(sport: string): Promise<boolean>;
   hasUpcomingRegularSeasonGames(sport: string, withinDays?: number): Promise<boolean>;
 
   // World Cup
@@ -1658,6 +1659,20 @@ export class DatabaseStorage implements IStorage {
       .select({ id: games.id })
       .from(games)
       .where(eq(games.status, "in_progress"))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  /**
+   * Per-sport variant of hasGamesInProgress. Used by the live-score worker
+   * so a sport with no live game can stay on the 15-minute idle cadence
+   * even when another sport is currently live.
+   */
+  async hasGamesInProgressBySport(sport: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(and(eq(games.sport, sport), eq(games.status, "in_progress")))
       .limit(1);
     return rows.length > 0;
   }
