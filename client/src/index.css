@@ -75,6 +75,15 @@
       linear-gradient(135deg, #ff1493 0%, #8a2be2 50%, #4169e1 100%);
     background-size: 8px 8px, 8px 8px, 100% 100%;
     min-height: 100vh;
+    /* Prevent tap-to-define dictionary popups on mobile */
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  /* Re-enable text selection in form fields so users can edit/copy their input */
+  input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
   }
 }
 
