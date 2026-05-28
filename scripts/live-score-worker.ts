@@ -122,18 +122,34 @@ async function runOneCycle(
   // transient ESPN error.
   const tasks: Array<[string, () => Promise<unknown>]> = [];
 
+  // Per-sport timing + error capture so we can persist accurate "last sync"
+  // metadata for the admin dashboard.
+  const sportTimers: Record<Sport, { start: number; error: string | null } | undefined> = {
+    MLB: undefined, NBA: undefined, NFL: undefined,
+  };
+  const startSport = (s: Sport) => {
+    if (!sportTimers[s]) sportTimers[s] = { start: Date.now(), error: null };
+  };
+  const failSport = (s: Sport, err: unknown) => {
+    const t = sportTimers[s];
+    if (t && !t.error) t.error = err instanceof Error ? err.message : String(err);
+  };
+
   if (mlbOn) {
-    tasks.push(["MLB standings", () => sportsService.updateMLBStandings()]);
-    tasks.push(["MLB games",     () => sportsApi.syncMLBGames()]);
+    startSport("MLB");
+    tasks.push(["MLB standings", () => sportsService.updateMLBStandings().catch(e => { failSport("MLB", e); throw e; })]);
+    tasks.push(["MLB games",     () => sportsApi.syncMLBGames().catch(e => { failSport("MLB", e); throw e; })]);
   }
   if (nbaOn) {
-    tasks.push(["NBA standings", () => sportsService.updateNBAStandings()]);
-    tasks.push(["NBA games",     () => sportsApi.syncNBAGames()]);
+    startSport("NBA");
+    tasks.push(["NBA standings", () => sportsService.updateNBAStandings().catch(e => { failSport("NBA", e); throw e; })]);
+    tasks.push(["NBA games",     () => sportsApi.syncNBAGames().catch(e => { failSport("NBA", e); throw e; })]);
   }
   if (nflOn) {
-    tasks.push(["NFL standings",        () => sportsService.updateNFLStandings()]);
-    tasks.push(["NFL games (current)",  () => sportsApi.syncCurrentNFLGames()]);
-    tasks.push(["NFL games (next wk)",  () => sportsApi.syncNextWeekNFLGames()]);
+    startSport("NFL");
+    tasks.push(["NFL standings",        () => sportsService.updateNFLStandings().catch(e => { failSport("NFL", e); throw e; })]);
+    tasks.push(["NFL games (current)",  () => sportsApi.syncCurrentNFLGames().catch(e => { failSport("NFL", e); throw e; })]);
+    tasks.push(["NFL games (next wk)",  () => sportsApi.syncNextWeekNFLGames().catch(e => { failSport("NFL", e); throw e; })]);
   }
 
   // ESPN team-record endpoint covers all three sports in one helper, so we
@@ -159,6 +175,19 @@ async function runOneCycle(
       log(`  ✓ ${name}`);
     } catch (err) {
       log(`  ✗ ${name} failed:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  // Persist per-sport sync metadata so the admin dashboard can show
+  // when each sport last refreshed and surface any error from the
+  // most recent attempt.
+  for (const sport of ["MLB", "NBA", "NFL"] as Sport[]) {
+    const t = sportTimers[sport];
+    if (!t) continue;
+    try {
+      await storage.recordSyncResult(sport, Date.now() - t.start, t.error);
+    } catch (err) {
+      log(`  ! failed to record sync status for ${sport}:`, err);
     }
   }
 

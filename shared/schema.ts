@@ -134,6 +134,16 @@ export const draftPicks = pgTable("draft_picks", {
   pickedAt: timestamp("picked_at").defaultNow(),
 });
 
+export const syncStatus = pgTable("sync_status", {
+  sport: varchar("sport").primaryKey(),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSuccessAt: timestamp("last_success_at"),
+  lastDurationMs: integer("last_duration_ms"),
+  lastError: text("last_error"),
+});
+
+export type SyncStatus = typeof syncStatus.$inferSelect;
+
 export const games = pgTable("games", {
   id: varchar("id").primaryKey(),
   sport: text("sport").default("NFL"), // NFL, MLB, NBA, WORLD_CUP

@@ -35,6 +35,8 @@ import {
   worldCupTeams,
   draftPicks,
   games,
+  syncStatus,
+  type SyncStatus,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -117,6 +119,10 @@ export interface IStorage {
   hasGamesInProgress(): Promise<boolean>;
   hasGamesInProgressBySport(sport: string): Promise<boolean>;
   hasUpcomingRegularSeasonGames(sport: string, withinDays?: number): Promise<boolean>;
+
+  // Sync status (written by live-score worker, read by admin dashboard)
+  recordSyncResult(sport: string, durationMs: number, error: string | null): Promise<void>;
+  getAllSyncStatuses(): Promise<SyncStatus[]>;
 
   // World Cup
   getAllWorldCupTeams(): Promise<WorldCupTeam[]>;
@@ -2732,6 +2738,32 @@ export class DatabaseStorage implements IStorage {
     );
 
     return gamesWithOwners;
+  }
+
+  async recordSyncResult(sport: string, durationMs: number, error: string | null): Promise<void> {
+    const now = new Date();
+    await db
+      .insert(syncStatus)
+      .values({
+        sport,
+        lastSyncAt: now,
+        lastSuccessAt: error ? null : now,
+        lastDurationMs: durationMs,
+        lastError: error,
+      })
+      .onConflictDoUpdate({
+        target: syncStatus.sport,
+        set: {
+          lastSyncAt: now,
+          lastSuccessAt: error ? sql`${syncStatus.lastSuccessAt}` : now,
+          lastDurationMs: durationMs,
+          lastError: error,
+        },
+      });
+  }
+
+  async getAllSyncStatuses(): Promise<SyncStatus[]> {
+    return await db.select().from(syncStatus);
   }
 }
 

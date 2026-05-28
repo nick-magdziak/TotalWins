@@ -20,6 +20,15 @@ async function migrate() {
     END \$\$
   \`;
   await sql\`
+    CREATE TABLE IF NOT EXISTS sync_status (
+      sport varchar PRIMARY KEY,
+      last_sync_at timestamp,
+      last_success_at timestamp,
+      last_duration_ms integer,
+      last_error text
+    )
+  \`;
+  await sql\`
     CREATE TABLE IF NOT EXISTS world_cup_teams (
       id varchar PRIMARY KEY,
       name text NOT NULL,

@@ -2274,6 +2274,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Per-sport sync status for the admin dashboard. Reads the
+  // metadata written by scripts/live-score-worker.ts and combines
+  // it with the same in-season / live-game logic the worker uses
+  // so admins can see the current cadence + last sync at a glance.
+  app.get("/api/admin/sync-status", async (_req, res) => {
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+      const inQuietHours = hour >= 2 && hour < 6;
+
+      const inCalendarSeason = (sport: "MLB" | "NBA" | "NFL") => {
+        const m = now.getMonth();
+        if (sport === "MLB") return m >= 2 && m <= 8;
+        if (sport === "NBA") return m >= 9 || m <= 3;
+        return m >= 8 || m === 0;
+      };
+
+      const statuses = await storage.getAllSyncStatuses();
+      const bySport = new Map(statuses.map(s => [s.sport, s]));
+
+      const sports = ["MLB", "NBA", "NFL"] as const;
+      const result = await Promise.all(sports.map(async (sport) => {
+        const [live, hasUpcoming] = await Promise.all([
+          storage.hasGamesInProgressBySport(sport),
+          storage.hasUpcomingRegularSeasonGames(sport, 14),
+        ]);
+        const inSeason = inCalendarSeason(sport) || hasUpcoming;
+
+        let cadence: "live" | "idle" | "quiet" | "off_season";
+        let intervalLabel: string;
+        if (!inSeason) {
+          cadence = "off_season";
+          intervalLabel = "Off-season";
+        } else if (inQuietHours) {
+          cadence = "quiet";
+          intervalLabel = "Quiet (1h)";
+        } else if (live) {
+          cadence = "live";
+          intervalLabel = "Live (2m)";
+        } else {
+          cadence = "idle";
+          intervalLabel = "Idle (15m)";
+        }
+
+        const row = bySport.get(sport);
+        return {
+          sport,
+          cadence,
+          intervalLabel,
+          liveGameInProgress: live,
+          inSeason,
+          lastSyncAt: row?.lastSyncAt ?? null,
+          lastSuccessAt: row?.lastSuccessAt ?? null,
+          lastDurationMs: row?.lastDurationMs ?? null,
+          lastError: row?.lastError ?? null,
+        };
+      }));
+
+      res.json({ now: now.toISOString(), sports: result });
+    } catch (error) {
+      console.error("GET /api/admin/sync-status error:", error);
+      res.status(500).json({ message: "Failed to load sync status" });
+    }
+  });
+
   // Push notification routes
   app.get("/api/push/vapid-key", async (req, res) => {
     const { pushNotificationService } = await import("./services/pushNotificationService");

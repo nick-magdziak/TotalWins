@@ -37,7 +37,9 @@ import {
   Copy,
   Link2,
   Mail,
-  ShieldAlert
+  ShieldAlert,
+  Activity,
+  AlertCircle
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1406,6 +1408,9 @@ export default function Admin() {
             </CardContent>
           </Card>
 
+          {/* Live Score Sync Status */}
+          <SyncStatusPanel />
+
           {/* Draft Settings */}
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
             <CardContent className="p-6">
@@ -2637,5 +2642,115 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+type SportSyncStatus = {
+  sport: "MLB" | "NBA" | "NFL";
+  cadence: "live" | "idle" | "quiet" | "off_season";
+  intervalLabel: string;
+  liveGameInProgress: boolean;
+  inSeason: boolean;
+  lastSyncAt: string | null;
+  lastSuccessAt: string | null;
+  lastDurationMs: number | null;
+  lastError: string | null;
+};
+
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return "Never";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  if (diffMs < 0) return "just now";
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ${min % 60}m ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
+}
+
+function cadenceStyles(cadence: SportSyncStatus["cadence"]) {
+  switch (cadence) {
+    case "live":       return { bg: "bg-green-100",  text: "text-green-800",  label: "LIVE" };
+    case "idle":       return { bg: "bg-blue-100",   text: "text-blue-800",   label: "IDLE" };
+    case "quiet":      return { bg: "bg-gray-200",   text: "text-gray-700",   label: "QUIET" };
+    case "off_season": return { bg: "bg-gray-100",   text: "text-gray-500",   label: "OFF-SEASON" };
+  }
+}
+
+function SyncStatusPanel() {
+  const { data, isLoading } = useQuery<{ now: string; sports: SportSyncStatus[] }>({
+    queryKey: ["/api/admin/sync-status"],
+    refetchInterval: 30_000,
+  });
+
+  return (
+    <Card className="bg-white rounded-2xl retro-border shadow-xl">
+      <CardContent className="p-6">
+        <h3 className="text-retro-purple text-xl font-bold mb-4 retro-font">
+          <Activity className="inline mr-2" />
+          LIVE SCORE SYNC
+        </h3>
+        {isLoading || !data ? (
+          <div className="text-gray-500 text-sm">Loading sync status…</div>
+        ) : (
+          <div className="space-y-3">
+            {data.sports.map((s) => {
+              const cad = cadenceStyles(s.cadence);
+              return (
+                <div
+                  key={s.sport}
+                  className="border-2 border-retro-pink rounded-lg p-3 bg-gray-50"
+                  data-testid={`sync-status-${s.sport}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-bold text-retro-purple retro-font text-lg">{s.sport}</div>
+                    <div className="flex items-center gap-2">
+                      {s.liveGameInProgress && (
+                        <Badge className="bg-red-500 text-white">GAME IN PROGRESS</Badge>
+                      )}
+                      <Badge className={`${cad.bg} ${cad.text} font-bold`}>{cad.label}</Badge>
+                    </div>
+                  </div>
+                  <div className="text-sm text-retro-charcoal grid grid-cols-2 gap-x-3 gap-y-1">
+                    <div>
+                      <span className="text-gray-500">Cadence: </span>
+                      <span className="font-medium">{s.intervalLabel}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Last sync: </span>
+                      <span className="font-medium">{formatRelativeTime(s.lastSyncAt)}</span>
+                    </div>
+                    {s.lastDurationMs != null && (
+                      <div>
+                        <span className="text-gray-500">Duration: </span>
+                        <span className="font-medium">{(s.lastDurationMs / 1000).toFixed(1)}s</span>
+                      </div>
+                    )}
+                    {s.lastSuccessAt && s.lastError && (
+                      <div>
+                        <span className="text-gray-500">Last success: </span>
+                        <span className="font-medium">{formatRelativeTime(s.lastSuccessAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {s.lastError && (
+                    <div className="mt-2 flex items-start gap-1 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span className="break-all">{s.lastError}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div className="text-xs text-gray-400 text-right">
+              Refreshes every 30s · {new Date(data.now).toLocaleTimeString()}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
