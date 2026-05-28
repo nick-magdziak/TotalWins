@@ -442,19 +442,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const requester = requesterId ? await storage.getUser(requesterId) : null;
     const isSelfOrAdmin = requesterId === user.id || !!requester?.isAdmin;
 
-    // Also expose email to league commissioners/creators who share a league with this user
+    // Also expose email to league commissioners/creators who share a league with this user.
+    // We iterate the REQUESTER's leagues (they are always "active" in their own leagues)
+    // and check whether the target user is a member of any of those leagues — including
+    // "pending" members who were just added via "Add & Invite Later".
     let isLeagueCommissioner = false;
     if (requesterId && !isSelfOrAdmin) {
-      const targetLeagues = await storage.getUserLeagues(user.id);
-      for (const league of targetLeagues) {
-        if (league.createdBy === requesterId) {
-          isLeagueCommissioner = true;
-          break;
+      const requesterLeagues = await storage.getUserLeagues(requesterId);
+      for (const league of requesterLeagues) {
+        const isCreator = league.createdBy === requesterId;
+        let hasCommissionerRole = isCreator;
+        if (!isCreator) {
+          const requesterMembership = await storage.getLeagueMember(league.id, requesterId);
+          hasCommissionerRole = !!requesterMembership?.isCommissioner;
         }
-        const membership = await storage.getLeagueMember(league.id, requesterId);
-        if (membership?.isCommissioner) {
-          isLeagueCommissioner = true;
-          break;
+        if (hasCommissionerRole) {
+          // Check if the target user is in this league (any invitation status, including pending)
+          const targetMembership = await storage.getLeagueMember(league.id, user.id);
+          if (targetMembership) {
+            isLeagueCommissioner = true;
+            break;
+          }
         }
       }
     }

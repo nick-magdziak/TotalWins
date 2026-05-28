@@ -109,7 +109,9 @@ export default function Admin() {
       });
       return Promise.all(usersPromises);
     },
-    enabled: !!leagueId
+    enabled: !!leagueId,
+    staleTime: 0,           // always consider stale so emails stay current
+    refetchOnMount: true,   // re-fetch every time the admin page is visited
   });
 
   const auditQueryKey = [
