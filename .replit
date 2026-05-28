@@ -48,4 +48,3 @@ timeoutMs = 60000
 [userenv]
 
 [userenv.production]
-DISABLE_WEB_SYNC = "true"
