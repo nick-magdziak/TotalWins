@@ -589,6 +589,22 @@ export default function Admin() {
     },
   });
 
+  const approveMemberMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/leagues/${leagueId}/members/${userId}/approve`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).message || "Failed to approve");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Member approved!", description: "Player is now active in the league." });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId, "members-with-users"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to approve", description: error.message, variant: "destructive" });
+    },
+  });
+
   const updatePrivilegesMutation = useMutation({
     mutationFn: async ({ userId, isCommissioner }: { userId: string; isCommissioner: boolean }) => {
       return apiRequest("POST", "/api/leagues/set-commissioner", {
@@ -1293,6 +1309,21 @@ export default function Admin() {
                         <Badge className={memberData.invitationStatus === "pending" ? "bg-orange-500 text-white" : "bg-retro-teal text-white"}>
                           {memberData.invitationStatus === "pending" ? "PENDING" : "ACTIVE"}
                         </Badge>
+                        {memberData.invitationStatus === "pending" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            title="Approve member"
+                            disabled={approveMemberMutation.isPending}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveMemberMutation.mutate(memberData.userId);
+                            }}
+                            className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white rounded"
+                          >
+                            APPROVE
+                          </Button>
+                        )}
                         {memberData.invitationStatus === "pending" && memberData.user?.email && (
                           <Button
                             type="button"

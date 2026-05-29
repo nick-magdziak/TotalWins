@@ -670,6 +670,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Accept a pending league invitation
+  // Commissioner manually approves a pending member
+  app.post("/api/leagues/:leagueId/members/:userId/approve", requireAuth, async (req, res) => {
+    try {
+      const { leagueId, userId } = req.params;
+      const requesterId = req.session.userId!;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      const requester = await storage.getUser(requesterId);
+      const requesterMembership = await storage.getLeagueMember(leagueId, requesterId);
+      const isAuthorized =
+        requester?.isAdmin ||
+        league.createdBy === requesterId ||
+        requesterMembership?.isCommissioner;
+      if (!isAuthorized) return res.status(403).json({ message: "Commissioner access required" });
+      const member = await storage.getLeagueMember(leagueId, userId);
+      if (!member || member.invitationStatus !== "pending") {
+        return res.status(404).json({ message: "No pending invitation found" });
+      }
+      const ok = await storage.acceptLeagueInvitation(leagueId, userId);
+      if (!ok) return res.status(500).json({ message: "Failed to approve member" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to approve member" });
+    }
+  });
+
   app.post("/api/leagues/:id/accept-invitation", requireVerified, async (req, res) => {
     try {
       const sessionUserId = req.session.userId;
