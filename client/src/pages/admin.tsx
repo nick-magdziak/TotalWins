@@ -2149,8 +2149,15 @@ export default function Admin() {
                   {membersWithUserData?.find(m => m.id === selectedMember.id)?.user?.displayName || 
                    `Player ${membersWithUserData?.findIndex(m => m.id === selectedMember.id)! + 1}`}
                 </h3>
-                <p className="text-retro-charcoal/60 text-sm">
+                <p className="text-retro-charcoal/60 text-sm flex items-center justify-center gap-1.5">
                   {membersWithUserData?.find(m => m.id === selectedMember.id)?.user?.email || "No email available"}
+                  {(() => {
+                    const u = membersWithUserData?.find(m => m.id === selectedMember.id)?.user;
+                    if (!u?.email) return null;
+                    return u?.verifiedAt
+                      ? <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" title="Email verified" />
+                      : <ShieldAlert className="w-3.5 h-3.5 text-orange-400 shrink-0" title="Email not verified" />;
+                  })()}
                 </p>
                 <p className="text-retro-charcoal/70 text-sm">
                   Set this player's role in the league
