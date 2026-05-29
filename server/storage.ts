@@ -1164,6 +1164,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   /**
+   * Return noon UTC on the given date. Used as the effective league start
+   * boundary so that late-night UTC game timestamps that belong to the
+   * *previous* local day (e.g. a 5 PM PT game stored as 00:05 UTC the next
+   * calendar day) are not counted. No MLB/NBA game ever starts before noon
+   * UTC (8 AM ET), so this is safe as a lower bound.
+   */
+  private toUtcNoon(value: Date | string): Date {
+    const d = value instanceof Date ? value : new Date(value);
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
+  }
+
+  /**
    * Convert a league's season string to the season key used in the games
    * table for that sport. League seasons are stored using human-readable
    * formats ("2025", "2025-26") but the games table uses ESPN's
@@ -1211,7 +1223,7 @@ export class DatabaseStorage implements IStorage {
    */
   private async getEffectiveLeagueStartDate(league: League): Promise<Date | null> {
     if (league.leagueStartDate) {
-      return this.toUtcMidnight(league.leagueStartDate);
+      return this.toUtcNoon(league.leagueStartDate);
     }
     return this.getSportSeasonStart(league.sport, league.season);
   }
@@ -1222,7 +1234,7 @@ export class DatabaseStorage implements IStorage {
     const league = await this.getLeague(leagueId);
     if (!league) return { startDate: null, source: null };
     if (league.leagueStartDate) {
-      return { startDate: this.toUtcMidnight(league.leagueStartDate), source: "league" };
+      return { startDate: this.toUtcNoon(league.leagueStartDate), source: "league" };
     }
     const seasonStart = await this.getSportSeasonStart(league.sport, league.season);
     return { startDate: seasonStart, source: seasonStart ? "season" : null };
