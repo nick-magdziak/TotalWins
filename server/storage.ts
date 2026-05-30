@@ -23,6 +23,7 @@ import {
   type WCGroupStanding,
   type WCPlayerStanding,
   users,
+  pushSubscriptions,
   emailVerificationTokens,
   type EmailVerificationToken,
   auditLog,
@@ -119,6 +120,12 @@ export interface IStorage {
   hasGamesInProgress(): Promise<boolean>;
   hasGamesInProgressBySport(sport: string): Promise<boolean>;
   hasUpcomingRegularSeasonGames(sport: string, withinDays?: number): Promise<boolean>;
+
+  // Push subscriptions (per-device)
+  addPushSubscription(userId: string, endpoint: string, keys: { p256dh: string; auth: string }): Promise<void>;
+  getPushSubscriptions(userId: string): Promise<Array<{ endpoint: string; keys: { p256dh: string; auth: string } }>>;
+  removePushSubscriptionByEndpoint(endpoint: string): Promise<void>;
+  removeAllPushSubscriptions(userId: string): Promise<void>;
 
   // Sync status (written by live-score worker, read by admin dashboard)
   recordSyncResult(sport: string, durationMs: number, error: string | null): Promise<void>;
@@ -2776,6 +2783,29 @@ export class DatabaseStorage implements IStorage {
 
   async getAllSyncStatuses(): Promise<SyncStatus[]> {
     return await db.select().from(syncStatus);
+  }
+
+  async addPushSubscription(userId: string, endpoint: string, keys: { p256dh: string; auth: string }): Promise<void> {
+    await db
+      .insert(pushSubscriptions)
+      .values({ userId, endpoint, keys })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: { userId, keys },
+      });
+  }
+
+  async getPushSubscriptions(userId: string): Promise<Array<{ endpoint: string; keys: { p256dh: string; auth: string } }>> {
+    const rows = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+    return rows.map(r => ({ endpoint: r.endpoint, keys: r.keys as { p256dh: string; auth: string } }));
+  }
+
+  async removePushSubscriptionByEndpoint(endpoint: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async removeAllPushSubscriptions(userId: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
   }
 }
 

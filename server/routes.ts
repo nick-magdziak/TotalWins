@@ -2420,14 +2420,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/push/unsubscribe", async (req, res) => {
     try {
-      const { userId } = req.body;
+      const { userId, endpoint } = req.body;
       
       if (!userId) {
         return res.status(400).json({ message: "User ID required" });
       }
 
       const { pushNotificationService } = await import("./services/pushNotificationService");
-      await pushNotificationService.unsubscribeUser(userId);
+      if (endpoint) {
+        await pushNotificationService.unsubscribeEndpoint(endpoint);
+      } else {
+        await pushNotificationService.unsubscribeUser(userId);
+      }
       
       res.json({ message: "Successfully unsubscribed from push notifications" });
     } catch (error) {

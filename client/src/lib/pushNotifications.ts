@@ -126,14 +126,15 @@ class PushNotificationManager {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 
+      const endpoint = subscription?.endpoint;
       if (subscription) {
         await subscription.unsubscribe();
       }
 
-      // Remove subscription from server
+      // Remove this device's subscription from server
       const currentUser = getCurrentUser();
       if (currentUser) {
-        await this.removeSubscriptionFromServer();
+        await this.removeSubscriptionFromServer(endpoint);
       }
 
       console.log('Successfully unsubscribed from push notifications');
@@ -197,7 +198,7 @@ class PushNotificationManager {
   /**
    * Remove subscription from server
    */
-  private async removeSubscriptionFromServer(): Promise<void> {
+  private async removeSubscriptionFromServer(endpoint?: string): Promise<void> {
     const currentUser = getCurrentUser();
     if (!currentUser) return;
 
@@ -207,7 +208,8 @@ class PushNotificationManager {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        userId: currentUser.id
+        userId: currentUser.id,
+        endpoint,
       })
     });
 

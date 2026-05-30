@@ -54,12 +54,8 @@ class PushNotificationService {
    */
   async subscribeUser(userId: string, subscription: PushSubscription): Promise<void> {
     try {
-      // Store the subscription in the user's profile
-      await storage.updateUser(userId, {
-        pushSubscription: subscription
-      });
-      
-      console.log(`User ${userId} subscribed to push notifications`);
+      await storage.addPushSubscription(userId, subscription.endpoint, subscription.keys);
+      console.log(`User ${userId} subscribed to push notifications (endpoint: ${subscription.endpoint.slice(0, 40)}...)`);
     } catch (error) {
       console.error('Error subscribing user to push notifications:', error);
       throw error;
@@ -67,15 +63,23 @@ class PushNotificationService {
   }
 
   /**
-   * Unsubscribe a user from push notifications
+   * Unsubscribe a specific device endpoint from push notifications
+   */
+  async unsubscribeEndpoint(endpoint: string): Promise<void> {
+    try {
+      await storage.removePushSubscriptionByEndpoint(endpoint);
+    } catch (error) {
+      console.error('Error removing push subscription endpoint:', error);
+    }
+  }
+
+  /**
+   * Unsubscribe all devices for a user
    */
   async unsubscribeUser(userId: string): Promise<void> {
     try {
-      await storage.updateUser(userId, {
-        pushSubscription: null
-      });
-      
-      console.log(`User ${userId} unsubscribed from push notifications`);
+      await storage.removeAllPushSubscriptions(userId);
+      console.log(`User ${userId} unsubscribed from push notifications (all devices)`);
     } catch (error) {
       console.error('Error unsubscribing user from push notifications:', error);
       throw error;
@@ -83,40 +87,46 @@ class PushNotificationService {
   }
 
   /**
-   * Send a push notification to a specific user
+   * Send a push notification to all devices registered for a user
    */
   async sendNotificationToUser(userId: string, payload: NotificationPayload): Promise<void> {
     if (!pushEnabled) return;
-    try {
-      const user = await storage.getUser(userId);
-      if (!user?.pushSubscription) {
-        console.log(`User ${userId} has no push subscription`);
-        return;
-      }
 
-      const notificationPayload = {
-        title: payload.title,
-        body: payload.body,
-        icon: payload.icon || '/total-wins-icon.png',
-        badge: payload.badge || '/total-wins-badge.png',
-        data: payload.data || {},
-        actions: payload.actions || []
-      };
-
-      await webpush.sendNotification(
-        user.pushSubscription as any,
-        JSON.stringify(notificationPayload)
-      );
-
-      console.log(`Push notification sent to user ${userId}: ${payload.title}`);
-    } catch (error: any) {
-      console.error(`Error sending push notification to user ${userId}:`, error);
-      
-      // If the subscription is invalid, remove it from the user
-      if (error?.statusCode === 410 || error?.statusCode === 404) {
-        await this.unsubscribeUser(userId);
-      }
+    const subscriptions = await storage.getPushSubscriptions(userId);
+    if (subscriptions.length === 0) {
+      console.log(`User ${userId} has no push subscriptions`);
+      return;
     }
+
+    const notificationPayload = JSON.stringify({
+      title: payload.title,
+      body: payload.body,
+      icon: payload.icon || '/total-wins-icon.png',
+      badge: payload.badge || '/total-wins-badge.png',
+      data: payload.data || {},
+      actions: payload.actions || []
+    });
+
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: sub.keys } as any,
+            notificationPayload
+          );
+        } catch (error: any) {
+          if (error?.statusCode === 410 || error?.statusCode === 404) {
+            await storage.removePushSubscriptionByEndpoint(sub.endpoint);
+            console.log(`Removed stale push subscription for user ${userId}`);
+          } else {
+            throw error;
+          }
+        }
+      })
+    );
+
+    const sent = results.filter(r => r.status === 'fulfilled').length;
+    console.log(`Push notification sent to user ${userId}: ${payload.title} (${sent}/${subscriptions.length} devices)`);
   }
 
   /**
