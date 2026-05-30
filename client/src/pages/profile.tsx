@@ -949,30 +949,6 @@ export default function Profile() {
               <div>Loading preferences...</div>
             ) : (
               <>
-                {/* League Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="league-select" className="text-base">
-                    League
-                  </Label>
-                  <Select value={selectedLeagueId} onValueChange={setSelectedLeagueId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a league..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userLeagues?.map((league) => (
-                        <SelectItem key={league.id} value={league.id}>
-                          {league.name} ({league.sport?.toUpperCase()})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Notification settings apply only to the selected league above
-                  </p>
-                </div>
-
-                <Separator />
-
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -1064,9 +1040,6 @@ export default function Profile() {
             )}
           </CardContent>
         </Card>
-
-        {/* Install App (PWA) */}
-        <InstallAppCard />
 
         {/* Push Notifications */}
         <Card>
@@ -1161,6 +1134,9 @@ export default function Profile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Install App (PWA) */}
+        <InstallAppCard />
       </div>
     </div>
   );
