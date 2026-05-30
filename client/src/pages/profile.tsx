@@ -987,55 +987,59 @@ export default function Profile() {
                   </div>
                 </div>
 
-                <Separator />
+                {currentUser?.isAdmin && (
+                  <>
+                    <Separator />
 
-                {/* Test Email Buttons */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Test Email Notifications
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => testEmailMutation.mutate("invitation")}
-                      disabled={testEmailMutation.isPending}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Test Invitation
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => testEmailMutation.mutate("draft")}
-                      disabled={testEmailMutation.isPending}
-                    >
-                      <Bell className="h-4 w-4 mr-2" />
-                      Test Draft
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => testEmailMutation.mutate("game")}
-                      disabled={testEmailMutation.isPending}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Test Game
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => testSendUpdatesMutation.mutate()}
-                      disabled={testSendUpdatesMutation.isPending || !selectedLeagueId}
-                    >
-                      <Bell className="h-4 w-4 mr-2" />
-                      {testSendUpdatesMutation.isPending ? "Sending..." : "Test Updates"}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Test emails will be sent to {currentUser.email}
-                  </p>
-                </div>
+                    {/* Test Email Buttons */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Test Email Notifications
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => testEmailMutation.mutate("invitation")}
+                          disabled={testEmailMutation.isPending}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Test Invitation
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => testEmailMutation.mutate("draft")}
+                          disabled={testEmailMutation.isPending}
+                        >
+                          <Bell className="h-4 w-4 mr-2" />
+                          Test Draft
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => testEmailMutation.mutate("game")}
+                          disabled={testEmailMutation.isPending}
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Test Game
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => testSendUpdatesMutation.mutate()}
+                          disabled={testSendUpdatesMutation.isPending || !selectedLeagueId}
+                        >
+                          <Bell className="h-4 w-4 mr-2" />
+                          {testSendUpdatesMutation.isPending ? "Sending..." : "Test Updates"}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Test emails will be sent to {currentUser.email}
+                      </p>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </CardContent>
