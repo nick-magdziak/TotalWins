@@ -89,7 +89,7 @@ class PushNotificationService {
   /**
    * Send a push notification to all devices registered for a user
    */
-  async sendNotificationToUser(userId: string, payload: NotificationPayload): Promise<void> {
+  async sendNotificationToUser(userId: string, payload: NotificationPayload, urgency: 'high' | 'normal' | 'low' = 'normal'): Promise<void> {
     if (!pushEnabled) return;
 
     const subscriptions = await storage.getPushSubscriptions(userId);
@@ -112,7 +112,8 @@ class PushNotificationService {
         try {
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: sub.keys } as any,
-            notificationPayload
+            notificationPayload,
+            { urgency }
           );
         } catch (error: any) {
           if (error?.statusCode === 410 || error?.statusCode === 404) {
@@ -155,7 +156,7 @@ class PushNotificationService {
       ]
     };
 
-    await this.sendNotificationToUser(userId, payload);
+    await this.sendNotificationToUser(userId, payload, 'high');
   }
 
   /**
