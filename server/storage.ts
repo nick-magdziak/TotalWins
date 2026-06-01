@@ -1461,10 +1461,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateNBATeamRecord(teamId: string, wins: number, losses: number): Promise<void> {
-    await db.update(nbaTeams).set({ wins, losses }).where(eq(nbaTeams.id, teamId));
-  }
-
   // Draft methods
   async getDraftPicks(leagueId: string): Promise<DraftPick[]> {
     return await db
@@ -2618,7 +2614,7 @@ export class DatabaseStorage implements IStorage {
     if (!league) return [];
     
     // For MLB/NBA, get tomorrow's games only. For NFL, get upcoming scheduled games
-    let upcomingGames;
+    let upcomingGames: any[];
     
     if (league.sport === 'WORLD_CUP') {
       // World Cup: tomorrow midnight → day+3 end-of-day (3-day window, date-based)

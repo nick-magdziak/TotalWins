@@ -497,7 +497,7 @@ export default function Standings() {
           );
         })()}
 
-        <StandingsTable leagueId={activeLeagueId} />
+        <StandingsTable leagueId={activeLeagueId ?? ""} />
       </section>
 
       {/* World Cup Group Tables */}

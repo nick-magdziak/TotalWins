@@ -95,7 +95,9 @@ export class SportsApiService {
           gameDate: new Date(event.date),
           completedAt: event.status.type.name === 'STATUS_FINAL' ? new Date(event.date) : null,
           week: null,
-          period: period
+          period: period,
+          wcRound: null,
+          wcGroup: null,
         };
 
         games.push(game);
@@ -237,7 +239,9 @@ export class SportsApiService {
           status: this.mapESPNStatus(competition.status.type.name),
           gameDate: new Date(event.date),
           completedAt: competition.status.type.completed ? new Date() : null,
-          period: period
+          period: period,
+          wcRound: null,
+          wcGroup: null,
         };
         
         games.push(game);
@@ -410,7 +414,9 @@ export class SportsApiService {
           gameDate: new Date(event.date),
           completedAt: statusName === 'STATUS_FINAL' ? new Date(event.date) : null,
           week: null,
-          period
+          period,
+          wcRound: null,
+          wcGroup: null,
         };
         games.push(game);
       } catch (err) {

@@ -124,6 +124,7 @@ export class WorldCupDataService {
           sport: "WORLD_CUP",
           season: this.SEASON,
           week: null,
+          seasonType: "regular",
           homeTeamId: this.mapESPNTeamToWCId(homeComp.team),
           awayTeamId: this.mapESPNTeamToWCId(awayComp.team),
           homeScore: homeComp.score != null ? Number(homeComp.score) : null,

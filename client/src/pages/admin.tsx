@@ -2155,8 +2155,8 @@ export default function Admin() {
                     const u = membersWithUserData?.find(m => m.id === selectedMember.id)?.user;
                     if (!u?.email) return null;
                     return u?.verifiedAt
-                      ? <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" title="Email verified" />
-                      : <ShieldAlert className="w-3.5 h-3.5 text-orange-400 shrink-0" title="Email not verified" />;
+                      ? <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" aria-label="Email verified" />
+                      : <ShieldAlert className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-label="Email not verified" />;
                   })()}
                 </p>
                 <p className="text-retro-charcoal/70 text-sm">

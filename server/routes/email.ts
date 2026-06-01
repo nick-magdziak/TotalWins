@@ -208,7 +208,7 @@ export async function getNotificationPreferences(req: Request, res: Response) {
 
     res.json({
       draftNotifications: user.draftNotifications ?? true,
-      gameNotifications: user.gameNotifications ?? false,
+      gameNotifications: user.notifications ?? false,
     });
   } catch (error) {
     console.error("Get notification preferences error:", error);

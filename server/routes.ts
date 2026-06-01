@@ -976,6 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let sent = 0;
       for (const member of members) {
+        if (!member.userId) continue;
         const user = await storage.getUser(member.userId);
         if (!user || !user.email || user.password === "__pending__") continue;
         const success = await emailService.sendLeagueUpdate(

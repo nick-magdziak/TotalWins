@@ -20,9 +20,7 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-try {
-  startLiveScoreSync();
-} catch (err) {
-  console.error("[live-score-worker] fatal error starting sync:", err);
+startLiveScoreSync((err) => {
+  console.error("[live-score-worker] fatal error in sync loop:", err);
   process.exit(1);
-}
+});

@@ -236,9 +236,13 @@ async function run(): Promise<void> {
  * Kicks off the initial sync + startup backfill and schedules the
  * self-rescheduling tick loop, then returns immediately.
  * Must NOT be called more than once per process.
+ *
+ * @param onFatalError  Optional callback invoked on unrecoverable async startup
+ *                      failure (e.g. so a standalone worker can call process.exit(1)).
  */
-export function startLiveScoreSync(): void {
+export function startLiveScoreSync(onFatalError?: (err: unknown) => void): void {
   run().catch(err => {
     console.error("[liveScoreSync] fatal error in sync loop:", err);
+    onFatalError?.(err);
   });
 }

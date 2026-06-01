@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type League } from "@shared/schema";
 
 export default function Draft() {
-  const [selectedTeamForDraft, setSelectedTeamForDraft] = useState<NFLTeam | MLBTeam | NBATeam | null>(null);
+  const [selectedTeamForDraft, setSelectedTeamForDraft] = useState<NFLTeam | MLBTeam | NBATeam | WorldCupTeam | null>(null);
   const [showDraftConfirmation, setShowDraftConfirmation] = useState(false);
 
   const currentUser = getCurrentUser();
@@ -346,7 +346,7 @@ export default function Draft() {
                           return lastTeam
                             ? (currentLeague?.sport === 'WORLD_CUP'
                                 ? lastTeam.name
-                                : `${lastTeam.city} ${lastTeam.name}`)
+                                : `${'city' in lastTeam ? lastTeam.city : ''} ${lastTeam.name}`.trim())
                             : "none";
                         })()
                       ) : (
@@ -515,7 +515,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
+                      }).sort((a, b) => `${'city' in a ? a.city : ''} ${a.name}`.localeCompare(`${'city' in b ? b.city : ''} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -536,7 +536,7 @@ export default function Draft() {
                                     color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
                                   }}
                                 >
-                                  <span className="retro-font">{team.city} {team.name}</span>
+                                  <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                                 </button>
                               );
                             })}
@@ -553,7 +553,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NFL_DIVISIONS[division as keyof typeof NFL_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
+                      }).sort((a, b) => `${'city' in a ? a.city : ''} ${a.name}`.localeCompare(`${'city' in b ? b.city : ''} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -574,7 +574,7 @@ export default function Draft() {
                                     color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
                                   }}
                                 >
-                                  <span className="retro-font">{team.city} {team.name}</span>
+                                  <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                                 </button>
                               );
                             })}
@@ -594,7 +594,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
+                      }).sort((a, b) => `${'city' in a ? a.city : ''} ${a.name}`.localeCompare(`${'city' in b ? b.city : ''} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -615,7 +615,7 @@ export default function Draft() {
                                     color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
                                   }}
                                 >
-                                  <span className="retro-font">{team.city} {team.name}</span>
+                                  <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                                 </button>
                               );
                             })}
@@ -632,7 +632,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = MLB_DIVISIONS[division as keyof typeof MLB_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
+                      }).sort((a, b) => `${'city' in a ? a.city : ''} ${a.name}`.localeCompare(`${'city' in b ? b.city : ''} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -653,7 +653,7 @@ export default function Draft() {
                                     color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
                                   }}
                                 >
-                                  <span className="retro-font">{team.city} {team.name}</span>
+                                  <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                                 </button>
                               );
                             })}
@@ -673,7 +673,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
+                      }).sort((a, b) => `${'city' in a ? a.city : ''} ${a.name}`.localeCompare(`${'city' in b ? b.city : ''} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -694,7 +694,7 @@ export default function Draft() {
                                     color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
                                   }}
                                 >
-                                  <span className="retro-font">{team.city} {team.name}</span>
+                                  <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                                 </button>
                               );
                             })}
@@ -711,7 +711,7 @@ export default function Draft() {
                       const divisionTeams = teams?.filter(team => {
                         const divisionTeamIds = NBA_DIVISIONS[division as keyof typeof NBA_DIVISIONS];
                         return divisionTeamIds && isTeamInDivision(team.abbreviation, divisionTeamIds);
-                      }).sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`)) || [];
+                      }).sort((a, b) => `${'city' in a ? a.city : ''} ${a.name}`.localeCompare(`${'city' in b ? b.city : ''} ${b.name}`)) || [];
                       
                       return (
                         <div key={division} className="mb-6">
@@ -732,7 +732,7 @@ export default function Draft() {
                                     color: drafted.has(team.id) ? '#6b7280' : teamColors?.font || '#374151'
                                   }}
                                 >
-                                  <span className="retro-font">{team.city} {team.name}</span>
+                                  <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                                 </button>
                               );
                             })}
@@ -773,10 +773,10 @@ export default function Draft() {
                         }}
                       >
                         <div className="flex justify-between items-center">
-                          <span className="retro-font">{team.city} {team.name}</span>
+                          <span className="retro-font">{'city' in team ? `${team.city} ` : ''}{team.name}</span>
                           <span className="text-xs opacity-75">{team.abbreviation}</span>
                         </div>
-                        {team.division && (
+                        {'division' in team && team.division && (
                           <div className="text-xs opacity-60 mt-1">{team.division}</div>
                         )}
                       </button>
@@ -834,7 +834,7 @@ export default function Draft() {
                 }}
               >
                 <div className="text-2xl font-bold retro-font">
-                  {selectedTeamForDraft.city} {selectedTeamForDraft.name}
+                  {'city' in selectedTeamForDraft ? `${selectedTeamForDraft.city} ` : ''}{selectedTeamForDraft.name}
                 </div>
               </div>
             </div>
