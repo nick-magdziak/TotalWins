@@ -1,0 +1,53 @@
+Goal: Consolidate this app to run as a SINGLE process on one Replit Reserved VM.
+Two changes: (1) remove the crude 5-minute background sync currently baked into the
+web server, and (2) reuse the smarter adaptive sync logic from
+scripts/live-score-worker.ts so it runs in-process inside the web server instead.
+Do NOT split into two deployments — everything runs in one process on one VM.
+
+CHANGES:
+
+1. Create a new module: server/services/liveScoreSync.ts
+   Export a single function `startLiveScoreSync()`. Move the core sync logic OUT of
+   scripts/live-score-worker.ts and INTO this module:
+     - the interval constants (ACTIVE_INTERVAL_MS, IDLE_INTERVAL_MS, QUIET_INTERVAL_MS)
+     - the helpers isWorldCupTournamentWindow, isQuietHours, inCalendarSeasonWindow, isInSeason
+     - runOneCycle(...)
+     - the self-rescheduling adaptive `tick` loop and the per-sport "due at" timestamps
+     - the startup cycle and the 30-day startup backfill
+   Fix all import paths for the new location (e.g. ../storage, ../sportsDataService,
+   ./sportsApi, ./worldCupService).
+   IMPORTANT: this module must NOT register process signal handlers (SIGTERM/SIGINT),
+   must NOT call process.exit, and must NOT block its caller. It should kick off the
+   initial sync + backfill in the background, schedule the adaptive loop, and return
+   immediately.
+
+2. Refactor scripts/live-score-worker.ts into a THIN wrapper:
+   it imports startLiveScoreSync from server/services/liveScoreSync.ts, registers the
+   SIGTERM/SIGINT handlers, calls startLiveScoreSync(), and keeps the fatal-error
+   process.exit(1) behavior. Keep this file working (so we retain the option to run a
+   standalone worker later) but it must contain NO duplicated sync logic.
+
+3. Edit server/index.ts:
+   - DELETE the entire in-server sync block — the `if (process.env.DISABLE_WEB_SYNC
+     !== "true") { ... }` section containing the setTimeout initial sync and the
+     setInterval 5-minute loop, plus its local helpers (isMLBSeason, isNBASeason,
+     isNFLSeason, isWorldCup, buildSyncTasks).
+   - Import startLiveScoreSync from server/services/liveScoreSync.ts.
+   - After server.listen(...) succeeds, add:
+       if (process.env.DISABLE_WEB_SYNC !== "true") startLiveScoreSync();
+   - Remove any now-unused imports (SportsDataService, sportsApi, worldCupDataService)
+     if nothing else in the file references them.
+
+DO NOT TOUCH:
+   - setupRealtime / the websocket layer, the routes, auth/session setup, or the DB
+     schema. Sync stays in the same process as the web server, so realtime updates keep
+     working unchanged — do not rewire them.
+   - the build or start scripts in package.json.
+   - Keep DISABLE_WEB_SYNC as the on/off switch: unset/default = sync runs in-process;
+     "true" = web server does not sync (reserved for a possible future split).
+
+WHEN DONE:
+   - Run `npm run check` and fix any type errors.
+   - Run `npm run build` and confirm it completes.
+   - Confirm the 5-minute setInterval is completely gone and there is exactly ONE place
+     that starts the sync loop.
