@@ -1,0 +1,36 @@
+I migrated this app to a single Replit Reserved VM (deploymentTarget = "vm" in .replit,
+run command `npm run start`). The web server now runs the live-score sync in-process via
+startLiveScoreSync() in server/index.ts. Please verify the three things below.
+
+This is READ-ONLY — do NOT change any code or settings. For each item, tell me clearly
+whether you actually confirmed it from the workspace/logs/config, or whether I need to
+check it myself in the Replit UI. Do NOT report something as fine if you can't actually
+inspect it.
+
+1. SESSION_SECRET is configured for the deployment.
+   - server/index.ts throws on boot in production if SESSION_SECRET is unset, which would
+     crash the deployed app on startup.
+   - Check whether SESSION_SECRET exists in this project's Secrets / deployment environment
+     (you don't need the value, just whether the key is set).
+   - Check the most recent deployment/run logs: confirm they show "serving on port" and do
+     NOT contain "SESSION_SECRET environment variable must be set in production".
+   - If you can't access the secrets or deployment logs, say so and tell me exactly where
+     in the UI to look.
+
+2. Only one deployment is active.
+   - I want ONLY the Reserved VM deployment running; the old Autoscale deployment should be
+     shut down so I'm not billed for both.
+   - Report whatever you can determine. If you can't see the Deployments dashboard, say so
+     and tell me exactly where in the Replit UI to confirm there's a single active VM
+     deployment and no lingering Autoscale one.
+
+3. The standalone live-score worker is NOT running alongside the web server.
+   - The web app already syncs in-process. If scripts/live-score-worker.ts also runs at the
+     same time, ESPN calls and DB writes would be duplicated.
+   - Confirm from config that nothing starts the worker alongside the deployment: the run
+     command is `npm run start` (not the worker script), no .replit workflow or deployment
+     auto-runs `npm run worker:live-scores` or `tsx scripts/live-score-worker.ts`, and
+     DISABLE_WEB_SYNC is NOT set to "true" (that would wrongly disable the web server's sync).
+   - Tell me whether anything would cause both to run at once.
+
+Give me a short report with a clear pass / fail / "check manually" for each item.
