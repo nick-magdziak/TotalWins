@@ -2818,7 +2818,7 @@ export class DatabaseStorage implements IStorage {
     syncStatuses: SyncStatus[];
   }> {
     // Fetch all base data in parallel
-    const [allUsers, allLeagues, allMembers, allPickCounts, allPushSubs, syncStatuses] = await Promise.all([
+    const [allUsers, allLeagues, allMembers, allPickCounts, draftedUserPairs, allPushSubs, syncStatuses] = await Promise.all([
       db.select().from(users).orderBy(users.createdAt),
       db.select().from(leagues).orderBy(leagues.createdAt),
       db.select().from(leagueMembers),
@@ -2826,6 +2826,8 @@ export class DatabaseStorage implements IStorage {
         leagueId: draftPicks.leagueId,
         count: sql<number>`cast(count(*) as integer)`.as("count"),
       }).from(draftPicks).groupBy(draftPicks.leagueId),
+      // Distinct (leagueId, userId) pairs — to detect members with zero picks
+      db.selectDistinct({ leagueId: draftPicks.leagueId, userId: draftPicks.userId }).from(draftPicks),
       db.select({
         userId: pushSubscriptions.userId,
         count: sql<number>`cast(count(*) as integer)`.as("count"),
@@ -2859,6 +2861,12 @@ export class DatabaseStorage implements IStorage {
       if (row.leagueId) pickCountByLeague.set(row.leagueId, row.count);
     }
 
+    // Build a Set of "leagueId|userId" for members who have at least one pick
+    const draftedSet = new Set<string>();
+    for (const pair of draftedUserPairs) {
+      if (pair.leagueId && pair.userId) draftedSet.add(`${pair.leagueId}|${pair.userId}`);
+    }
+
     // Index push sub counts by userId
     const pushCountByUser = new Map<string, number>();
     for (const row of allPushSubs) pushCountByUser.set(row.userId, row.count);
@@ -2880,7 +2888,8 @@ export class DatabaseStorage implements IStorage {
       const activeMembers = members.filter(m => m.invitationStatus === "active");
       const memberCount = activeMembers.length;
       const pickCount = pickCountByLeague.get(l.id) ?? 0;
-      const isStalled = memberCount <= 1 || pickCount === 0;
+      // Stalled = any active member has zero draft picks in this league
+      const isStalled = activeMembers.some(m => m.userId && !draftedSet.has(`${l.id}|${m.userId}`));
       return { ...l, memberCount, pickCount, isStalled };
     });
 
