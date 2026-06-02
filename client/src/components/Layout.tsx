@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare, MoreHorizontal } from "lucide-react";
+import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare, MoreHorizontal, Shield } from "lucide-react";
 import { getCurrentUser, logout, AUTH_STORAGE_KEY } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -121,6 +121,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: `/standings?league=${effectiveLeagueId}`, label: "STANDINGS", icon: Trophy, showTurnBadge: false },
     { path: `/draft?league=${effectiveLeagueId}`, label: "DRAFT", icon: Users, showTurnBadge: isUserTurn },
     ...(isLeagueAdmin ? [{ path: `/admin?league=${effectiveLeagueId}`, label: "ADMIN", icon: Settings, showTurnBadge: false }] : []),
+    ...(currentUser?.isAdmin ? [{ path: "/super-admin", label: "SUPER ADMIN", icon: Shield, showTurnBadge: false }] : []),
   ];
 
   // General navigation items (not league-specific)

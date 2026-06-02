@@ -2393,6 +2393,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Super Admin dashboard — single endpoint returning platform-wide read-only snapshot
+  app.get("/api/admin/super-dashboard", async (_req, res) => {
+    try {
+      const data = await storage.getSuperDashboardData();
+      // Strip sensitive fields from user objects before sending to client
+      const safeUsers = data.users.map(({ password, resetToken, resetTokenExpiresAt, ...u }) => u);
+      res.json({ ...data, users: safeUsers });
+    } catch (error) {
+      console.error("GET /api/admin/super-dashboard error:", error);
+      res.status(500).json({ message: "Failed to load super dashboard data" });
+    }
+  });
+
   // Push notification routes
   app.get("/api/push/vapid-key", async (req, res) => {
     const { pushNotificationService } = await import("./services/pushNotificationService");

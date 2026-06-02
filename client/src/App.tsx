@@ -8,6 +8,7 @@ import Standings from "@/pages/standings";
 import Draft from "@/pages/draft";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
+import SuperAdmin from "@/pages/super-admin";
 import Signup from "@/pages/signup";
 import Login from "@/pages/login";
 import ForgotPassword from "@/pages/forgot-password";
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/create-league" component={CreateLeague} />
       <Route path="/profile" component={Profile} />
       <Route path="/admin" component={Admin} />
+      <Route path="/super-admin" component={SuperAdmin} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />

@@ -149,6 +149,13 @@ export interface IStorage {
       maxPossibleWins: number;
     }>;
   }>;
+
+  getSuperDashboardData(): Promise<{
+    users: Array<User & { pushSubCount: number; leaguesBySport: Record<string, number> }>;
+    leagues: Array<League & { memberCount: number; pickCount: number; isStalled: boolean }>;
+    pushStats: { totalSubscriptions: number; byUser: Array<{ userId: string; displayName: string; count: number }> };
+    syncStatuses: SyncStatus[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2802,6 +2809,90 @@ export class DatabaseStorage implements IStorage {
 
   async removeAllPushSubscriptions(userId: string): Promise<void> {
     await db.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async getSuperDashboardData(): Promise<{
+    users: Array<User & { pushSubCount: number; leaguesBySport: Record<string, number> }>;
+    leagues: Array<League & { memberCount: number; pickCount: number; isStalled: boolean }>;
+    pushStats: { totalSubscriptions: number; byUser: Array<{ userId: string; displayName: string; count: number }> };
+    syncStatuses: SyncStatus[];
+  }> {
+    // Fetch all base data in parallel
+    const [allUsers, allLeagues, allMembers, allPickCounts, allPushSubs, syncStatuses] = await Promise.all([
+      db.select().from(users).orderBy(users.createdAt),
+      db.select().from(leagues).orderBy(leagues.createdAt),
+      db.select().from(leagueMembers),
+      db.select({
+        leagueId: draftPicks.leagueId,
+        count: sql<number>`cast(count(*) as integer)`.as("count"),
+      }).from(draftPicks).groupBy(draftPicks.leagueId),
+      db.select({
+        userId: pushSubscriptions.userId,
+        count: sql<number>`cast(count(*) as integer)`.as("count"),
+      }).from(pushSubscriptions).groupBy(pushSubscriptions.userId),
+      db.select().from(syncStatus),
+    ]);
+
+    // Index members by leagueId for efficient lookup
+    const membersByLeague = new Map<string, typeof allMembers>();
+    for (const m of allMembers) {
+      if (!m.leagueId) continue;
+      if (!membersByLeague.has(m.leagueId)) membersByLeague.set(m.leagueId, []);
+      membersByLeague.get(m.leagueId)!.push(m);
+    }
+
+    // Index active memberships by userId for sport breakdown
+    const activeLeaguesByUser = new Map<string, string[]>();
+    for (const m of allMembers) {
+      if (!m.userId || m.invitationStatus !== "active") continue;
+      if (!activeLeaguesByUser.has(m.userId)) activeLeaguesByUser.set(m.userId, []);
+      activeLeaguesByUser.get(m.userId)!.push(m.leagueId ?? "");
+    }
+
+    // Index league sport by id
+    const leagueSportById = new Map<string, string>();
+    for (const l of allLeagues) leagueSportById.set(l.id, l.sport);
+
+    // Index pick counts by leagueId
+    const pickCountByLeague = new Map<string, number>();
+    for (const row of allPickCounts) {
+      if (row.leagueId) pickCountByLeague.set(row.leagueId, row.count);
+    }
+
+    // Index push sub counts by userId
+    const pushCountByUser = new Map<string, number>();
+    for (const row of allPushSubs) pushCountByUser.set(row.userId, row.count);
+
+    // Build user rows
+    const enrichedUsers = allUsers.map(u => {
+      const leagueIds = activeLeaguesByUser.get(u.id) ?? [];
+      const leaguesBySport: Record<string, number> = {};
+      for (const lid of leagueIds) {
+        const sport = leagueSportById.get(lid) ?? "NFL";
+        leaguesBySport[sport] = (leaguesBySport[sport] ?? 0) + 1;
+      }
+      return { ...u, pushSubCount: pushCountByUser.get(u.id) ?? 0, leaguesBySport };
+    });
+
+    // Build league rows
+    const enrichedLeagues = allLeagues.map(l => {
+      const members = membersByLeague.get(l.id) ?? [];
+      const activeMembers = members.filter(m => m.invitationStatus === "active");
+      const memberCount = activeMembers.length;
+      const pickCount = pickCountByLeague.get(l.id) ?? 0;
+      const isStalled = memberCount <= 1 || pickCount === 0;
+      return { ...l, memberCount, pickCount, isStalled };
+    });
+
+    // Build push stats
+    const totalSubscriptions = allPushSubs.reduce((sum, r) => sum + r.count, 0);
+    const userMap = new Map<string, string>(allUsers.map(u => [u.id, u.displayName]));
+    const byUser = allPushSubs
+      .filter(r => r.count > 0)
+      .map(r => ({ userId: r.userId, displayName: userMap.get(r.userId) ?? r.userId, count: r.count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { users: enrichedUsers, leagues: enrichedLeagues, pushStats: { totalSubscriptions, byUser }, syncStatuses };
   }
 }
 
