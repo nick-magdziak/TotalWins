@@ -1,9 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Activity, Bell, CheckCircle, Clock, AlertCircle, XCircle, Smartphone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, Users, Activity, Bell, CheckCircle, Clock, AlertCircle, XCircle, Smartphone, RefreshCw } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type SuperDashboardUser = {
   id: string;
@@ -50,6 +53,27 @@ type SuperDashboardData = {
   }>;
 };
 
+type SportSyncStatus = {
+  sport: string;
+  cadence: "live" | "idle" | "quiet" | "off_season";
+  intervalLabel: string;
+  liveGameInProgress: boolean;
+  inSeason: boolean;
+  lastSyncAt: string | null;
+  lastSuccessAt: string | null;
+  lastDurationMs: number | null;
+  lastError: string | null;
+};
+
+function cadenceBadgeStyle(cadence: SportSyncStatus["cadence"]) {
+  switch (cadence) {
+    case "live":       return "bg-green-500 text-white";
+    case "idle":       return "bg-blue-500 text-white";
+    case "quiet":      return "bg-gray-500 text-white";
+    case "off_season": return "bg-gray-700 text-gray-300";
+  }
+}
+
 function fmtRelative(ts: string | null): string {
   if (!ts) return "Never";
   const diff = Date.now() - new Date(ts).getTime();
@@ -87,6 +111,7 @@ function draftStatusColor(status: string): string {
 export default function SuperAdmin() {
   const currentUser = getCurrentUser();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
 
   if (!currentUser?.isAdmin) {
     navigate("/");
@@ -102,6 +127,35 @@ export default function SuperAdmin() {
     },
     staleTime: 30000,
     refetchInterval: 60000,
+  });
+
+  const { data: syncData, refetch: refetchSync } = useQuery<{ now: string; sports: SportSyncStatus[] }>({
+    queryKey: ["/api/admin/sync-status"],
+    refetchInterval: 30000,
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: async (sport: string) => {
+      if (sport === "WORLD_CUP") {
+        return apiRequest("POST", "/api/admin/sync-world-cup", {});
+      }
+      return apiRequest("POST", "/api/admin/sync-live-scores", { sport });
+    },
+    onSuccess: (_res, sport) => {
+      toast({
+        title: "Sync triggered",
+        description: `${sport === "WORLD_CUP" ? "World Cup" : sport} sync completed successfully.`,
+      });
+      refetchSync();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/super-dashboard"] });
+    },
+    onError: (_err, sport) => {
+      toast({
+        title: "Sync failed",
+        description: `Could not sync ${sport === "WORLD_CUP" ? "World Cup" : sport}. Check server logs.`,
+        variant: "destructive",
+      });
+    },
   });
 
   return (
@@ -297,18 +351,25 @@ export default function SuperAdmin() {
                     <h2 className="text-lg font-bold text-retro-pink retro-font">APP HEALTH</h2>
                     <span className="text-white/50 text-sm retro-font">(sync status)</span>
                   </div>
-                  {data.syncStatuses.length === 0 ? (
-                    <p className="text-white/50 retro-font text-sm">No sync records yet.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {["NFL", "MLB", "NBA", "WORLD_CUP"].map(sport => {
-                        const row = data.syncStatuses.find(s => s.sport === sport);
-                        return (
-                          <div key={sport} className="rounded-lg border border-white/10 p-3 bg-white/5">
-                            <div className="flex items-center justify-between mb-1">
+                  <div className="space-y-3">
+                    {["NFL", "MLB", "NBA", "WORLD_CUP"].map(sport => {
+                      const row = data.syncStatuses.find(s => s.sport === sport);
+                      const liveRow = syncData?.sports.find(s => s.sport === sport);
+                      const isSyncing = syncMutation.isPending && syncMutation.variables === sport;
+                      return (
+                        <div key={sport} className="rounded-lg border border-white/10 p-3 bg-white/5">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
                               <Badge className={`text-[10px] px-1.5 py-0.5 retro-font ${sportBadgeColor(sport)}`}>
                                 {sport === "WORLD_CUP" ? "WORLD CUP" : sport}
                               </Badge>
+                              {liveRow && (
+                                <Badge className={`text-[10px] px-1.5 py-0.5 retro-font ${cadenceBadgeStyle(liveRow.cadence)}`}>
+                                  {liveRow.intervalLabel}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
                               {row?.lastError ? (
                                 <AlertCircle className="w-4 h-4 text-red-400" />
                               ) : row?.lastSuccessAt ? (
@@ -316,24 +377,34 @@ export default function SuperAdmin() {
                               ) : (
                                 <Clock className="w-4 h-4 text-white/40" />
                               )}
-                            </div>
-                            <div className="text-xs text-white/70 retro-font space-y-0.5">
-                              <div>Last sync: <span className="text-white">{fmtRelative(row?.lastSyncAt ?? null)}</span></div>
-                              <div>Last success: <span className="text-green-400">{fmtRelative(row?.lastSuccessAt ?? null)}</span></div>
-                              {row?.lastDurationMs != null && (
-                                <div>Duration: <span className="text-white">{row.lastDurationMs}ms</span></div>
-                              )}
-                              {row?.lastError && (
-                                <div className="text-red-400 truncate" title={row.lastError}>
-                                  Error: {row.lastError.substring(0, 80)}
-                                </div>
-                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-[10px] retro-font border-retro-teal/50 text-retro-teal hover:bg-retro-teal/20"
+                                disabled={isSyncing}
+                                onClick={() => syncMutation.mutate(sport)}
+                              >
+                                <RefreshCw className={`w-3 h-3 mr-1 ${isSyncing ? "animate-spin" : ""}`} />
+                                {isSyncing ? "SYNCING…" : "SYNC NOW"}
+                              </Button>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <div className="text-xs text-white/70 retro-font space-y-0.5">
+                            <div>Last sync: <span className="text-white">{fmtRelative(row?.lastSyncAt ?? null)}</span></div>
+                            <div>Last success: <span className="text-green-400">{fmtRelative(row?.lastSuccessAt ?? null)}</span></div>
+                            {row?.lastDurationMs != null && (
+                              <div>Duration: <span className="text-white">{row.lastDurationMs}ms</span></div>
+                            )}
+                            {row?.lastError && (
+                              <div className="text-red-400 truncate" title={row.lastError}>
+                                Error: {row.lastError.substring(0, 80)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
 

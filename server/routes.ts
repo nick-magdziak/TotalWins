@@ -2298,29 +2298,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Live scoring system endpoint
+  // Accepts optional { sport: "NFL" | "MLB" | "NBA" } body to limit the sync to one sport.
+  // When sport is omitted the legacy full-sync (MLB standings + ESPN team standings) runs.
   app.post("/api/admin/sync-live-scores", async (req, res) => {
     try {
       const { SportsDataService } = await import("./sportsDataService");
       const sportsService = new SportsDataService(storage);
-
-      // Sync current game scores
-      await sportsService.updateMLBStandings();
-
-      // Sync team win/loss records from ESPN standings API
       const { sportsApi } = await import("./services/sportsApi");
-      const standingsResult = await sportsApi.syncTeamStandingsFromESPN();
+
+      const sport = (req.body?.sport as string | undefined)?.toUpperCase();
+      const validSports = ["NFL", "MLB", "NBA"];
+
+      if (sport && !validSports.includes(sport)) {
+        return res.status(400).json({ message: `Invalid sport. Must be one of: ${validSports.join(", ")}` });
+      }
+
+      let message = "Live scores synced successfully";
+
+      if (sport === "MLB") {
+        await sportsService.updateMLBStandings();
+        await sportsApi.syncMLBGames();
+        message = "MLB standings and games synced successfully";
+      } else if (sport === "NBA") {
+        await sportsService.updateNBAStandings();
+        await sportsApi.syncNBAGames();
+        message = "NBA standings and games synced successfully";
+      } else if (sport === "NFL") {
+        await sportsService.updateNFLStandings();
+        await sportsApi.syncTeamStandingsFromESPN();
+        message = "NFL standings synced successfully";
+      } else {
+        // Legacy full-sync (no sport specified)
+        await sportsService.updateMLBStandings();
+        await sportsApi.syncTeamStandingsFromESPN();
+      }
+
       logAudit({
         actorUserId: req.session.userId ?? null,
         action: "sport.live_scores.sync",
-        metadata: { standingsUpdated: standingsResult.updated, standingsErrors: standingsResult.errors },
+        metadata: { sport: sport ?? "all" },
       });
-      
-      res.json({ 
-        message: "Live scores synced successfully",
+
+      res.json({
+        message,
         timestamp: new Date().toISOString(),
-        season: "2025",
-        standingsUpdated: standingsResult.updated,
-        standingsErrors: standingsResult.errors,
+        sport: sport ?? "all",
       });
     } catch (error) {
       console.error("Live scoring sync error:", error);
