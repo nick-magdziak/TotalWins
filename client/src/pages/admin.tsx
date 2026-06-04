@@ -1249,7 +1249,7 @@ export default function Admin() {
               </h3>
               
               {/* Invite Link */}
-              {currentLeague?.inviteCode && (
+              {currentLeague?.inviteCode ? (
                 <div className="bg-retro-cream border-2 border-retro-teal rounded-xl p-4 mb-4">
                   <p className="text-retro-charcoal font-bold text-xs retro-font mb-2 flex items-center gap-1">
                     <Link2 className="h-3 w-3" />
@@ -1277,6 +1277,32 @@ export default function Admin() {
                   <p className="text-gray-400 text-xs mt-1">
                     Code: <span className="font-mono font-bold text-retro-purple">{currentLeague.inviteCode}</span>
                   </p>
+                </div>
+              ) : currentLeague && (
+                <div className="bg-retro-cream border-2 border-gray-300 rounded-xl p-4 mb-4">
+                  <p className="text-retro-charcoal font-bold text-xs retro-font mb-2 flex items-center gap-1">
+                    <Link2 className="h-3 w-3" />
+                    SHARE INVITE LINK
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-retro-teal text-white w-full"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/leagues/${currentLeague.id}/generate-invite-code`, { method: "POST" });
+                        if (res.ok) {
+                          queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                          toast({ title: "Invite link created!", description: "Your invite link is ready to share." });
+                        }
+                      } catch {
+                        toast({ title: "Error", description: "Could not generate invite link.", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    GENERATE INVITE LINK
+                  </Button>
                 </div>
               )}
 

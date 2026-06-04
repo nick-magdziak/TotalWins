@@ -696,6 +696,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/leagues/:id/generate-invite-code", requireVerified, async (req, res) => {
+    try {
+      const leagueId = req.params.id;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (league.inviteCode) return res.json(league);
+      const crypto = await import("crypto");
+      const inviteCode = crypto.randomBytes(4).toString("hex").toUpperCase();
+      const updated = await storage.updateLeague(leagueId, { inviteCode });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate invite code" });
+    }
+  });
+
   app.post("/api/leagues/:id/accept-invitation", requireVerified, async (req, res) => {
     try {
       const sessionUserId = req.session.userId;

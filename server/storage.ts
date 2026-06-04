@@ -942,6 +942,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createLeague(insertLeague: InsertLeague): Promise<League> {
+    if (!insertLeague.inviteCode) {
+      const crypto = await import("crypto");
+      (insertLeague as any).inviteCode = crypto.randomBytes(4).toString("hex").toUpperCase();
+    }
     const [league] = await db.insert(leagues).values(insertLeague).returning();
     return league;
   }
