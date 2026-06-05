@@ -248,12 +248,36 @@ export function startLiveScoreSync(onFatalError?: (err: unknown) => void): void 
   scheduleDiscordDailyPost();
 }
 
-function scheduleDiscordDailyPost(): void {
+/** Returns the next 9:00am America/New_York as a UTC Date, DST-aware. */
+function getNext9amET(): Date {
   const now = new Date();
-  const next8am = new Date();
-  next8am.setHours(8, 0, 0, 0);
-  if (next8am <= now) next8am.setDate(next8am.getDate() + 1);
-  const msUntil = next8am.getTime() - now.getTime();
+  for (let daysAhead = 0; daysAhead <= 1; daysAhead++) {
+    const probe = new Date(now.getTime() + daysAhead * 86_400_000);
+    const etDate = probe.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // "YYYY-MM-DD"
+    for (const offset of ["-04:00", "-05:00"]) {
+      const candidate = new Date(`${etDate}T09:00:00${offset}`);
+      // Verify the candidate really lands at 9am ET (offset might be wrong for this date)
+      const actualHour = parseInt(
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          hour: "2-digit",
+          hour12: false,
+        }).format(candidate),
+        10,
+      );
+      if (actualHour === 9 && candidate > now) return candidate;
+    }
+  }
+  // Unreachable fallback: next 13:00 UTC
+  const fb = new Date();
+  fb.setUTCHours(13, 0, 0, 0);
+  if (fb <= now) fb.setUTCDate(fb.getUTCDate() + 1);
+  return fb;
+}
+
+function scheduleDiscordDailyPost(): void {
+  const next = getNext9amET();
+  const msUntil = next.getTime() - Date.now();
 
   setTimeout(async () => {
     try {
@@ -263,16 +287,24 @@ function scheduleDiscordDailyPost(): void {
     } catch (err) {
       log("discord daily post error:", err);
     }
-    setInterval(async () => {
-      try {
-        const { postDailyStandings } = await import("./discordService");
-        await postDailyStandings();
-        log("discord daily standings posted");
-      } catch (err) {
-        log("discord daily post error:", err);
-      }
-    }, 24 * 60 * 60 * 1000);
+    // Re-schedule each day so DST transitions are recalculated fresh
+    const reschedule = () => {
+      const nextFire = getNext9amET();
+      const delay = nextFire.getTime() - Date.now();
+      log(`discord next daily post in ${Math.round(delay / 1000 / 60)}m (${nextFire.toISOString()})`);
+      setTimeout(async () => {
+        try {
+          const { postDailyStandings } = await import("./discordService");
+          await postDailyStandings();
+          log("discord daily standings posted");
+        } catch (err) {
+          log("discord daily post error:", err);
+        }
+        reschedule();
+      }, delay);
+    };
+    reschedule();
   }, msUntil);
 
-  log(`discord daily post scheduled in ${Math.round(msUntil / 1000 / 60)}m`);
+  log(`discord daily post scheduled for ${next.toISOString()} (in ${Math.round(msUntil / 1000 / 60)}m)`);
 }
