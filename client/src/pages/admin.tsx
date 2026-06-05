@@ -39,7 +39,10 @@ import {
   Mail,
   ShieldAlert,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Wrench,
+  Send,
+  Trash2
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -74,6 +77,7 @@ export default function Admin() {
   const [auditSince, setAuditSince] = useState("");
   const [auditUntil, setAuditUntil] = useState("");
   const [auditScope, setAuditScope] = useState<"global" | "all">("global");
+  const [discordWebhookInput, setDiscordWebhookInput] = useState<string>("");
   const [auditFilters, setAuditFilters] = useState<{
     action: string;
     actor: string;
@@ -959,6 +963,10 @@ export default function Admin() {
       setLeagueName(currentLeague.name);
     }
   }, [currentLeague?.name]);
+
+  useEffect(() => {
+    setDiscordWebhookInput(currentLeague?.discordWebhookUrl ?? "");
+  }, [currentLeague?.discordWebhookUrl]);
 
   // Pre-populate draft date/time from saved league value
   useEffect(() => {
@@ -2152,6 +2160,124 @@ export default function Admin() {
           </Card>
         </section>
       )}
+
+      {/* External Tools */}
+      <section className="mt-8">
+        <h2 className="text-retro-purple text-xl font-bold mb-4 retro-font flex items-center gap-2">
+          <Wrench className="w-5 h-5" />
+          EXTERNAL TOOLS
+        </h2>
+
+        {/* Discord */}
+        <Card className="bg-white rounded-2xl retro-border shadow-xl">
+          <CardContent className="p-6">
+            <h3 className="text-retro-charcoal text-base font-bold mb-1 retro-font flex items-center gap-2">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#5865F2]" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+              </svg>
+              DISCORD
+            </h3>
+            <p className="text-gray-400 text-xs mb-4">Post a daily standings image to a Discord channel at 8am. Paste your server's webhook URL below.</p>
+
+            <div className="space-y-3">
+              <div>
+                <Label className="text-retro-charcoal font-bold text-xs mb-1 block">Webhook URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={discordWebhookInput}
+                    onChange={(e) => setDiscordWebhookInput(e.target.value)}
+                    placeholder="https://discord.com/api/webhooks/..."
+                    className="flex-1 text-xs font-mono border-2 border-gray-200 focus:border-retro-purple"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-retro-purple text-white shrink-0"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/leagues/${leagueId}/discord-webhook`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ url: discordWebhookInput || null }),
+                        });
+                        if (res.ok) {
+                          queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                          toast({ title: discordWebhookInput ? "Webhook saved!" : "Webhook cleared", description: discordWebhookInput ? "Daily standings will post at 8am." : "Discord posting disabled." });
+                        } else {
+                          toast({ title: "Error", description: "Could not save webhook URL.", variant: "destructive" });
+                        }
+                      } catch {
+                        toast({ title: "Error", description: "Could not save webhook URL.", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Save className="w-3 h-3 mr-1" />
+                    SAVE
+                  </Button>
+                  {currentLeague?.discordWebhookUrl && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-500 hover:bg-red-50 shrink-0"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/leagues/${leagueId}/discord-webhook`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ url: null }),
+                          });
+                          if (res.ok) {
+                            setDiscordWebhookInput("");
+                            queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                            toast({ title: "Webhook cleared", description: "Discord posting disabled." });
+                          }
+                        } catch {
+                          toast({ title: "Error", description: "Could not clear webhook.", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {currentLeague?.discordWebhookUrl && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#5865F2] hover:bg-[#4752C4] text-white"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/leagues/${leagueId}/discord-test`, { method: "POST" });
+                        if (res.ok) {
+                          toast({ title: "Test post sent!", description: "Check your Discord channel." });
+                        } else {
+                          const data = await res.json();
+                          toast({ title: "Failed", description: data.message ?? "Could not post to Discord.", variant: "destructive" });
+                        }
+                      } catch {
+                        toast({ title: "Error", description: "Could not post to Discord.", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    SEND TEST POST
+                  </Button>
+                  <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Webhook active · daily at 8am
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Privilege Management Dialog */}
       <Dialog open={showPrivilegeDialog} onOpenChange={setShowPrivilegeDialog}>

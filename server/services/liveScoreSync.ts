@@ -245,4 +245,34 @@ export function startLiveScoreSync(onFatalError?: (err: unknown) => void): void 
     console.error("[liveScoreSync] fatal error in sync loop:", err);
     onFatalError?.(err);
   });
+  scheduleDiscordDailyPost();
+}
+
+function scheduleDiscordDailyPost(): void {
+  const now = new Date();
+  const next8am = new Date();
+  next8am.setHours(8, 0, 0, 0);
+  if (next8am <= now) next8am.setDate(next8am.getDate() + 1);
+  const msUntil = next8am.getTime() - now.getTime();
+
+  setTimeout(async () => {
+    try {
+      const { postDailyStandings } = await import("./discordService");
+      await postDailyStandings();
+      log("discord daily standings posted");
+    } catch (err) {
+      log("discord daily post error:", err);
+    }
+    setInterval(async () => {
+      try {
+        const { postDailyStandings } = await import("./discordService");
+        await postDailyStandings();
+        log("discord daily standings posted");
+      } catch (err) {
+        log("discord daily post error:", err);
+      }
+    }, 24 * 60 * 60 * 1000);
+  }, msUntil);
+
+  log(`discord daily post scheduled in ${Math.round(msUntil / 1000 / 60)}m`);
 }

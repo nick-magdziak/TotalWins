@@ -696,6 +696,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/leagues/:id/discord-webhook", requireVerified, async (req, res) => {
+    try {
+      const leagueId = req.params.id;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (league.createdBy !== req.session.userId) {
+        const member = await storage.getLeagueMember(leagueId, req.session.userId!);
+        if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
+      }
+      const { url } = z.object({ url: z.string().nullable() }).parse(req.body);
+      const updated = await storage.updateLeague(leagueId, { discordWebhookUrl: url ?? undefined });
+      logAudit({ actorUserId: req.session.userId ?? null, action: "league.discord_webhook.update", leagueId });
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  app.post("/api/leagues/:id/discord-test", requireVerified, async (req, res) => {
+    try {
+      const leagueId = req.params.id;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (league.createdBy !== req.session.userId) {
+        const member = await storage.getLeagueMember(leagueId, req.session.userId!);
+        if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
+      }
+      if (!league.discordWebhookUrl) return res.status(400).json({ message: "No webhook URL configured" });
+      const { postStandingsToDiscord } = await import("./services/discordService");
+      await postStandingsToDiscord(league);
+      logAudit({ actorUserId: req.session.userId ?? null, action: "league.discord_webhook.test", leagueId });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error?.message ?? "Failed to post to Discord" });
+    }
+  });
+
   app.post("/api/leagues/:id/generate-invite-code", requireVerified, async (req, res) => {
     try {
       const leagueId = req.params.id;
