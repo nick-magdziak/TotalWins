@@ -31,6 +31,14 @@ export async function postStandingsToDiscord(league: League): Promise<void> {
     return;
   }
 
+  // Only post if at least one game was completed yesterday — no point
+  // showing an unchanged standings image on off-days.
+  const hadGames = await storage.hadCompletedGamesYesterday(league.sport);
+  if (!hadGames) {
+    log(`skipping ${league.name} — no completed ${league.sport} games yesterday`);
+    return;
+  }
+
   const standings = await storage.getPlayerStandings(league.id);
   if (!standings || standings.length === 0) return;
 

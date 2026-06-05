@@ -121,6 +121,7 @@ export interface IStorage {
   hasGamesInProgress(): Promise<boolean>;
   hasGamesInProgressBySport(sport: string): Promise<boolean>;
   hasUpcomingRegularSeasonGames(sport: string, withinDays?: number): Promise<boolean>;
+  hadCompletedGamesYesterday(sport: string): Promise<boolean>;
 
   // Push subscriptions (per-device)
   addPushSubscription(userId: string, endpoint: string, keys: { p256dh: string; auth: string }): Promise<void>;
@@ -1712,6 +1713,30 @@ export class DatabaseStorage implements IStorage {
       .select({ id: games.id })
       .from(games)
       .where(and(eq(games.sport, sport), eq(games.status, "in_progress")))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  /**
+   * Returns true when at least one game for the given sport was completed
+   * on the previous calendar day (midnight-to-midnight UTC). Used by the
+   * Discord daily post to skip off-days when standings haven't changed.
+   */
+  async hadCompletedGamesYesterday(sport: string): Promise<boolean> {
+    const now = new Date();
+    const yesterdayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+    const todayStart    = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const rows = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(
+        and(
+          eq(games.sport, sport),
+          eq(games.status, "completed"),
+          gte(games.gameDate, yesterdayStart),
+          lt(games.gameDate, todayStart),
+        )
+      )
       .limit(1);
     return rows.length > 0;
   }
