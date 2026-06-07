@@ -18,11 +18,23 @@ function escapeXml(s: string): string {
 const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"] as const;
 
 const GROUP_PALETTE = [
-  { hdr: "#00d4c8", hdrBg: "#081f1e", teamBg: "#0a1410" }, // teal
-  { hdr: "#ff6b9d", hdrBg: "#1f0811", teamBg: "#140a0d" }, // pink
-  { hdr: "#a78bfa", hdrBg: "#100817", teamBg: "#0d0a14" }, // purple
-  { hdr: "#ffd700", hdrBg: "#1a1500", teamBg: "#131000" }, // gold
+  { hdr: "#00d4c8", hdrBg: "#081f1e", teamBg: "#0a1410" }, // 0: teal
+  { hdr: "#ff6b9d", hdrBg: "#1f0811", teamBg: "#140a0d" }, // 1: pink
+  { hdr: "#a78bfa", hdrBg: "#100817", teamBg: "#0d0a14" }, // 2: purple
+  { hdr: "#ffd700", hdrBg: "#1a1500", teamBg: "#131000" }, // 3: gold/yellow
+  { hdr: "#60a5fa", hdrBg: "#071528", teamBg: "#050e1c" }, // 4: blue
 ];
+
+// Per-group color assignment (user-specified)
+const GROUP_COLOR_IDX: Record<string, number> = {
+  A: 0, B: 1, C: 2, D: 3,
+  E: 2, F: 3, G: 4, H: 1,
+  I: 0, J: 1, K: 2, L: 3,
+};
+
+function groupPalette(grp: string) {
+  return GROUP_PALETTE[GROUP_COLOR_IDX[grp] ?? 0];
+}
 
 export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buffer> {
   const { Resvg } = await import("@resvg/resvg-js");
@@ -134,8 +146,7 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
       const player = userById.get(pick.userId ?? "") ?? "?";
       const teamAbbr = team?.abbreviation ?? pick.teamId.slice(0, 3).toUpperCase();
       const teamName = team?.name ?? pick.teamId;
-      const gidx = GROUPS.indexOf((team?.group ?? "A") as typeof GROUPS[number]);
-      const c = GROUP_PALETTE[gidx % 4];
+      const c = groupPalette(team?.group ?? "A");
 
       svg += `<text x="${LP + 20}" y="${midY}" text-anchor="middle" font-size="10" fill="#64748b">${pick.pickNumber}</text>`;
       svg += `<text x="${LP + 40}" y="${midY}" text-anchor="start" font-size="10" font-weight="bold" fill="${c.hdr}">${escapeXml(teamAbbr)}</text>`;
@@ -153,7 +164,7 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
     for (let col = 0; col < 4; col++) {
       const gidx = row * 4 + col;
       const grp = GROUPS[gidx];
-      const palette = GROUP_PALETTE[col % 4];
+      const palette = groupPalette(grp);
       const gx = CX + col * GRP_COL_W;
       const gy = CONTENT_TOP + row * (GRP_CELL_H + GRP_GAP);
       const teams = teamsByGroup.get(grp) ?? [];
@@ -220,8 +231,7 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
       svg += `<rect x="${px}" y="${ty}" width="${PLR_COL_W}" height="${PLR_TEAM_H}" fill="${rowBg}"/>`;
 
       if (team) {
-        const gidx = GROUPS.indexOf(team.group as typeof GROUPS[number]);
-        const c = GROUP_PALETTE[gidx % 4];
+        const c = groupPalette(team.group);
         svg += `<text x="${px + 5}" y="${ty + 12}" text-anchor="start" font-size="10" fill="${c.hdr}">${escapeXml(team.abbreviation)}</text>`;
         svg += `<text x="${px + 32}" y="${ty + 12}" text-anchor="start" font-size="10" fill="#cbd5e1">${escapeXml(team.name.length > 12 ? team.name.slice(0, 12) : team.name)}</text>`;
       }
@@ -256,8 +266,7 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
     if (isDrafted) {
       svg += `<text x="${RX + RP}" y="${ty + 11}" text-anchor="start" font-size="9" fill="#334155">${escapeXml(t.name)}</text>`;
     } else {
-      const gidx = GROUPS.indexOf(t.group as typeof GROUPS[number]);
-      const c = GROUP_PALETTE[gidx % 4];
+      const c = groupPalette(t.group);
       svg += `<text x="${RX + RP}" y="${ty + 11}" text-anchor="start" font-size="9" fill="#e2e8f0">${escapeXml(t.name)}</text>`;
       svg += `<text x="${TOTAL_W - RP}" y="${ty + 11}" text-anchor="end" font-size="8" fill="${c.hdr}">${escapeXml(t.group)}</text>`;
     }
