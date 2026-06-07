@@ -40,12 +40,15 @@ export default function AdminDraftBoard() {
   const { data: boardData, isLoading: imageLoading, refetch: refetchImage } = useQuery<{ image: string; pickCount: number; memberCount: number }>({
     queryKey: ["/api/leagues", selectedLeagueId, "draft-board-image"],
     queryFn: async () => {
-      const res = await fetch(`/api/leagues/${selectedLeagueId}/draft-board-image`);
+      const res = await fetch(`/api/leagues/${selectedLeagueId}/draft-board-image?t=${Date.now()}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Failed to load image");
       return res.json();
     },
     enabled: !!selectedLeagueId,
-    staleTime: 10_000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   async function handleSendToDiscord() {
