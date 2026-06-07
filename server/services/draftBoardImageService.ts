@@ -115,7 +115,7 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
   <rect width="${TOTAL_W}" height="${TOTAL_H}" fill="#0a0f1a"/>
   <!-- Header -->
   <rect x="0" y="0" width="${TOTAL_W}" height="${HEADER_H}" fill="#0f172a"/>
-  <text x="${TOTAL_W / 2}" y="22" text-anchor="middle" font-size="17" font-weight="bold" fill="#00d4c8">${escapeXml(league.name)} · WORLD CUP DRAFT BOARD</text>
+  <text x="${TOTAL_W / 2}" y="22" text-anchor="middle" font-size="17" font-weight="bold" fill="#00d4c8">${escapeXml(league.name)} · DRAFT BOARD</text>
   <text x="${TOTAL_W / 2}" y="40" text-anchor="middle" font-size="12" fill="#64748b">Updated: ${escapeXml(dateStr)} · ${picks.length} / ${totalExpectedPicks} picks made</text>
   <!-- Panel dividers -->
   <line x1="${LEFT_W}" y1="${HEADER_H}" x2="${LEFT_W}" y2="${TOTAL_H}" stroke="#1e293b" stroke-width="1"/>
