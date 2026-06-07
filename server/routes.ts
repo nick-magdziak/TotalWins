@@ -9,6 +9,7 @@ import { z } from "zod";
 import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.js";
 import { notifyUser } from "./lib/realtime";
 import { logAudit } from "./lib/audit.js";
+import { generateDraftBoardImage } from "./services/draftBoardImageService.js";
 
 // Rate limiter: aggressive throttle for auth endpoints to prevent brute-force
 const authLimiter = rateLimit({
@@ -772,7 +773,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const boardData = await storage.getLeagueDraftBoard(leagueId);
       if (!boardData) return res.status(404).json({ message: "League not found" });
-      const { generateDraftBoardImage } = await import("./services/draftBoardImageService");
       const imageBuffer = await generateDraftBoardImage(boardData);
       const base64 = imageBuffer.toString("base64");
       res.json({ image: `data:image/png;base64,${base64}`, pickCount: boardData.picks.length, memberCount: boardData.members.length });
