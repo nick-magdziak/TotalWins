@@ -50,7 +50,7 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
     teamsByGroup.get(t.group)?.push(t);
   }
 
-  const totalExpectedPicks = Math.min(48, members.length * (league.teamsPerPlayer ?? 6));
+  const totalExpectedPicks = Math.max(picks.length, members.length * (league.teamsPerPlayer ?? 6));
   const maxTeamsPerPlayer = Math.max(...members.map(m => (picksByUserId.get(m.userId)?.length ?? 0)), 1, league.teamsPerPlayer ?? 6);
 
   // Layout constants
