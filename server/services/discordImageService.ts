@@ -76,7 +76,7 @@ export async function generateStandingsImage(
     for (const team of s.teams) {
       const cellMid = x + TEAM_CELL / 2;
       rows += `<text x="${x + 4}" y="${baselineY - 3}" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="bold" fill="#94a3b8">${escapeXml(team.abbreviation)}</text>`;
-      rows += `<text x="${x + TEAM_CELL - 6}" y="${baselineY - 3}" text-anchor="end" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#e2e8f0">${team.wins ?? 0}</text>`;
+      rows += `<text x="${x + 34}" y="${baselineY - 3}" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#e2e8f0">${team.wins ?? 0}</text>`;
       rows += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + ROW_H}" stroke="#1e293b" stroke-width="1"/>`;
       x += TEAM_CELL;
     }
