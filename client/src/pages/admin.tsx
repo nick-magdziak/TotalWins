@@ -2362,7 +2362,7 @@ export default function Admin() {
                   )}
                   <span className="text-xs text-green-600 font-medium flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Webhook active · daily at 9am ET
+                    Webhook active
                   </span>
                 </div>
               )}
