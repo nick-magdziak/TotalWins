@@ -1,4 +1,5 @@
 import type { WorldCupTeam, DraftPick, League, LeagueMember } from "../../shared/schema";
+import { getDraftConfigByKey } from "../../shared/draftConfig";
 
 export type DraftBoardData = {
   league: League;
@@ -62,8 +63,10 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
     teamsByGroup.get(t.group)?.push(t);
   }
 
-  const totalExpectedPicks = Math.max(picks.length, members.length * (league.teamsPerPlayer ?? 6));
-  const maxTeamsPerPlayer = Math.max(...members.map(m => (picksByUserId.get(m.userId)?.length ?? 0)), 1, league.teamsPerPlayer ?? 6);
+  const configTeams = league.draftConfiguration ? (getDraftConfigByKey(league.draftConfiguration)?.teams ?? null) : null;
+  const teamsPerPlayerResolved = configTeams ?? league.teamsPerPlayer ?? 6;
+  const totalExpectedPicks = Math.max(picks.length, members.length * teamsPerPlayerResolved);
+  const maxTeamsPerPlayer = Math.max(...members.map(m => (picksByUserId.get(m.userId)?.length ?? 0)), 1, teamsPerPlayerResolved);
 
   // Layout constants
   const TOTAL_W = 1000;
