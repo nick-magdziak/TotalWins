@@ -752,6 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const schema = z.object({
         discordStandingsEnabled: z.boolean().optional(),
         discordDraftBoardEnabled: z.boolean().optional(),
+        discordPickAlertEnabled: z.boolean().optional(),
       });
       const updates = schema.parse(req.body);
       const updated = await storage.updateLeague(leagueId, updates as any);
@@ -1551,6 +1552,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to auto-complete draft:', completionError);
       }
       
+      // Fire Discord pick alert (text message, instant)
+      try {
+        const freshLeague = await storage.getLeague(req.params.leagueId);
+        if (freshLeague?.discordWebhookUrl && freshLeague.discordPickAlertEnabled) {
+          const pickerUser = await storage.getUser(pickData.userId!);
+          const pickerName = pickerUser?.displayName ?? "Someone";
+
+          // Resolve team name based on sport
+          let teamName = pickData.teamId;
+          const teamObj = freshLeague.sport === "NFL"   ? await storage.getNFLTeam(pickData.teamId)
+                        : freshLeague.sport === "MLB"   ? await storage.getMLBTeam(pickData.teamId)
+                        : freshLeague.sport === "NBA"   ? await storage.getNBATeam(pickData.teamId)
+                        : await storage.getWorldCupTeam(pickData.teamId);
+          if (teamObj) {
+            teamName = ("city" in teamObj && teamObj.city)
+              ? `${teamObj.city} ${teamObj.name}`
+              : teamObj.name;
+          }
+
+          // Next player up — from draft status computed after this pick
+          const statusAfterPick = await storage.getDraftStatus(req.params.leagueId);
+          let nextPlayerName: string | null = null;
+          if (statusAfterPick.isActive && statusAfterPick.currentPlayer) {
+            const nextUser = await storage.getUser(statusAfterPick.currentPlayer);
+            nextPlayerName = nextUser?.displayName ?? null;
+          }
+
+          const { postPickAlertToDiscord } = await import("./services/discordService.js");
+          await postPickAlertToDiscord(
+            freshLeague,
+            pickerName,
+            teamName,
+            pick.pickNumber ?? (pick as any).pickNumber ?? pickData.pickNumber ?? 0,
+            nextPlayerName
+          );
+        }
+      } catch (discordPickErr) {
+        console.error("Discord pick alert failed (non-fatal):", discordPickErr);
+      }
+
       // Send draft notification to the next player
       try {
         const draftStatus = await storage.getDraftStatus(req.params.leagueId);

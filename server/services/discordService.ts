@@ -101,6 +101,34 @@ export async function postDraftBoardToDiscord(league: League, force = false): Pr
   log(`draft board posted for ${league.name} (${pickCount}/${total} picks made)`);
 }
 
+export async function postPickAlertToDiscord(
+  league: League,
+  pickerName: string,
+  teamName: string,
+  pickNumber: number,
+  nextPlayerName: string | null
+): Promise<void> {
+  if (!league.discordWebhookUrl) return;
+  if (!league.discordPickAlertEnabled) return;
+
+  const nextLine = nextPlayerName
+    ? `**${nextPlayerName}** is up with the next pick!`
+    : "The draft is complete!";
+
+  const content = `**${pickerName}** picks **${teamName}** at Pick #${pickNumber}. ${nextLine}`;
+
+  const response = await fetch(league.discordWebhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Discord pick alert failed: ${response.status} ${text}`);
+  }
+  log(`pick alert posted for ${league.name}: ${content}`);
+}
+
 export async function postDailyStandings(): Promise<void> {
   const allLeagues = await storage.getLeaguesWithDiscordWebhook();
   const results = await Promise.allSettled(

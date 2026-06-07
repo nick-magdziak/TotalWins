@@ -81,6 +81,7 @@ export default function Admin() {
   const [discordWebhookInput, setDiscordWebhookInput] = useState<string>("");
   const [discordStandingsEnabled, setDiscordStandingsEnabled] = useState<boolean>(true);
   const [discordDraftBoardEnabled, setDiscordDraftBoardEnabled] = useState<boolean>(false);
+  const [discordPickAlertEnabled, setDiscordPickAlertEnabled] = useState<boolean>(false);
   const [auditFilters, setAuditFilters] = useState<{
     action: string;
     actor: string;
@@ -971,7 +972,8 @@ export default function Admin() {
     setDiscordWebhookInput(currentLeague?.discordWebhookUrl ?? "");
     setDiscordStandingsEnabled(currentLeague?.discordStandingsEnabled ?? true);
     setDiscordDraftBoardEnabled(currentLeague?.discordDraftBoardEnabled ?? false);
-  }, [currentLeague?.discordWebhookUrl, currentLeague?.discordStandingsEnabled, currentLeague?.discordDraftBoardEnabled]);
+    setDiscordPickAlertEnabled(currentLeague?.discordPickAlertEnabled ?? false);
+  }, [currentLeague?.discordWebhookUrl, currentLeague?.discordStandingsEnabled, currentLeague?.discordDraftBoardEnabled, currentLeague?.discordPickAlertEnabled]);
 
   // Pre-populate draft date/time from saved league value
   useEffect(() => {
@@ -2302,8 +2304,8 @@ export default function Admin() {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ discordDraftBoardEnabled: checked }),
                           });
-                          queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
                         } catch {
                           setDiscordDraftBoardEnabled(!checked);
                         }
@@ -2311,6 +2313,34 @@ export default function Admin() {
                     />
                   </div>
                 )}
+
+                {/* Pick Alerts toggle */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-200">
+                  <div>
+                    <p className={`text-xs font-medium ${currentLeague?.discordWebhookUrl ? "text-gray-800" : "text-gray-400"}`}>
+                      Pick Alerts
+                    </p>
+                    <p className="text-xs text-gray-400">Posts a message instantly when each draft pick is made</p>
+                  </div>
+                  <Switch
+                    checked={discordPickAlertEnabled}
+                    disabled={!currentLeague?.discordWebhookUrl}
+                    onCheckedChange={async (checked) => {
+                      setDiscordPickAlertEnabled(checked);
+                      try {
+                        await fetch(`/api/leagues/${leagueId}/discord-settings`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ discordPickAlertEnabled: checked }),
+                        });
+                        queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
+                      } catch {
+                        setDiscordPickAlertEnabled(!checked);
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               {currentLeague?.discordWebhookUrl && (
