@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Activity, Bell, CheckCircle, Clock, AlertCircle, XCircle, Smartphone, RefreshCw, LayoutGrid } from "lucide-react";
+import { Shield, Users, Activity, Bell, CheckCircle, Clock, AlertCircle, XCircle, Smartphone, RefreshCw, LayoutGrid, BarChart2 } from "lucide-react";
 import { Link } from "wouter";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -174,12 +174,20 @@ export default function SuperAdmin() {
               <p className="text-white/70 text-sm retro-font">Platform-wide read-only overview</p>
             </div>
           </div>
-          <Link href="/admin/draft-board">
-            <Button size="sm" className="bg-teal-700 hover:bg-teal-600 text-white flex items-center gap-1">
-              <LayoutGrid className="w-4 h-4" />
-              Draft Board Preview
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/admin/standings-preview">
+              <Button size="sm" className="bg-yellow-700 hover:bg-yellow-600 text-white flex items-center gap-1">
+                <BarChart2 className="w-4 h-4" />
+                Standings Preview
+              </Button>
+            </Link>
+            <Link href="/admin/draft-board">
+              <Button size="sm" className="bg-teal-700 hover:bg-teal-600 text-white flex items-center gap-1">
+                <LayoutGrid className="w-4 h-4" />
+                Draft Board Preview
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {isLoading && (

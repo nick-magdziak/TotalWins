@@ -10,6 +10,7 @@ import { hashPassword, comparePassword, PENDING_PLACEHOLDER } from "./lib/auth.j
 import { notifyUser } from "./lib/realtime";
 import { logAudit } from "./lib/audit.js";
 import { generateDraftBoardImage } from "./services/draftBoardImageService.js";
+import { generateStandingsImage } from "./services/discordImageService.js";
 
 // Rate limiter: aggressive throttle for auth endpoints to prevent brute-force
 const authLimiter = rateLimit({
@@ -803,6 +804,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error?.message ?? "Failed to post draft board to Discord" });
+    }
+  });
+
+  // Standings image preview (super-admin only)
+  app.get("/api/leagues/:id/standings-image", requireVerified, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user?.isAdmin) return res.status(403).json({ message: "Super-admin access required" });
+      const leagueId = req.params.id;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      const standings = await storage.getPlayerStandings(leagueId);
+      if (!standings || standings.length === 0) return res.status(404).json({ message: "No standings data yet" });
+      const imageBuffer = await generateStandingsImage(league.name, league.sport, standings);
+      const base64 = imageBuffer.toString("base64");
+      res.json({ image: `data:image/png;base64,${base64}`, memberCount: standings.length });
+    } catch (error: any) {
+      res.status(500).json({ message: error?.message ?? "Failed to generate standings image" });
+    }
+  });
+
+  // Force-post standings to Discord (super-admin only, bypasses schedule)
+  app.post("/api/leagues/:id/discord-standings-test", requireVerified, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user?.isAdmin) return res.status(403).json({ message: "Super-admin access required" });
+      const leagueId = req.params.id;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (!league.discordWebhookUrl) return res.status(400).json({ message: "No Discord webhook configured for this league" });
+      const standings = await storage.getPlayerStandings(leagueId);
+      if (!standings || standings.length === 0) return res.status(400).json({ message: "No standings data yet" });
+      const imageBuffer = await generateStandingsImage(league.name, league.sport, standings);
+      const form = new FormData();
+      form.append("content", `**${league.name} Standings**`);
+      form.append("file", new Blob([imageBuffer], { type: "image/png" }), "standings.png");
+      const response = await fetch(league.discordWebhookUrl, { method: "POST", body: form });
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(502).json({ message: `Discord rejected the post: ${response.status} ${text}` });
+      }
+      logAudit({ actorUserId: req.session.userId ?? null, action: "league.discord_standings.test", leagueId });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error?.message ?? "Failed to post standings to Discord" });
     }
   });
 
