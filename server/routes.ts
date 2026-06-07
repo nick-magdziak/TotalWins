@@ -1589,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "| teamsPerPlayer:", freshLeague.teamsPerPlayer,
               "| totalPicks:", totalPicks,
               "| nextPickNum:", nextPickNum,
-              "| draftPositions:", allMembers.map(m => `${m.userId.slice(0,6)}:${m.draftPosition}`).join(", "));
+              "| draftPositions:", allMembers.map(m => `${(m.userId ?? "null").slice(0,6)}:${m.draftPosition}`).join(", "));
             if (nextPickNum <= totalPicks && allMembers.length > 0) {
               const round        = Math.ceil(nextPickNum / allMembers.length);
               const posInRound   = ((nextPickNum - 1) % allMembers.length) + 1;

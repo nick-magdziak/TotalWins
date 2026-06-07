@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import { generateStandingsImage } from "./discordImageService";
 import { generateDraftBoardImage } from "./draftBoardImageService";
+import { getDraftConfigByKey } from "../../shared/draftConfig";
 import type { League } from "../../shared/schema";
 
 function log(...args: unknown[]) {
@@ -85,7 +86,10 @@ export async function postDraftBoardToDiscord(league: League, force = false): Pr
   const imageBuffer = await generateDraftBoardImage(boardData);
 
   const pickCount = boardData.picks.length;
-  const total = Math.max(pickCount, boardData.members.length * (boardData.league.teamsPerPlayer ?? 6));
+  const draftCfg = boardData.league.draftConfiguration ? getDraftConfigByKey(boardData.league.draftConfiguration) : null;
+  const total = draftCfg
+    ? draftCfg.players * draftCfg.teams
+    : Math.max(pickCount, boardData.members.length * (boardData.league.teamsPerPlayer ?? 6));
 
   const form = new FormData();
   form.append("content", `**${league.name} — Draft Board** · ${pickCount}/${total} picks made`);
