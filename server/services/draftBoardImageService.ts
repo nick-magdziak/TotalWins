@@ -28,7 +28,7 @@ const GROUP_PALETTE = [
 // Per-group color assignment (user-specified)
 const GROUP_COLOR_IDX: Record<string, number> = {
   A: 0, B: 1, C: 2, D: 3,
-  E: 2, F: 3, G: 4, H: 1,
+  E: 2, F: 3, G: 0, H: 1,
   I: 0, J: 1, K: 2, L: 3,
 };
 
