@@ -85,7 +85,7 @@ export async function postDraftBoardToDiscord(league: League, force = false): Pr
   const imageBuffer = await generateDraftBoardImage(boardData);
 
   const pickCount = boardData.picks.length;
-  const total = boardData.members.length * (boardData.league.teamsPerPlayer ?? 6);
+  const total = Math.max(pickCount, boardData.members.length * (boardData.league.teamsPerPlayer ?? 6));
 
   const form = new FormData();
   form.append("content", `**${league.name} — Draft Board** · ${pickCount}/${total} picks made`);
@@ -98,7 +98,7 @@ export async function postDraftBoardToDiscord(league: League, force = false): Pr
   }
 
   await storage.updateLeagueLastDraftBoardPost(league.id);
-  log(`draft board posted for ${league.name} (${pickCount}/${total} picks)`);
+  log(`draft board posted for ${league.name} (${pickCount}/${total} picks made)`);
 }
 
 export async function postDailyStandings(): Promise<void> {
