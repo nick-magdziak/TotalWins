@@ -2208,7 +2208,7 @@ export default function Admin() {
                         if (res.ok) {
                           queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
                           queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
-                          toast({ title: discordWebhookInput ? "Webhook saved!" : "Webhook cleared", description: discordWebhookInput ? "Daily standings will post at 8am." : "Discord posting disabled." });
+                          toast({ title: discordWebhookInput ? "Webhook saved!" : "Webhook cleared", description: discordWebhookInput ? "Discord services are now active." : "Discord posting disabled." });
                         } else {
                           toast({ title: "Error", description: "Could not save webhook URL.", variant: "destructive" });
                         }

@@ -704,7 +704,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leagueId = req.params.id;
       const league = await storage.getLeague(leagueId);
       if (!league) return res.status(404).json({ message: "League not found" });
-      if (league.createdBy !== req.session.userId) {
+      const actor = await storage.getUser(req.session.userId!);
+      if (!actor?.isAdmin && league.createdBy !== req.session.userId) {
         const member = await storage.getLeagueMember(leagueId, req.session.userId!);
         if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
       }
@@ -722,7 +723,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leagueId = req.params.id;
       const league = await storage.getLeague(leagueId);
       if (!league) return res.status(404).json({ message: "League not found" });
-      if (league.createdBy !== req.session.userId) {
+      const actor = await storage.getUser(req.session.userId!);
+      if (!actor?.isAdmin && league.createdBy !== req.session.userId) {
         const member = await storage.getLeagueMember(leagueId, req.session.userId!);
         if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
       }
@@ -742,7 +744,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leagueId = req.params.id;
       const league = await storage.getLeague(leagueId);
       if (!league) return res.status(404).json({ message: "League not found" });
-      if (league.createdBy !== req.session.userId) {
+      const actor = await storage.getUser(req.session.userId!);
+      if (!actor?.isAdmin && league.createdBy !== req.session.userId) {
         const member = await storage.getLeagueMember(leagueId, req.session.userId!);
         if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
       }
