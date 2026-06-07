@@ -962,6 +962,7 @@ export class DatabaseStorage implements IStorage {
         sql`${leagues.discordWebhookUrl} != ''`,
         eq(leagues.discordDraftBoardEnabled as any, true),
         eq(leagues.sport, "WORLD_CUP"),
+        eq(leagues.draftStatus, "active"),
       )
     );
   }

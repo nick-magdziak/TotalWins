@@ -62,7 +62,8 @@ export async function postStandingsToDiscord(league: League): Promise<void> {
 export async function postDraftBoardToDiscord(league: League, force = false): Promise<void> {
   if (!league.discordWebhookUrl) return;
   if (league.sport !== "WORLD_CUP") return;
-  if (!league.discordDraftBoardEnabled) return;
+  // When force=true (manual test/send from admin), bypass the enabled toggle and new-picks gate
+  if (!force && !league.discordDraftBoardEnabled) return;
 
   if (!force) {
     // Only post if at least one pick has been made since the last post
