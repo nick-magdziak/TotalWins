@@ -1480,8 +1480,8 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          {/* Live Score Sync Status */}
-          <SyncStatusPanel />
+          {/* Live Score Sync Status — super-admin only */}
+          {currentUser?.isAdmin && <SyncStatusPanel />}
 
           {/* Draft Settings */}
           <Card className="bg-white rounded-2xl retro-border shadow-xl">
