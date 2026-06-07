@@ -11,6 +11,7 @@ import { notifyUser } from "./lib/realtime";
 import { logAudit } from "./lib/audit.js";
 import { generateDraftBoardImage } from "./services/draftBoardImageService.js";
 import { generateStandingsImage } from "./services/discordImageService.js";
+import { getDraftConfigByKey as getDraftCfgKey } from "../shared/draftConfig.js";
 
 // Rate limiter: aggressive throttle for auth endpoints to prevent brute-force
 const authLimiter = rateLimit({
@@ -1575,26 +1576,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // even when draftStatus is "pending" (e.g. test/admin-entry drafts)
           let nextPlayerName: string | null = null;
           try {
-            const { getDraftConfigByKey: getConfig } = await import('../shared/draftConfig.js');
             const allPicksNow = await storage.getDraftPicks(req.params.leagueId);
             const allMembers  = await storage.getLeagueMembers(req.params.leagueId);
-            const draftCfg    = freshLeague.draftConfiguration ? getConfig(freshLeague.draftConfiguration) : null;
+            const draftCfg    = freshLeague.draftConfiguration ? getDraftCfgKey(freshLeague.draftConfiguration) : null;
             const totalPicks  = draftCfg
               ? draftCfg.players * draftCfg.teams
               : allMembers.length * (freshLeague.teamsPerPlayer ?? 4);
             const nextPickNum = allPicksNow.length + 1;
             if (nextPickNum <= totalPicks && allMembers.length > 0) {
-              const round          = Math.ceil(nextPickNum / allMembers.length);
-              const posInRound     = ((nextPickNum - 1) % allMembers.length) + 1;
-              const isSnakeRound   = round % 2 === 0;
-              const draftPos       = isSnakeRound ? allMembers.length - posInRound + 1 : posInRound;
-              const nextMember     = allMembers.find(m => m.draftPosition === draftPos);
+              const round        = Math.ceil(nextPickNum / allMembers.length);
+              const posInRound   = ((nextPickNum - 1) % allMembers.length) + 1;
+              const isSnakeRound = round % 2 === 0;
+              const draftPos     = isSnakeRound ? allMembers.length - posInRound + 1 : posInRound;
+
+              // Try by explicit draftPosition first, fall back to join-order index
+              let nextMember = allMembers.find(m => m.draftPosition === draftPos);
+              if (!nextMember) {
+                const sorted = [...allMembers].sort((a, b) =>
+                  new Date(a.joinedAt ?? 0).getTime() - new Date(b.joinedAt ?? 0).getTime()
+                );
+                nextMember = sorted[draftPos - 1] ?? sorted[0];
+              }
+
               if (nextMember?.userId) {
-                const nextUser   = await storage.getUser(nextMember.userId);
-                nextPlayerName   = nextUser?.displayName ?? null;
+                const nextUser = await storage.getUser(nextMember.userId);
+                nextPlayerName = nextUser?.displayName ?? null;
               }
             }
-          } catch { /* non-fatal */ }
+          } catch (err) {
+            console.error("Discord pick alert — next-player lookup failed:", err);
+          }
 
           const { postPickAlertToDiscord } = await import("./services/discordService.js");
           await postPickAlertToDiscord(
