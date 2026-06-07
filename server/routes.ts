@@ -306,7 +306,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateUser(user.id, { resetToken: token, resetTokenExpiresAt: expiresAt });
 
-      const resetUrl = `${process.env.APP_URL || "https://totalwins.app"}/reset-password?token=${token}`;
+      const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+      const resetUrl = `${baseUrl}/reset-password?token=${token}`;
       const { EmailService } = await import("./services/emailService.js");
       const emailService = new EmailService();
       await emailService.sendPasswordResetEmail(user.email, user.displayName, resetUrl);
