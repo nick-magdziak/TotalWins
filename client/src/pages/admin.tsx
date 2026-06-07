@@ -2206,8 +2206,8 @@ export default function Admin() {
                           body: JSON.stringify({ url: discordWebhookInput || null }),
                         });
                         if (res.ok) {
-                          queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
                           toast({ title: discordWebhookInput ? "Webhook saved!" : "Webhook cleared", description: discordWebhookInput ? "Discord services are now active." : "Discord posting disabled." });
                         } else {
                           toast({ title: "Error", description: "Could not save webhook URL.", variant: "destructive" });
@@ -2235,8 +2235,8 @@ export default function Admin() {
                           });
                           if (res.ok) {
                             setDiscordWebhookInput("");
-                            queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
-                            queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/users", currentUser?.id, "leagues"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/leagues", leagueId] });
                             toast({ title: "Webhook cleared", description: "Discord posting disabled." });
                           }
                         } catch {
