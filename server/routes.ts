@@ -191,6 +191,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Protect all /api/admin/* endpoints with admin authentication
   app.use("/api/admin", requireAdmin);
 
+  // TEMPORARY: one-time super-admin bootstrap — locked to a single email
+  app.post("/api/bootstrap-superadmin", async (req, res) => {
+    try {
+      const BOOTSTRAP_EMAIL = "nicholas.magdziak@gmail.com";
+      const userId = req.session.userId;
+      if (!userId) return res.status(401).json({ error: "Must be logged in" });
+      const user = await storage.getUser(userId);
+      if (!user || user.email !== BOOTSTRAP_EMAIL)
+        return res.status(403).json({ error: "Not authorized for bootstrap" });
+      await storage.updateUser(userId, { isAdmin: true });
+      return res.json({ success: true, message: `${BOOTSTRAP_EMAIL} is now a super-admin.` });
+    } catch (err) {
+      return res.status(500).json({ error: "Bootstrap failed" });
+    }
+  });
+
   // Authentication
   app.post("/api/auth/signup", accountLimiter, async (req, res) => {
     try {
