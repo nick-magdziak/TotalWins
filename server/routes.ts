@@ -1571,13 +1571,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : teamObj.name;
           }
 
-          // Next player up — from draft status computed after this pick
-          const statusAfterPick = await storage.getDraftStatus(req.params.leagueId);
+          // Next player up — computed directly from pick counts so it works
+          // even when draftStatus is "pending" (e.g. test/admin-entry drafts)
           let nextPlayerName: string | null = null;
-          if (statusAfterPick.isActive && statusAfterPick.currentPlayer) {
-            const nextUser = await storage.getUser(statusAfterPick.currentPlayer);
-            nextPlayerName = nextUser?.displayName ?? null;
-          }
+          try {
+            const { getDraftConfigByKey: getConfig } = await import('../shared/draftConfig.js');
+            const allPicksNow = await storage.getDraftPicks(req.params.leagueId);
+            const allMembers  = await storage.getLeagueMembers(req.params.leagueId);
+            const draftCfg    = freshLeague.draftConfiguration ? getConfig(freshLeague.draftConfiguration) : null;
+            const totalPicks  = draftCfg
+              ? draftCfg.players * draftCfg.teams
+              : allMembers.length * (freshLeague.teamsPerPlayer ?? 4);
+            const nextPickNum = allPicksNow.length + 1;
+            if (nextPickNum <= totalPicks && allMembers.length > 0) {
+              const round          = Math.ceil(nextPickNum / allMembers.length);
+              const posInRound     = ((nextPickNum - 1) % allMembers.length) + 1;
+              const isSnakeRound   = round % 2 === 0;
+              const draftPos       = isSnakeRound ? allMembers.length - posInRound + 1 : posInRound;
+              const nextMember     = allMembers.find(m => m.draftPosition === draftPos);
+              if (nextMember?.userId) {
+                const nextUser   = await storage.getUser(nextMember.userId);
+                nextPlayerName   = nextUser?.displayName ?? null;
+              }
+            }
+          } catch { /* non-fatal */ }
 
           const { postPickAlertToDiscord } = await import("./services/discordService.js");
           await postPickAlertToDiscord(
