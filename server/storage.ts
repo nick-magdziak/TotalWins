@@ -133,6 +133,12 @@ export interface IStorage {
   recordSyncResult(sport: string, durationMs: number, error: string | null): Promise<void>;
   getAllSyncStatuses(): Promise<SyncStatus[]>;
 
+  // Discord draft board
+  getLeagueDraftBoard(leagueId: string): Promise<{ league: League; members: Array<{ userId: string; displayName: string; draftPosition: number | null }>; picks: DraftPick[]; wcTeams: WorldCupTeam[] } | null>;
+  updateLeagueLastDraftBoardPost(leagueId: string): Promise<void>;
+  getLeaguesWithDraftBoardEnabled(): Promise<League[]>;
+  getLatestDraftPickAt(leagueId: string): Promise<Date | null>;
+
   // World Cup
   getAllWorldCupTeams(): Promise<WorldCupTeam[]>;
   getWorldCupTeam(id: string): Promise<WorldCupTeam | undefined>;
@@ -947,6 +953,69 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(leagues).where(
       and(sql`${leagues.discordWebhookUrl} IS NOT NULL`, sql`${leagues.discordWebhookUrl} != ''`)
     );
+  }
+
+  async getLeaguesWithDraftBoardEnabled(): Promise<League[]> {
+    return db.select().from(leagues).where(
+      and(
+        sql`${leagues.discordWebhookUrl} IS NOT NULL`,
+        sql`${leagues.discordWebhookUrl} != ''`,
+        eq(leagues.discordDraftBoardEnabled as any, true),
+        eq(leagues.sport, "WORLD_CUP"),
+      )
+    );
+  }
+
+  async getLeagueDraftBoard(leagueId: string): Promise<{
+    league: League;
+    members: Array<{ userId: string; displayName: string; draftPosition: number | null }>;
+    picks: DraftPick[];
+    wcTeams: WorldCupTeam[];
+  } | null> {
+    const league = await this.getLeague(leagueId);
+    if (!league) return null;
+
+    const [memberRows, picks, wcTeamRows] = await Promise.all([
+      db
+        .select({
+          userId: leagueMembers.userId,
+          displayName: users.displayName,
+          draftPosition: leagueMembers.draftPosition,
+        })
+        .from(leagueMembers)
+        .innerJoin(users, eq(leagueMembers.userId, users.id))
+        .where(
+          and(
+            eq(leagueMembers.leagueId, leagueId),
+            eq(leagueMembers.invitationStatus, "active"),
+          )
+        ),
+      this.getDraftPicks(leagueId),
+      db.select().from(worldCupTeams).where(eq(worldCupTeams.qualified, true)),
+    ]);
+
+    return {
+      league,
+      members: memberRows.map(r => ({
+        userId: r.userId ?? "",
+        displayName: r.displayName,
+        draftPosition: r.draftPosition,
+      })),
+      picks,
+      wcTeams: wcTeamRows,
+    };
+  }
+
+  async updateLeagueLastDraftBoardPost(leagueId: string): Promise<void> {
+    await db.update(leagues).set({ lastDraftBoardPostedAt: new Date() } as any).where(eq(leagues.id, leagueId));
+  }
+
+  async getLatestDraftPickAt(leagueId: string): Promise<Date | null> {
+    const [row] = await db
+      .select({ maxPickedAt: sql<Date | null>`MAX(${draftPicks.pickedAt})` })
+      .from(draftPicks)
+      .where(eq(draftPicks.leagueId, leagueId));
+    return row?.maxPickedAt ?? null;
   }
 
   async createLeague(insertLeague: InsertLeague): Promise<League> {

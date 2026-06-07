@@ -733,6 +733,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update Discord service toggles (standings enabled, draft board enabled)
+  app.patch("/api/leagues/:id/discord-settings", requireVerified, async (req, res) => {
+    try {
+      const leagueId = req.params.id;
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (league.createdBy !== req.session.userId) {
+        const member = await storage.getLeagueMember(leagueId, req.session.userId!);
+        if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
+      }
+      const schema = z.object({
+        discordStandingsEnabled: z.boolean().optional(),
+        discordDraftBoardEnabled: z.boolean().optional(),
+      });
+      const updates = schema.parse(req.body);
+      const updated = await storage.updateLeague(leagueId, updates as any);
+      logAudit({ actorUserId: req.session.userId ?? null, action: "league.discord_settings.update", leagueId });
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Get draft board image as base64 PNG (admin/super-admin only)
+  app.get("/api/leagues/:id/draft-board-image", requireVerified, async (req, res) => {
+    try {
+      const leagueId = req.params.id;
+      const user = await storage.getUser(req.session.userId!);
+      if (!user?.isAdmin) {
+        const league = await storage.getLeague(leagueId);
+        if (!league) return res.status(404).json({ message: "League not found" });
+        if (league.createdBy !== req.session.userId) {
+          const member = await storage.getLeagueMember(leagueId, req.session.userId!);
+          if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
+        }
+      }
+      const boardData = await storage.getLeagueDraftBoard(leagueId);
+      if (!boardData) return res.status(404).json({ message: "League not found" });
+      const { generateDraftBoardImage } = await import("./services/draftBoardImageService");
+      const imageBuffer = await generateDraftBoardImage(boardData);
+      const base64 = imageBuffer.toString("base64");
+      res.json({ image: `data:image/png;base64,${base64}`, pickCount: boardData.picks.length, memberCount: boardData.members.length });
+    } catch (error: any) {
+      res.status(500).json({ message: error?.message ?? "Failed to generate draft board image" });
+    }
+  });
+
+  // Force-post draft board to Discord (admin/super-admin only, bypasses new-picks gate)
+  app.post("/api/leagues/:id/discord-draft-board-test", requireVerified, async (req, res) => {
+    try {
+      const leagueId = req.params.id;
+      const user = await storage.getUser(req.session.userId!);
+      if (!user?.isAdmin) {
+        const league = await storage.getLeague(leagueId);
+        if (!league) return res.status(404).json({ message: "League not found" });
+        if (league.createdBy !== req.session.userId) {
+          const member = await storage.getLeagueMember(leagueId, req.session.userId!);
+          if (!member?.isCommissioner) return res.status(403).json({ message: "Not authorized" });
+        }
+      }
+      const league = await storage.getLeague(leagueId);
+      if (!league) return res.status(404).json({ message: "League not found" });
+      if (!league.discordWebhookUrl) return res.status(400).json({ message: "No webhook URL configured" });
+      const { postDraftBoardToDiscord } = await import("./services/discordService");
+      await postDraftBoardToDiscord(league, true /* force */);
+      logAudit({ actorUserId: req.session.userId ?? null, action: "league.discord_draft_board.test", leagueId });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error?.message ?? "Failed to post draft board to Discord" });
+    }
+  });
+
   app.post("/api/leagues/:id/generate-invite-code", requireVerified, async (req, res) => {
     try {
       const leagueId = req.params.id;

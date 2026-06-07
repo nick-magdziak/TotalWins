@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Activity, Bell, CheckCircle, Clock, AlertCircle, XCircle, Smartphone, RefreshCw } from "lucide-react";
+import { Shield, Users, Activity, Bell, CheckCircle, Clock, AlertCircle, XCircle, Smartphone, RefreshCw, LayoutGrid } from "lucide-react";
+import { Link } from "wouter";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -163,14 +164,22 @@ export default function SuperAdmin() {
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="w-8 h-8 text-retro-yellow" />
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-retro-yellow retro-font neon-glow">
-              SUPER ADMIN
-            </h1>
-            <p className="text-white/70 text-sm retro-font">Platform-wide read-only overview</p>
+        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Shield className="w-8 h-8 text-retro-yellow" />
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-retro-yellow retro-font neon-glow">
+                SUPER ADMIN
+              </h1>
+              <p className="text-white/70 text-sm retro-font">Platform-wide read-only overview</p>
+            </div>
           </div>
+          <Link href="/admin/draft-board">
+            <Button size="sm" className="bg-teal-700 hover:bg-teal-600 text-white flex items-center gap-1">
+              <LayoutGrid className="w-4 h-4" />
+              Draft Board Preview
+            </Button>
+          </Link>
         </div>
 
         {isLoading && (

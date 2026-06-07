@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { generateStandingsImage } from "./discordImageService";
+import { generateDraftBoardImage } from "./draftBoardImageService";
 import type { League } from "../../shared/schema";
 
 function log(...args: unknown[]) {
@@ -9,9 +10,13 @@ function log(...args: unknown[]) {
 export async function postStandingsToDiscord(league: League): Promise<void> {
   if (!league.discordWebhookUrl) return;
 
-  // Only post once the season has started — no spoiler-free standings before
-  // the first game counts. Uses the admin-set leagueStartDate if present,
-  // otherwise the earliest synced game date for the sport/season.
+  // Respect the "Daily Standings" toggle (default true for backward-compat)
+  if (league.discordStandingsEnabled === false) {
+    log(`skipping ${league.name} — standings posting disabled`);
+    return;
+  }
+
+  // Only post once the season has started
   const { startDate } = await storage.getLeagueEffectiveStartDate(league.id);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -31,8 +36,7 @@ export async function postStandingsToDiscord(league: League): Promise<void> {
     return;
   }
 
-  // Only post if at least one game was completed yesterday — no point
-  // showing an unchanged standings image on off-days.
+  // Only post if at least one game was completed yesterday
   const hadGames = await storage.hadCompletedGamesYesterday(league.sport);
   if (!hadGames) {
     log(`skipping ${league.name} — no completed ${league.sport} games yesterday`);
@@ -42,29 +46,58 @@ export async function postStandingsToDiscord(league: League): Promise<void> {
   const standings = await storage.getPlayerStandings(league.id);
   if (!standings || standings.length === 0) return;
 
-  const imageBuffer = await generateStandingsImage(
-    league.name,
-    league.sport,
-    standings
-  );
+  const imageBuffer = await generateStandingsImage(league.name, league.sport, standings);
 
   const form = new FormData();
   form.append("content", `**${league.name} Standings**`);
-  form.append(
-    "file",
-    new Blob([imageBuffer], { type: "image/png" }),
-    "standings.png"
-  );
+  form.append("file", new Blob([imageBuffer], { type: "image/png" }), "standings.png");
 
-  const response = await fetch(league.discordWebhookUrl, {
-    method: "POST",
-    body: form,
-  });
-
+  const response = await fetch(league.discordWebhookUrl, { method: "POST", body: form });
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`Discord webhook failed: ${response.status} ${text}`);
   }
+}
+
+export async function postDraftBoardToDiscord(league: League, force = false): Promise<void> {
+  if (!league.discordWebhookUrl) return;
+  if (league.sport !== "WORLD_CUP") return;
+  if (!league.discordDraftBoardEnabled) return;
+
+  if (!force) {
+    // Only post if at least one pick has been made since the last post
+    const latestPickAt = await storage.getLatestDraftPickAt(league.id);
+    if (!latestPickAt) {
+      log(`skipping draft board for ${league.name} — no picks made`);
+      return;
+    }
+    const lastPostedAt = (league as any).lastDraftBoardPostedAt as Date | null;
+    if (lastPostedAt && latestPickAt <= lastPostedAt) {
+      log(`skipping draft board for ${league.name} — no new picks since last post`);
+      return;
+    }
+  }
+
+  const boardData = await storage.getLeagueDraftBoard(league.id);
+  if (!boardData) return;
+
+  const imageBuffer = await generateDraftBoardImage(boardData);
+
+  const pickCount = boardData.picks.length;
+  const total = boardData.members.length * (boardData.league.teamsPerPlayer ?? 6);
+
+  const form = new FormData();
+  form.append("content", `**${league.name} — Draft Board** · ${pickCount}/${total} picks made`);
+  form.append("file", new Blob([imageBuffer], { type: "image/png" }), "draft-board.png");
+
+  const response = await fetch(league.discordWebhookUrl, { method: "POST", body: form });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Discord draft board webhook failed: ${response.status} ${text}`);
+  }
+
+  await storage.updateLeagueLastDraftBoardPost(league.id);
+  log(`draft board posted for ${league.name} (${pickCount}/${total} picks)`);
 }
 
 export async function postDailyStandings(): Promise<void> {
@@ -74,7 +107,19 @@ export async function postDailyStandings(): Promise<void> {
   );
   for (const r of results) {
     if (r.status === "rejected") {
-      console.error("[discordService] post failed:", r.reason);
+      console.error("[discordService] standings post failed:", r.reason);
+    }
+  }
+}
+
+export async function postHourlyDraftBoards(): Promise<void> {
+  const wcLeagues = await storage.getLeaguesWithDraftBoardEnabled();
+  const results = await Promise.allSettled(
+    wcLeagues.map((league: League) => postDraftBoardToDiscord(league))
+  );
+  for (const r of results) {
+    if (r.status === "rejected") {
+      console.error("[discordService] draft board post failed:", r.reason);
     }
   }
 }

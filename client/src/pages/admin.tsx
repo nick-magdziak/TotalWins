@@ -44,6 +44,7 @@ import {
   Send,
   Trash2
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +79,8 @@ export default function Admin() {
   const [auditUntil, setAuditUntil] = useState("");
   const [auditScope, setAuditScope] = useState<"global" | "all">("global");
   const [discordWebhookInput, setDiscordWebhookInput] = useState<string>("");
+  const [discordStandingsEnabled, setDiscordStandingsEnabled] = useState<boolean>(true);
+  const [discordDraftBoardEnabled, setDiscordDraftBoardEnabled] = useState<boolean>(false);
   const [auditFilters, setAuditFilters] = useState<{
     action: string;
     actor: string;
@@ -966,7 +969,9 @@ export default function Admin() {
 
   useEffect(() => {
     setDiscordWebhookInput(currentLeague?.discordWebhookUrl ?? "");
-  }, [currentLeague?.discordWebhookUrl]);
+    setDiscordStandingsEnabled(currentLeague?.discordStandingsEnabled ?? true);
+    setDiscordDraftBoardEnabled(currentLeague?.discordDraftBoardEnabled ?? false);
+  }, [currentLeague?.discordWebhookUrl, currentLeague?.discordStandingsEnabled, currentLeague?.discordDraftBoardEnabled]);
 
   // Pre-populate draft date/time from saved league value
   useEffect(() => {
@@ -2177,7 +2182,7 @@ export default function Admin() {
               </svg>
               DISCORD
             </h3>
-            <p className="text-gray-400 text-xs mb-4">Post a daily standings image to a Discord channel at 8am. Paste your server's webhook URL below.</p>
+            <p className="text-gray-400 text-xs mb-4">Post automated images to a Discord channel. Paste your server's webhook URL, then enable the services you want below.</p>
 
             <div className="space-y-3">
               <div>
@@ -2245,8 +2250,71 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Service toggles – always shown so user knows what's available */}
+              <div className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+                <p className="text-xs font-bold text-retro-charcoal mb-2">Discord Services</p>
+
+                {/* Daily Standings toggle */}
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className={`text-xs font-medium ${currentLeague?.discordWebhookUrl ? "text-gray-800" : "text-gray-400"}`}>
+                      Daily Standings
+                    </p>
+                    <p className="text-xs text-gray-400">Posts standings image at 9am ET every day</p>
+                  </div>
+                  <Switch
+                    checked={discordStandingsEnabled}
+                    disabled={!currentLeague?.discordWebhookUrl}
+                    onCheckedChange={async (checked) => {
+                      setDiscordStandingsEnabled(checked);
+                      try {
+                        await fetch(`/api/leagues/${leagueId}/discord-settings`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ discordStandingsEnabled: checked }),
+                        });
+                        queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                      } catch {
+                        setDiscordStandingsEnabled(!checked);
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Draft Board toggle – only for World Cup leagues */}
+                {currentLeague?.sport === 'WORLD_CUP' && (
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-200">
+                    <div>
+                      <p className={`text-xs font-medium ${currentLeague?.discordWebhookUrl ? "text-gray-800" : "text-gray-400"}`}>
+                        Draft Board (World Cup)
+                      </p>
+                      <p className="text-xs text-gray-400">Posts draft board image hourly when new picks are made</p>
+                    </div>
+                    <Switch
+                      checked={discordDraftBoardEnabled}
+                      disabled={!currentLeague?.discordWebhookUrl}
+                      onCheckedChange={async (checked) => {
+                        setDiscordDraftBoardEnabled(checked);
+                        try {
+                          await fetch(`/api/leagues/${leagueId}/discord-settings`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ discordDraftBoardEnabled: checked }),
+                          });
+                          queryClient.invalidateQueries({ queryKey: ["/api/leagues"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/user/leagues"] });
+                        } catch {
+                          setDiscordDraftBoardEnabled(!checked);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
               {currentLeague?.discordWebhookUrl && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <Button
                     type="button"
                     size="sm"
@@ -2266,11 +2334,35 @@ export default function Admin() {
                     }}
                   >
                     <Send className="w-3 h-3 mr-1" />
-                    SEND TEST POST
+                    TEST STANDINGS
                   </Button>
+                  {currentLeague?.sport === 'WORLD_CUP' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="border-[#5865F2] text-[#5865F2] hover:bg-[#5865F2] hover:text-white"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/leagues/${leagueId}/discord-draft-board-test`, { method: "POST" });
+                          if (res.ok) {
+                            toast({ title: "Draft board posted!", description: "Check your Discord channel." });
+                          } else {
+                            const data = await res.json();
+                            toast({ title: "Failed", description: data.message ?? "Could not post draft board.", variant: "destructive" });
+                          }
+                        } catch {
+                          toast({ title: "Error", description: "Could not post draft board.", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <Send className="w-3 h-3 mr-1" />
+                      TEST DRAFT BOARD
+                    </Button>
+                  )}
                   <span className="text-xs text-green-600 font-medium flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Webhook active · daily at 8am
+                    Webhook active · daily at 9am ET
                   </span>
                 </div>
               )}

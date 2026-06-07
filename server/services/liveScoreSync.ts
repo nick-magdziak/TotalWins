@@ -246,6 +246,7 @@ export function startLiveScoreSync(onFatalError?: (err: unknown) => void): void 
     onFatalError?.(err);
   });
   scheduleDiscordDailyPost();
+  scheduleHourlyDraftBoardPost();
 }
 
 /** Returns the next 9:00am America/New_York as a UTC Date, DST-aware. */
@@ -307,4 +308,28 @@ function scheduleDiscordDailyPost(): void {
   }, msUntil);
 
   log(`discord daily post scheduled for ${next.toISOString()} (in ${Math.round(msUntil / 1000 / 60)}m)`);
+}
+
+function scheduleHourlyDraftBoardPost(): void {
+  const now = new Date();
+  const nextHour = new Date(now);
+  nextHour.setUTCMinutes(0, 0, 0);
+  nextHour.setUTCHours(nextHour.getUTCHours() + 1);
+  const msUntil = nextHour.getTime() - now.getTime();
+
+  setTimeout(async () => {
+    const fireOnce = async () => {
+      try {
+        const { postHourlyDraftBoards } = await import("./discordService");
+        await postHourlyDraftBoards();
+        log("draft board hourly post fired");
+      } catch (err) {
+        log("draft board hourly post error:", err);
+      }
+    };
+    await fireOnce();
+    setInterval(fireOnce, 60 * 60 * 1000);
+  }, msUntil);
+
+  log(`draft board hourly post scheduled in ${Math.round(msUntil / 1000 / 60)}m`);
 }

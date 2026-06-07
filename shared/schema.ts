@@ -82,6 +82,9 @@ export const leagues = pgTable("leagues", {
   seasonStatus: text("season_status").notNull().default("pre_season"), // pre_season, active, completed
   inviteCode: text("invite_code").unique(),
   discordWebhookUrl: text("discord_webhook_url"),
+  discordStandingsEnabled: boolean("discord_standings_enabled").default(true),
+  discordDraftBoardEnabled: boolean("discord_draft_board_enabled").default(false),
+  lastDraftBoardPostedAt: timestamp("last_draft_board_posted_at"),
   createdBy: varchar("created_by").references(() => users.id),
   parentLeagueId: varchar("parent_league_id").references((): AnyPgColumn => leagues.id), // franchise parent; null = this IS the root
   createdAt: timestamp("created_at").defaultNow(),

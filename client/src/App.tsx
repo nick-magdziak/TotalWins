@@ -9,6 +9,7 @@ import Draft from "@/pages/draft";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import SuperAdmin from "@/pages/super-admin";
+import AdminDraftBoard from "@/pages/admin-draft-board";
 import Signup from "@/pages/signup";
 import Login from "@/pages/login";
 import ForgotPassword from "@/pages/forgot-password";
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/admin" component={Admin} />
       <Route path="/super-admin" component={SuperAdmin} />
+      <Route path="/admin/draft-board" component={AdminDraftBoard} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
