@@ -1583,15 +1583,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? draftCfg.players * draftCfg.teams
               : allMembers.length * (freshLeague.teamsPerPlayer ?? 4);
             const nextPickNum = allPicksNow.length + 1;
+            console.log("[pickAlert] picks so far:", allPicksNow.length,
+              "| members:", allMembers.length,
+              "| draftCfg:", freshLeague.draftConfiguration ?? "null",
+              "| teamsPerPlayer:", freshLeague.teamsPerPlayer,
+              "| totalPicks:", totalPicks,
+              "| nextPickNum:", nextPickNum,
+              "| draftPositions:", allMembers.map(m => `${m.userId.slice(0,6)}:${m.draftPosition}`).join(", "));
             if (nextPickNum <= totalPicks && allMembers.length > 0) {
               const round        = Math.ceil(nextPickNum / allMembers.length);
               const posInRound   = ((nextPickNum - 1) % allMembers.length) + 1;
               const isSnakeRound = round % 2 === 0;
               const draftPos     = isSnakeRound ? allMembers.length - posInRound + 1 : posInRound;
+              console.log("[pickAlert] round:", round, "| posInRound:", posInRound, "| draftPos:", draftPos);
 
               // Try by explicit draftPosition first, fall back to join-order index
               let nextMember = allMembers.find(m => m.draftPosition === draftPos);
               if (!nextMember) {
+                console.log("[pickAlert] no draftPosition match — using join-order fallback");
                 const sorted = [...allMembers].sort((a, b) =>
                   new Date(a.joinedAt ?? 0).getTime() - new Date(b.joinedAt ?? 0).getTime()
                 );
@@ -1601,7 +1610,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (nextMember?.userId) {
                 const nextUser = await storage.getUser(nextMember.userId);
                 nextPlayerName = nextUser?.displayName ?? null;
+                console.log("[pickAlert] nextPlayer resolved:", nextPlayerName);
+              } else {
+                console.log("[pickAlert] nextMember has no userId:", nextMember);
               }
+            } else {
+              console.log("[pickAlert] draft complete — nextPickNum > totalPicks or no members");
             }
           } catch (err) {
             console.error("Discord pick alert — next-player lookup failed:", err);
