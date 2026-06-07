@@ -2539,6 +2539,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Super Admin — list all leagues (admin-gated)
+  app.get("/api/admin/leagues", requireVerified, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user?.isAdmin) return res.status(403).json({ message: "Admin access required" });
+      const allLeagues = await storage.getAllLeagues();
+      res.json(allLeagues);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load leagues" });
+    }
+  });
+
   // Super Admin dashboard — single endpoint returning platform-wide read-only snapshot
   app.get("/api/admin/super-dashboard", async (_req, res) => {
     try {

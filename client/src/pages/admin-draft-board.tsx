@@ -30,8 +30,9 @@ export default function AdminDraftBoard() {
   }
 
   // Load all leagues, filter WC
-  const { data: allLeagues = [] } = useQuery<League[]>({
+  const { data: allLeagues = [], isError: leaguesError } = useQuery<League[]>({
     queryKey: ["/api/admin/leagues"],
+    retry: 2,
   });
   const wcLeagues = allLeagues.filter((l: League) => l.sport === "WORLD_CUP");
 

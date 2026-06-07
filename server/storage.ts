@@ -68,6 +68,7 @@ export interface IStorage {
 
   // Leagues
   getLeague(id: string): Promise<League | undefined>;
+  getAllLeagues(): Promise<League[]>;
   getLeagueByInviteCode(code: string): Promise<League | undefined>;
   getLeaguesWithDiscordWebhook(): Promise<League[]>;
   createLeague(league: InsertLeague): Promise<League>;
@@ -939,6 +940,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // League methods
+  async getAllLeagues(): Promise<League[]> {
+    return db.select().from(leagues).orderBy(leagues.createdAt);
+  }
+
   async getLeague(id: string): Promise<League | undefined> {
     const [league] = await db.select().from(leagues).where(eq(leagues.id, id));
     return league || undefined;
