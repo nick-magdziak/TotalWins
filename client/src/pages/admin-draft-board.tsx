@@ -35,6 +35,7 @@ export default function AdminDraftBoard() {
     retry: 2,
   });
   const wcLeagues = allLeagues.filter((l: League) => l.sport === "WORLD_CUP");
+  const selectedLeague = wcLeagues.find((l: League) => l.id === selectedLeagueId);
 
   // Load draft board image
   const { data: boardData, isLoading: imageLoading, refetch: refetchImage } = useQuery<{ image: string; pickCount: number; memberCount: number }>({
@@ -123,7 +124,8 @@ export default function AdminDraftBoard() {
                   size="sm"
                   className="bg-[#5865F2] hover:bg-[#4752C4] text-white"
                   onClick={handleSendToDiscord}
-                  disabled={!selectedLeagueId || isSending}
+                  disabled={!selectedLeagueId || isSending || !selectedLeague?.discordWebhookUrl}
+                  title={!selectedLeague?.discordWebhookUrl ? "No Discord webhook configured" : ""}
                 >
                   <Send className="w-4 h-4 mr-1" />
                   {isSending ? "Sending…" : "Send to Discord"}
@@ -135,6 +137,9 @@ export default function AdminDraftBoard() {
               <p className="mt-2 text-xs text-gray-400">
                 {boardData.pickCount} picks made · {boardData.memberCount} members
               </p>
+            )}
+            {!selectedLeague?.discordWebhookUrl && selectedLeagueId && (
+              <p className="mt-2 text-xs text-yellow-500">No Discord webhook configured — preview only</p>
             )}
           </CardContent>
         </Card>

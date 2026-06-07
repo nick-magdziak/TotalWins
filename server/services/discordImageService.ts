@@ -103,7 +103,7 @@ export async function generateStandingsImage(
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#0a0f1a"/>
   <rect x="0" y="0" width="${W}" height="${HEADER_H - 16}" fill="#0f172a"/>
-  <text x="${W / 2}" y="26" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="bold" fill="#00d4c8">${escapeXml(leagueName)} · ${escapeXml(sportLabel)}</text>
+  <text x="${W / 2}" y="26" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="bold" fill="#00d4c8">${escapeXml(leagueName)} · Standings</text>
   <text x="${W / 2}" y="46" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="13" fill="#64748b">As Of: ${escapeXml(dateStr)}</text>
   ${colHeaders}
   ${rows}
