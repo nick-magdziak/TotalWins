@@ -67,14 +67,20 @@ export async function postDraftBoardToDiscord(league: League, force = false): Pr
   if (!force && !league.discordDraftBoardEnabled) return;
 
   if (!force) {
-    // Only post if at least one pick has been made since the last post
+    // Only post if at least one pick has been made in the last hour
     const latestPickAt = await storage.getLatestDraftPickAt(league.id);
     if (!latestPickAt) {
       log(`skipping draft board for ${league.name} — no picks made`);
       return;
     }
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const ageMs = Date.now() - new Date(latestPickAt).getTime();
+    if (ageMs > ONE_HOUR_MS) {
+      log(`skipping draft board for ${league.name} — last pick was ${Math.round(ageMs / 60000)}m ago (> 1h)`);
+      return;
+    }
     const lastPostedAt = (league as any).lastDraftBoardPostedAt as Date | null;
-    if (lastPostedAt && latestPickAt <= lastPostedAt) {
+    if (lastPostedAt && new Date(latestPickAt) <= new Date(lastPostedAt)) {
       log(`skipping draft board for ${league.name} — no new picks since last post`);
       return;
     }
