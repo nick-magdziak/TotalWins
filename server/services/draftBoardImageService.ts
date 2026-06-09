@@ -1,5 +1,6 @@
 import type { WorldCupTeam, DraftPick, League, LeagueMember } from "../../shared/schema";
 import { getDraftConfigByKey } from "../../shared/draftConfig";
+import { getDraftOrder } from "../../shared/draftUtils";
 
 export type DraftBoardData = {
   league: League;
@@ -63,10 +64,21 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
     teamsByGroup.get(t.group)?.push(t);
   }
 
-  const configTeams = league.draftConfiguration ? (getDraftConfigByKey(league.draftConfiguration)?.teams ?? null) : null;
+  const draftCfgFull = league.draftConfiguration ? getDraftConfigByKey(league.draftConfiguration) : null;
+  const configTeams = draftCfgFull?.teams ?? null;
   const teamsPerPlayerResolved = configTeams ?? league.teamsPerPlayer ?? 6;
   const totalExpectedPicks = Math.max(picks.length, members.length * teamsPerPlayerResolved);
   const maxTeamsPerPlayer = Math.max(...members.map(m => (picksByUserId.get(m.userId)?.length ?? 0)), 1, teamsPerPlayerResolved);
+
+  // Build pickNumber → scheduled player name for future (unpicked) slots
+  const membersByDraftPos = [...members].sort((a, b) => (a.draftPosition ?? 99) - (b.draftPosition ?? 99));
+  const draftStyle = draftCfgFull?.draftStyle ?? "snake";
+  const pickOrderList = getDraftOrder(draftStyle, membersByDraftPos.length, teamsPerPlayerResolved);
+  const scheduledPlayer = new Map<number, string>();
+  for (const entry of pickOrderList) {
+    const m = membersByDraftPos[entry.position - 1];
+    if (m) scheduledPlayer.set(entry.pick, m.displayName);
+  }
 
   // Layout constants
   const TOTAL_W = 1000;
@@ -156,7 +168,11 @@ export async function generateDraftBoardImage(data: DraftBoardData): Promise<Buf
       svg += `<text x="${LP + 78}" y="${midY}" text-anchor="start" font-size="9" fill="#94a3b8">${escapeXml(teamName.length > 10 ? teamName.slice(0, 10) : teamName)}</text>`;
       svg += `<text x="${LEFT_W - LP}" y="${midY}" text-anchor="end" font-size="9" fill="#cbd5e1">${escapeXml(player.length > 10 ? player.slice(0, 10) : player)}</text>`;
     } else {
+      const scheduled = scheduledPlayer.get(i + 1);
       svg += `<text x="${LP + 20}" y="${midY}" text-anchor="middle" font-size="10" fill="#1e293b">${i + 1}</text>`;
+      if (scheduled) {
+        svg += `<text x="${LEFT_W - LP}" y="${midY}" text-anchor="end" font-size="9" fill="#1e3a5f">${escapeXml(scheduled.length > 10 ? scheduled.slice(0, 10) : scheduled)}</text>`;
+      }
     }
   }
 
