@@ -500,67 +500,6 @@ export default function Standings() {
         <StandingsTable leagueId={activeLeagueId ?? ""} />
       </section>
 
-      {/* World Cup Group Tables */}
-      {isWorldCup && !isViewingPastSeason && (
-        <section className="mb-8 px-4">
-          <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
-            <Globe className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
-            GROUP STAGE STANDINGS
-          </h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {wcGroups && Object.keys(wcGroups).length > 0 ? Object.entries(wcGroups).map(([groupLetter, group]) => {
-              const groupName = `Group ${groupLetter}`;
-              return (
-                <Card key={groupLetter} className="bg-white rounded-2xl retro-border shadow-xl">
-                  <CardContent className="p-4">
-                    <h4 className="text-retro-purple font-bold mb-2 text-center retro-font text-sm">{groupName}</h4>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="text-gray-500 border-b">
-                          <th className="text-left py-1">Team</th>
-                          <th className="text-center py-1">P</th>
-                          <th className="text-center py-1">W</th>
-                          <th className="text-center py-1">D</th>
-                          <th className="text-center py-1">L</th>
-                          <th className="text-center py-1">GF</th>
-                          <th className="text-center py-1">GA</th>
-                          <th className="text-center py-1">Pts</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {group.map((standing, si) => (
-                          <tr key={si} className={`border-b border-gray-100 ${si < 2 ? 'bg-green-50' : ''}`}>
-                            <td className="py-1">
-                              <div className="flex items-center gap-1">
-                                <FlagImage teamId={standing.teamId} emoji={standing.flagEmoji} name={standing.name} size={18} />
-                                <span className="font-bold truncate" title={standing.name}>{standing.abbreviation || standing.name}</span>
-                              </div>
-                            </td>
-                            <td className="text-center py-1">{standing.played}</td>
-                            <td className="text-center py-1">{standing.wins}</td>
-                            <td className="text-center py-1">{standing.draws}</td>
-                            <td className="text-center py-1">{standing.losses}</td>
-                            <td className="text-center py-1">{standing.goalsFor}</td>
-                            <td className="text-center py-1">{standing.goalsAgainst}</td>
-                            <td className="text-center py-1 font-bold">{standing.points}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div className="mt-1 text-xs text-gray-400 text-right">Top 2 advance</div>
-                  </CardContent>
-                </Card>
-              );
-            }) : (
-              <div className="col-span-3 text-center py-8 text-gray-500">
-                <Globe className="mx-auto mb-2 w-8 h-8 opacity-40" />
-                <p>Group stage data will appear once the tournament begins on June 11, 2026.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
       {/* Recent Updates Section — hidden for past seasons (final standings only) */}
       {!isViewingPastSeason && <section className="mb-8 px-4">
         <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
@@ -741,6 +680,67 @@ export default function Standings() {
           </Card>
         </div>
       </section>}
+
+      {/* World Cup Group Tables */}
+      {isWorldCup && !isViewingPastSeason && (
+        <section className="mb-8 px-4">
+          <h3 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center retro-font">
+            <Globe className="inline text-retro-teal mr-2 w-5 h-5 sm:w-6 sm:h-6" />
+            GROUP STAGE STANDINGS
+          </h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wcGroups && Object.keys(wcGroups).length > 0 ? Object.entries(wcGroups).map(([groupLetter, group]) => {
+              const groupName = `Group ${groupLetter}`;
+              return (
+                <Card key={groupLetter} className="bg-white rounded-2xl retro-border shadow-xl">
+                  <CardContent className="p-4">
+                    <h4 className="text-retro-purple font-bold mb-2 text-center retro-font text-sm">{groupName}</h4>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-gray-500 border-b">
+                          <th className="text-left py-1">Team</th>
+                          <th className="text-center py-1">P</th>
+                          <th className="text-center py-1">W</th>
+                          <th className="text-center py-1">D</th>
+                          <th className="text-center py-1">L</th>
+                          <th className="text-center py-1">GF</th>
+                          <th className="text-center py-1">GA</th>
+                          <th className="text-center py-1">Pts</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.map((standing, si) => (
+                          <tr key={si} className={`border-b border-gray-100 ${si < 2 ? 'bg-green-50' : ''}`}>
+                            <td className="py-1">
+                              <div className="flex items-center gap-1">
+                                <FlagImage teamId={standing.teamId} emoji={standing.flagEmoji} name={standing.name} size={18} />
+                                <span className="font-bold truncate" title={standing.name}>{standing.abbreviation || standing.name}</span>
+                              </div>
+                            </td>
+                            <td className="text-center py-1">{standing.played}</td>
+                            <td className="text-center py-1">{standing.wins}</td>
+                            <td className="text-center py-1">{standing.draws}</td>
+                            <td className="text-center py-1">{standing.losses}</td>
+                            <td className="text-center py-1">{standing.goalsFor}</td>
+                            <td className="text-center py-1">{standing.goalsAgainst}</td>
+                            <td className="text-center py-1 font-bold">{standing.points}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-1 text-xs text-gray-400 text-right">Top 2 advance</div>
+                  </CardContent>
+                </Card>
+              );
+            }) : (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                <Globe className="mx-auto mb-2 w-8 h-8 opacity-40" />
+                <p>Group stage data will appear once the tournament begins on June 11, 2026.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </>
   );
 }
