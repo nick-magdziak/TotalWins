@@ -2576,6 +2576,21 @@ export class DatabaseStorage implements IStorage {
     });
     const knockoutGames = completedGames.filter((g) => g.wcRound && g.wcRound !== "group_stage" && g.wcRound !== "third_place");
 
+    // +1 qualification bonus: awarded to every team that reached the Round of 32,
+    // but only applied on/after June 28 (the day after the group stage ends and
+    // before the knockout stage begins) so all 32 bonuses land at the same time.
+    const GROUP_STAGE_BONUS_DATE = new Date("2026-06-28T00:00:00Z");
+    const qualificationBonusActive = new Date() >= GROUP_STAGE_BONUS_DATE;
+    const round32TeamIds = new Set<string>();
+    if (qualificationBonusActive) {
+      for (const g of allGames) {
+        if (g.wcRound === "round_of_32") {
+          round32TeamIds.add(g.homeTeamId);
+          round32TeamIds.add(g.awayTeamId);
+        }
+      }
+    }
+
     const standings: WCPlayerStanding[] = [];
 
     const picksByUser = await this.getAllLeagueDraftPicks(leagueId);
@@ -2626,10 +2641,14 @@ export class DatabaseStorage implements IStorage {
             if (gf > ga) fantasyPoints += 2;
             else if (gf === ga) fantasyPoints += 1;
           } else if (g.wcRound && g.wcRound !== "third_place") {
-            if (g.wcRound === "round_of_32") fantasyPoints += 1;
             if (gf > ga) fantasyPoints += 2;
           }
         }
+
+        // +1 qualification bonus applied once on/after June 28 for each team
+        // that has a Round of 32 fixture (win or lose — just for qualifying).
+        if (round32TeamIds.has(teamId)) fantasyPoints += 1;
+
         teamWinsMap[teamId] = teamWins;
       }
 
