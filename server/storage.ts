@@ -2703,12 +2703,18 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
+    const wcDraftPosByUser = new Map<string, number>();
+    for (const { member, user } of members) {
+      wcDraftPosByUser.set(user.id, member.draftPosition ?? 999);
+    }
+
     standings.sort((a, b) => {
       if (b.fantasyPoints !== a.fantasyPoints) return b.fantasyPoints - a.fantasyPoints;
       if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
       if (b.knockoutGoalsFor !== a.knockoutGoalsFor) return b.knockoutGoalsFor - a.knockoutGoalsFor;
       if (a.goalsAgainst !== b.goalsAgainst) return a.goalsAgainst - b.goalsAgainst;
-      return a.knockoutGoalsAgainst - b.knockoutGoalsAgainst;
+      if (a.knockoutGoalsAgainst !== b.knockoutGoalsAgainst) return a.knockoutGoalsAgainst - b.knockoutGoalsAgainst;
+      return (wcDraftPosByUser.get(a.userId) ?? 999) - (wcDraftPosByUser.get(b.userId) ?? 999);
     });
 
     standings.forEach((s, i) => (s.rank = i + 1));
