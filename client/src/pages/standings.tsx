@@ -572,7 +572,6 @@ export default function Standings() {
                   <div className="text-center py-6">
                     <Clock className="mx-auto w-8 h-8 text-retro-pink/40 mb-2" />
                     <p className="text-retro-charcoal font-bold text-sm">No games for your teams today</p>
-                    <p className="text-xs text-gray-500 mt-1">Check back later or peek at upcoming games on the right.</p>
                   </div>
                 )}
                 
