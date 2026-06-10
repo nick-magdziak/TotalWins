@@ -728,7 +728,7 @@ export default function Standings() {
                         ))}
                       </tbody>
                     </table>
-                    <div className="mt-1 text-xs text-gray-400 text-right">Top 2 advance</div>
+                    <div className="mt-1 text-xs text-gray-400 text-right">Top 2 advance + possible 3rd place</div>
                   </CardContent>
                 </Card>
               );
