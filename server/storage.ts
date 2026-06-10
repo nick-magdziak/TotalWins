@@ -1454,8 +1454,17 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    // Sort by total wins and assign ranks
-    standings.sort((a, b) => b.totalWins - a.totalWins);
+    // Build draft-position lookup for tiebreaking
+    const draftPosByUser = new Map<string, number>();
+    for (const { member, user } of members) {
+      draftPosByUser.set(user.id, member.draftPosition ?? 999);
+    }
+
+    // Sort by total wins (desc); use draft order as tiebreaker (asc)
+    standings.sort((a, b) => {
+      if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
+      return (draftPosByUser.get(a.userId) ?? 999) - (draftPosByUser.get(b.userId) ?? 999);
+    });
     standings.forEach((standing, index) => {
       standing.rank = index + 1;
     });
