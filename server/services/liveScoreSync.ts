@@ -224,6 +224,7 @@ async function run(): Promise<void> {
     } catch (err) {
       log("unexpected cycle error:", err);
     }
+    await checkAndPostDailyStandings();
     setTimeout(tick, intervalMs);
   };
 
@@ -245,69 +246,45 @@ export function startLiveScoreSync(onFatalError?: (err: unknown) => void): void 
     console.error("[liveScoreSync] fatal error in sync loop:", err);
     onFatalError?.(err);
   });
-  scheduleDiscordDailyPost();
   scheduleHourlyDraftBoardPost();
 }
 
-/** Returns the next 9:00am America/New_York as a UTC Date, DST-aware. */
-function getNext9amET(): Date {
-  const now = new Date();
-  for (let daysAhead = 0; daysAhead <= 1; daysAhead++) {
-    const probe = new Date(now.getTime() + daysAhead * 86_400_000);
-    const etDate = probe.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // "YYYY-MM-DD"
-    for (const offset of ["-04:00", "-05:00"]) {
-      const candidate = new Date(`${etDate}T09:00:00${offset}`);
-      // Verify the candidate really lands at 9am ET (offset might be wrong for this date)
-      const actualHour = parseInt(
-        new Intl.DateTimeFormat("en-US", {
-          timeZone: "America/New_York",
-          hour: "2-digit",
-          hour12: false,
-        }).format(candidate),
-        10,
-      );
-      if (actualHour === 9 && candidate > now) return candidate;
+// Tracks which leagues have already had their daily standings posted today
+// (keyed by leagueId → UTC date string "YYYY-MM-DD").
+const dailyPostSentOn = new Map<string, string>();
+
+// How long after the last game completes before posting standings
+const DAILY_POST_DELAY_MS = 5 * 60 * 1000;
+
+/**
+ * Called after every sync cycle. For each league with a Discord webhook,
+ * checks whether all of today's games are done AND at least 5 minutes have
+ * passed since the last one finished — if so, posts the standings image and
+ * records it so we don't post again today.
+ */
+async function checkAndPostDailyStandings(): Promise<void> {
+  try {
+    const { postStandingsToDiscord } = await import("./discordService");
+    const allLeagues = await storage.getLeaguesWithDiscordWebhook();
+    const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD" UTC
+
+    for (const league of allLeagues) {
+      if (league.discordStandingsEnabled === false) continue;
+      if (dailyPostSentOn.get(league.id) === todayStr) continue;
+
+      const { allDone, lastCompletedAt } = await storage.getTodayLastCompletedGameAt(league.sport);
+      if (!allDone || !lastCompletedAt) continue;
+
+      const msSince = Date.now() - lastCompletedAt.getTime();
+      if (msSince < DAILY_POST_DELAY_MS) continue;
+
+      await postStandingsToDiscord(league);
+      dailyPostSentOn.set(league.id, todayStr);
+      log(`daily standings posted for ${league.name} (${Math.round(msSince / 60000)}m after last game)`);
     }
+  } catch (err) {
+    log("checkAndPostDailyStandings error:", err);
   }
-  // Unreachable fallback: next 13:00 UTC
-  const fb = new Date();
-  fb.setUTCHours(13, 0, 0, 0);
-  if (fb <= now) fb.setUTCDate(fb.getUTCDate() + 1);
-  return fb;
-}
-
-function scheduleDiscordDailyPost(): void {
-  const next = getNext9amET();
-  const msUntil = next.getTime() - Date.now();
-
-  setTimeout(async () => {
-    try {
-      const { postDailyStandings } = await import("./discordService");
-      await postDailyStandings();
-      log("discord daily standings posted");
-    } catch (err) {
-      log("discord daily post error:", err);
-    }
-    // Re-schedule each day so DST transitions are recalculated fresh
-    const reschedule = () => {
-      const nextFire = getNext9amET();
-      const delay = nextFire.getTime() - Date.now();
-      log(`discord next daily post in ${Math.round(delay / 1000 / 60)}m (${nextFire.toISOString()})`);
-      setTimeout(async () => {
-        try {
-          const { postDailyStandings } = await import("./discordService");
-          await postDailyStandings();
-          log("discord daily standings posted");
-        } catch (err) {
-          log("discord daily post error:", err);
-        }
-        reschedule();
-      }, delay);
-    };
-    reschedule();
-  }, msUntil);
-
-  log(`discord daily post scheduled for ${next.toISOString()} (in ${Math.round(msUntil / 1000 / 60)}m)`);
 }
 
 function scheduleHourlyDraftBoardPost(): void {

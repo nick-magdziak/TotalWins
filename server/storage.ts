@@ -123,6 +123,7 @@ export interface IStorage {
   hasGamesInProgressBySport(sport: string): Promise<boolean>;
   hasUpcomingRegularSeasonGames(sport: string, withinDays?: number): Promise<boolean>;
   hadCompletedGamesYesterday(sport: string): Promise<boolean>;
+  getTodayLastCompletedGameAt(sport: string): Promise<{ allDone: boolean; lastCompletedAt: Date | null }>;
 
   // Push subscriptions (per-device)
   addPushSubscription(userId: string, endpoint: string, keys: { p256dh: string; auth: string }): Promise<void>;
@@ -1823,6 +1824,41 @@ export class DatabaseStorage implements IStorage {
       )
       .limit(1);
     return rows.length > 0;
+  }
+
+  /**
+   * Returns whether all of today's games for a sport are completed, and the
+   * timestamp of the latest completed game. Returns allDone=false if any game
+   * is still scheduled/in_progress, or if there are no games today at all.
+   */
+  async getTodayLastCompletedGameAt(sport: string): Promise<{ allDone: boolean; lastCompletedAt: Date | null }> {
+    const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayEnd   = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+
+    const todayGames = await db
+      .select()
+      .from(games)
+      .where(and(
+        eq(games.sport, sport),
+        gte(games.gameDate, todayStart),
+        lt(games.gameDate, todayEnd),
+      ));
+
+    if (todayGames.length === 0) return { allDone: false, lastCompletedAt: null };
+
+    const hasUnfinished = todayGames.some(g => g.status === "scheduled" || g.status === "in_progress");
+    if (hasUnfinished) return { allDone: false, lastCompletedAt: null };
+
+    const completed = todayGames.filter(g => g.status === "completed");
+    if (completed.length === 0) return { allDone: false, lastCompletedAt: null };
+
+    const lastCompletedAt = completed.reduce<Date>((latest, g) => {
+      const t = g.completedAt ?? g.gameDate;
+      return t > latest ? t : latest;
+    }, new Date(0));
+
+    return { allDone: true, lastCompletedAt };
   }
 
   /**

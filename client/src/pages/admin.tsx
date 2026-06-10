@@ -2262,7 +2262,7 @@ export default function Admin() {
                     <p className={`text-xs font-medium ${currentLeague?.discordWebhookUrl ? "text-gray-800" : "text-gray-400"}`}>
                       Daily Standings
                     </p>
-                    <p className="text-xs text-gray-400">Posts standings image at 9am ET every day</p>
+                    <p className="text-xs text-gray-400">Posts standings image 5 min after the last game of the day</p>
                   </div>
                   <Switch
                     checked={discordStandingsEnabled}
