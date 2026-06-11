@@ -167,21 +167,57 @@ export class WorldCupDataService {
     return games;
   }
 
-  // Teams whose internal ID doesn't follow the wc-{ABBREVIATION} pattern
+  // Teams whose internal ID doesn't follow the wc-{ABBREVIATION} pattern,
+  // plus any alternate ESPN abbreviations that differ from the FIFA standard.
   private readonly ABBR_TO_WC_ID: Record<string, string> = {
-    "CZE": "wc-A4",   // Czech Republic
-    "BIH": "wc-B4",   // Bosnia and Herzegovina
-    "BOS": "wc-B4",   // alternate ESPN abbreviation for Bosnia
-    "TUR": "wc-D4",   // Turkey
-    "COD": "wc-K4",   // DR Congo
-    "CGO": "wc-K4",   // alternate ESPN abbreviation for DR Congo
-    "DRC": "wc-K4",   // another alternate
+    // Czech Republic
+    "CZE": "wc-A4",
+    // Bosnia and Herzegovina
+    "BIH": "wc-B4",
+    "BOS": "wc-B4",
+    // Turkey
+    "TUR": "wc-D4",
+    // DR Congo
+    "COD": "wc-K4",
+    "CGO": "wc-K4",
+    "DRC": "wc-K4",
+    // South Africa — ESPN soccer sometimes uses SAF instead of RSA
+    "SAF": "wc-RSA",
+    "ZAF": "wc-RSA",
+    // South Korea — ESPN sometimes uses KOR or PRK variants
+    "SKO": "wc-KOR",
+    "KOR": "wc-KOR",
+    // Switzerland — SUI vs SWI
+    "SWI": "wc-SUI",
+    // Ivory Coast — CIV vs CIV
+    "CIV": "wc-CIV",
+    // Saudi Arabia — KSA vs KSA
+    "KSA": "wc-KSA",
+    "SAU": "wc-KSA",
+    // Cape Verde — CPV vs CPV
+    "CPV": "wc-CPV",
+    "CVD": "wc-CPV",
+    // Uzbekistan
+    "UZB": "wc-UZB",
+    // New Zealand — NZL vs NZL
+    "NZL": "wc-NZL",
+    "NZE": "wc-NZL",
+    // Haiti — HAI vs HAI
+    "HAI": "wc-HAI",
+    "HTI": "wc-HAI",
+    // Curaçao
+    "CUW": "wc-CUW",
+    "CUR": "wc-CUW",
   };
 
   private mapESPNTeamToWCId(team: any): string {
     if (!team) return "UNKNOWN";
     const abbr = (team.abbreviation || "").toUpperCase();
-    return this.ABBR_TO_WC_ID[abbr] ?? `wc-${abbr}`;
+    const mapped = this.ABBR_TO_WC_ID[abbr] ?? `wc-${abbr}`;
+    if (mapped !== `wc-${abbr}`) {
+      console.log(`⚽ ESPN abbr mapping: ${abbr} → ${mapped}`);
+    }
+    return mapped;
   }
 
   private mapESPNStatus(statusName: string): "scheduled" | "in_progress" | "completed" {
