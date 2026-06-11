@@ -33,10 +33,14 @@ export class WorldCupDataService {
         });
 
         if (existing) {
+          // ESPN neutral-site games may have home/away orientation flipped vs. our
+          // seeded fixture. Detect the swap and align scores to our fixture's orientation
+          // so that win/loss calculations always use the correct team's score.
+          const espnFlipped = existing.homeTeamId !== game.homeTeamId;
           // Update the seeded record in-place; preserve its stable ID and group
           await storage.updateGame(existing.id, {
-            homeScore: game.homeScore,
-            awayScore: game.awayScore,
+            homeScore: espnFlipped ? game.awayScore : game.homeScore,
+            awayScore: espnFlipped ? game.homeScore : game.awayScore,
             status: game.status,
             completedAt: game.completedAt,
             period: game.period,
