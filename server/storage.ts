@@ -2649,14 +2649,15 @@ export class DatabaseStorage implements IStorage {
       let goalsAgainst = 0;
       let knockoutGoalsFor = 0;
       let knockoutGoalsAgainst = 0;
-      const teamWinsMap: Record<string, number> = {};
+      // Track per-team fantasy points so chip numbers sum to the player total
+      const teamPointsMap: Record<string, number> = {};
 
       for (const teamId of teamIds) {
         const teamGames = completedGames.filter(
           (g) => g.homeTeamId === teamId || g.awayTeamId === teamId
         );
 
-        let teamWins = 0;
+        let teamPoints = 0;
         for (const g of teamGames) {
           const isHome = g.homeTeamId === teamId;
           const gf = isHome ? (g.homeScore || 0) : (g.awayScore || 0);
@@ -2671,24 +2672,22 @@ export class DatabaseStorage implements IStorage {
             knockoutGoalsAgainst += ga;
           }
 
-          if (gf > ga) teamWins++;
-
           if (g.wcRound === "group_stage") {
-            if (gf > ga) fantasyPoints += 2;
-            else if (gf === ga) fantasyPoints += 1;
+            if (gf > ga) { fantasyPoints += 2; teamPoints += 2; }
+            else if (gf === ga) { fantasyPoints += 1; teamPoints += 1; }
           } else if (g.wcRound && g.wcRound !== "third_place") {
-            if (gf > ga) fantasyPoints += 2;
+            if (gf > ga) { fantasyPoints += 2; teamPoints += 2; }
           }
         }
 
         // +1 qualification bonus applied once on/after June 28 for each team
         // that has a Round of 32 fixture (win or lose — just for qualifying).
-        if (round32TeamIds.has(teamId)) fantasyPoints += 1;
+        if (round32TeamIds.has(teamId)) { fantasyPoints += 1; teamPoints += 1; }
 
-        teamWinsMap[teamId] = teamWins;
+        teamPointsMap[teamId] = teamPoints;
       }
 
-      const teamsWithWins = validTeams.map(t => ({ ...t, wins: teamWinsMap[t.id] || 0 }));
+      const teamsWithWins = validTeams.map(t => ({ ...t, wins: teamPointsMap[t.id] || 0 }));
 
       standings.push({
         userId: user.id,
