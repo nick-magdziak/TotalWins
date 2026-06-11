@@ -1832,9 +1832,14 @@ export class DatabaseStorage implements IStorage {
    * is still scheduled/in_progress, or if there are no games today at all.
    */
   async getTodayLastCompletedGameAt(sport: string): Promise<{ allDone: boolean; lastCompletedAt: Date | null }> {
-    const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const todayEnd   = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    // Use ET day boundary (EDT = UTC-4) so late US games (e.g. 10pm ET = 02:00 UTC next day)
+    // stay in the same "today" bucket as early games — matches the pattern in sportsApi.ts.
+    const etOffsetMs = 4 * 60 * 60 * 1000; // EDT = UTC-4
+    const etNow = new Date(Date.now() - etOffsetMs);
+    const todayStart = new Date(
+      Date.UTC(etNow.getUTCFullYear(), etNow.getUTCMonth(), etNow.getUTCDate()) + etOffsetMs
+    );
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     const todayGames = await db
       .select()
