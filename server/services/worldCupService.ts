@@ -55,7 +55,7 @@ export class WorldCupDataService {
 
       console.log(`⚽ Synced ${games.length} World Cup games`);
 
-      if (games.some((g) => g.status === "completed")) {
+      if (games.some((g) => g.status === "completed" || g.status === "in_progress")) {
         await storage.calculateWorldCupPlayerPoints();
       }
     } catch (error) {
@@ -119,6 +119,23 @@ export class WorldCupDataService {
           }
         }
 
+        // Parse soccer game clock (e.g. "32'" or "HT" or "45'+2")
+        let period: string | null = null;
+        if (status === "in_progress") {
+          const statusDetail: string = event.status?.type?.detail || event.status?.type?.description || "";
+          const displayClock: string = event.status?.displayClock || "";
+          const half: number = event.status?.period ?? 0;
+          if (statusDetail.toLowerCase().includes("half")) {
+            period = "HT";
+          } else if (displayClock) {
+            period = `${displayClock}'`;
+          } else if (half === 1) {
+            period = "1st Half";
+          } else if (half === 2) {
+            period = "2nd Half";
+          }
+        }
+
         const game: Game = {
           id: `wc-${event.id}`,
           sport: "WORLD_CUP",
@@ -132,7 +149,7 @@ export class WorldCupDataService {
           status,
           gameDate: new Date(event.date),
           completedAt: status === "completed" ? new Date(event.date) : null,
-          period: null,
+          period,
           wcRound,
           wcGroup,
         };
@@ -146,10 +163,21 @@ export class WorldCupDataService {
     return games;
   }
 
+  // Teams whose internal ID doesn't follow the wc-{ABBREVIATION} pattern
+  private readonly ABBR_TO_WC_ID: Record<string, string> = {
+    "CZE": "wc-A4",   // Czech Republic
+    "BIH": "wc-B4",   // Bosnia and Herzegovina
+    "BOS": "wc-B4",   // alternate ESPN abbreviation for Bosnia
+    "TUR": "wc-D4",   // Turkey
+    "COD": "wc-K4",   // DR Congo
+    "CGO": "wc-K4",   // alternate ESPN abbreviation for DR Congo
+    "DRC": "wc-K4",   // another alternate
+  };
+
   private mapESPNTeamToWCId(team: any): string {
     if (!team) return "UNKNOWN";
     const abbr = (team.abbreviation || "").toUpperCase();
-    return `wc-${abbr}`;
+    return this.ABBR_TO_WC_ID[abbr] ?? `wc-${abbr}`;
   }
 
   private mapESPNStatus(statusName: string): "scheduled" | "in_progress" | "completed" {
