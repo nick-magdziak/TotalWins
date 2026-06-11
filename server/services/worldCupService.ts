@@ -227,12 +227,23 @@ export class WorldCupDataService {
         return "scheduled";
       case "STATUS_IN_PROGRESS":
       case "STATUS_HALFTIME":
+      case "STATUS_HALF_TIME":
+      case "STATUS_SECOND_HALF":
+      case "STATUS_EXTRA_TIME":
+      case "STATUS_SHOOTOUT":
         return "in_progress";
       case "STATUS_FINAL":
       case "STATUS_FINAL_AET":
       case "STATUS_FINAL_PEN":
+      case "STATUS_FULL_TIME":
+      case "STATUS_FT":
+      case "STATUS_END_PERIOD":
         return "completed";
       default:
+        // Log unknown statuses so mismatches are visible in production logs
+        if (statusName && statusName !== "STATUS_SCHEDULED" && statusName !== "STATUS_POSTPONED") {
+          console.log(`⚽ Unknown ESPN status: "${statusName}" — defaulting to scheduled`);
+        }
         return "scheduled";
     }
   }
