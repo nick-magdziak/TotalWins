@@ -8,7 +8,27 @@ export class WorldCupDataService {
   async syncWorldCupGames(): Promise<void> {
     try {
       console.log("⚽ Syncing World Cup games from ESPN API...");
-      const games = await this.fetchWorldCupGames();
+
+      // Fetch today's scoreboard + yesterday's — yesterday ensures completed
+      // games are restored even if the server restarted and the startup
+      // backfill hasn't run yet (or was missed).
+      const todayStr = this.todayDateStr();
+      const yesterdayStr = this.offsetDateStr(-1);
+
+      const [todayGames, yesterdayGames] = await Promise.all([
+        this.fetchWorldCupGamesForDate(todayStr),
+        this.fetchWorldCupGamesForDate(yesterdayStr),
+      ]);
+
+      // Merge, deduplicate by ESPN event id (id = "wc-<espnId>")
+      const seenIds = new Set<string>();
+      const games: Game[] = [];
+      for (const g of [...yesterdayGames, ...todayGames]) {
+        if (!seenIds.has(g.id)) {
+          seenIds.add(g.id);
+          games.push(g);
+        }
+      }
 
       // Fetch all WC games once (seeded + previously synced)
       const allExisting = await storage.getGames(undefined, this.SEASON);
@@ -57,7 +77,7 @@ export class WorldCupDataService {
         }
       }
 
-      console.log(`⚽ Synced ${games.length} World Cup games`);
+      console.log(`⚽ Synced ${games.length} World Cup games (today + yesterday)`);
 
       if (games.some((g) => g.status === "completed" || g.status === "in_progress")) {
         await storage.calculateWorldCupPlayerPoints();
@@ -83,6 +103,7 @@ export class WorldCupDataService {
       const allExisting = await storage.getGames(undefined, this.SEASON);
       const wcExisting = allExisting.filter((g) => g.sport === "WORLD_CUP");
 
+      let updatedCount = 0;
       for (const game of games) {
         const teamA = game.homeTeamId;
         const teamB = game.awayTeamId;
@@ -95,6 +116,13 @@ export class WorldCupDataService {
           const daysDiff = Math.abs(new Date(g.gameDate).getTime() - gameDate) / 86_400_000;
           return sameRound && sameTeams && daysDiff <= 3;
         });
+
+        console.log(
+          `⚽ [backfill ${dateStr}] ${teamA} vs ${teamB} → ESPN status: ${game.status}` +
+          ` score: ${game.homeScore ?? "?"}–${game.awayScore ?? "?"}` +
+          ` | match: ${existing ? existing.id : "NONE"}`
+        );
+
         if (existing) {
           const espnFlipped = existing.homeTeamId !== game.homeTeamId;
           await storage.updateGame(existing.id, {
@@ -105,31 +133,42 @@ export class WorldCupDataService {
             period: game.period,
             gameDate: game.gameDate,
           });
+          updatedCount++;
         }
       }
-      console.log(`⚽ Backfill ${dateStr}: restored ${games.length} WC game(s)`);
+      console.log(`⚽ Backfill ${dateStr}: updated ${updatedCount}/${games.length} WC game(s) in DB`);
     } catch (err) {
       console.error(`⚽ Backfill ${dateStr} failed:`, err);
     }
   }
 
-  private async fetchWorldCupGames(): Promise<Game[]> {
+  private async fetchWorldCupGamesForDate(dateStr: string): Promise<Game[]> {
     try {
-      const response = await fetch(this.ESPN_WC_URL, {
-        headers: { Accept: "application/json" },
-      });
-
+      const url = `${this.ESPN_WC_URL}?dates=${dateStr}`;
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
       if (!response.ok) {
-        console.warn(`ESPN WC API returned ${response.status}`);
+        console.warn(`ESPN WC API (${dateStr}) returned ${response.status}`);
         return [];
       }
-
       const data = await response.json();
       return this.parseESPNWorldCupGames(data);
     } catch (error) {
-      console.error("Error fetching World Cup games from ESPN:", error);
+      console.error(`Error fetching WC games for ${dateStr}:`, error);
       return [];
     }
+  }
+
+  private async fetchWorldCupGames(): Promise<Game[]> {
+    return this.fetchWorldCupGamesForDate(this.todayDateStr());
+  }
+
+  private todayDateStr(): string {
+    return this.offsetDateStr(0);
+  }
+
+  private offsetDateStr(daysOffset: number): string {
+    const d = new Date(Date.now() + daysOffset * 86_400_000);
+    return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}`;
   }
 
   private parseESPNWorldCupGames(data: any): Game[] {
