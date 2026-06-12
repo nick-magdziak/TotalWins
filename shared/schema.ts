@@ -85,6 +85,7 @@ export const leagues = pgTable("leagues", {
   discordStandingsEnabled: boolean("discord_standings_enabled").default(true),
   discordDraftBoardEnabled: boolean("discord_draft_board_enabled").default(false),
   discordPickAlertEnabled: boolean("discord_pick_alert_enabled").default(false),
+  discordStandingsPostedOn: text("discord_standings_posted_on"), // "YYYY-MM-DD" UTC — last day standings were auto-posted
   lastDraftBoardPostedAt: timestamp("last_draft_board_posted_at"),
   createdBy: varchar("created_by").references(() => users.id),
   parentLeagueId: varchar("parent_league_id").references((): AnyPgColumn => leagues.id), // franchise parent; null = this IS the root

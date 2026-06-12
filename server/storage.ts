@@ -138,6 +138,7 @@ export interface IStorage {
   // Discord draft board
   getLeagueDraftBoard(leagueId: string): Promise<{ league: League; members: Array<{ userId: string; displayName: string; draftPosition: number | null }>; picks: DraftPick[]; wcTeams: WorldCupTeam[] } | null>;
   updateLeagueLastDraftBoardPost(leagueId: string): Promise<void>;
+  updateLeagueDiscordStandingsPostedOn(leagueId: string, dateStr: string): Promise<void>;
   getLeaguesWithDraftBoardEnabled(): Promise<League[]>;
   getLatestDraftPickAt(leagueId: string): Promise<Date | null>;
 
@@ -1017,6 +1018,10 @@ export class DatabaseStorage implements IStorage {
     await db.update(leagues).set({ lastDraftBoardPostedAt: new Date() } as any).where(eq(leagues.id, leagueId));
   }
 
+  async updateLeagueDiscordStandingsPostedOn(leagueId: string, dateStr: string): Promise<void> {
+    await db.update(leagues).set({ discordStandingsPostedOn: dateStr } as any).where(eq(leagues.id, leagueId));
+  }
+
   async getLatestDraftPickAt(leagueId: string): Promise<Date | null> {
     const [row] = await db
       .select({ maxPickedAt: sql<Date | null>`MAX(${draftPicks.pickedAt})` })
@@ -1849,6 +1854,8 @@ export class DatabaseStorage implements IStorage {
         gte(games.gameDate, todayStart),
         lt(games.gameDate, todayEnd),
       ));
+
+    console.log(`[getTodayLastCompletedGameAt] sport=${sport} window=[${todayStart.toISOString()} → ${todayEnd.toISOString()}] found=${todayGames.length} games:`, todayGames.map(g => `${g.id}(${g.status},${new Date(g.gameDate).toISOString()})`).join(', '));
 
     if (todayGames.length === 0) return { allDone: false, lastCompletedAt: null };
 

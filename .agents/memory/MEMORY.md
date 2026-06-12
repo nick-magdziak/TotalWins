@@ -1,0 +1,1 @@
+- [WC daily standings Discord timing](wc-discord-standings.md) — ET window + DB persistence prevent early/double posts

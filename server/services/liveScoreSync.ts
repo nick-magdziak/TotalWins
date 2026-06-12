@@ -251,7 +251,6 @@ export function startLiveScoreSync(onFatalError?: (err: unknown) => void): void 
 
 // Tracks which leagues have already had their daily standings posted today
 // (keyed by leagueId → UTC date string "YYYY-MM-DD").
-const dailyPostSentOn = new Map<string, string>();
 
 // How long after the last game completes before posting standings
 const DAILY_POST_DELAY_MS = 5 * 60 * 1000;
@@ -270,7 +269,7 @@ async function checkAndPostDailyStandings(): Promise<void> {
 
     for (const league of allLeagues) {
       if (league.discordStandingsEnabled === false) continue;
-      if (dailyPostSentOn.get(league.id) === todayStr) continue;
+      if (league.discordStandingsPostedOn === todayStr) continue;
 
       const { allDone, lastCompletedAt } = await storage.getTodayLastCompletedGameAt(league.sport);
       if (!allDone || !lastCompletedAt) continue;
@@ -279,7 +278,7 @@ async function checkAndPostDailyStandings(): Promise<void> {
       if (msSince < DAILY_POST_DELAY_MS) continue;
 
       await postStandingsToDiscord(league);
-      dailyPostSentOn.set(league.id, todayStr);
+      await storage.updateLeagueDiscordStandingsPostedOn(league.id, todayStr);
       log(`daily standings posted for ${league.name} (${Math.round(msSince / 60000)}m after last game)`);
     }
   } catch (err) {
