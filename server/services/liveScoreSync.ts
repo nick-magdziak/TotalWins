@@ -174,7 +174,16 @@ async function run(): Promise<void> {
     let label: string;
     let sportsToSync: { MLB: boolean; NBA: boolean; NFL: boolean } | undefined;
 
-    if (isQuietHours(now)) {
+    // During the World Cup window, check if a WC game is currently in progress.
+    // If so, bypass quiet hours so we don't miss the completion on a 1h interval.
+    let wcLiveDuringQuiet = false;
+    if (isQuietHours(now) && isWorldCupTournamentWindow(now)) {
+      try {
+        wcLiveDuringQuiet = await storage.hasGamesInProgressBySport("WORLD_CUP");
+      } catch (_) { /* ignore — safe to stay in quiet mode */ }
+    }
+
+    if (isQuietHours(now) && !wcLiveDuringQuiet) {
       intervalMs = QUIET_INTERVAL_MS;
       label = "quiet-hours (1h)";
     } else {
