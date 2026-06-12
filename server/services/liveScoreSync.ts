@@ -160,6 +160,8 @@ async function run(): Promise<void> {
         const dateStr = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}`;
         await worldCupDataService.syncWorldCupGamesForDate(dateStr);
       }
+      // Recalculate player points after restoring scores so standings reflect the results
+      await storage.calculateWorldCupPlayerPoints();
       log("■ WC backfill: complete");
     } catch (err) {
       log("WC backfill failed:", err instanceof Error ? err.message : err);
