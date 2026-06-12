@@ -226,6 +226,7 @@ export class WorldCupDataService {
       case "STATUS_POSTPONED":
         return "scheduled";
       case "STATUS_IN_PROGRESS":
+      case "STATUS_FIRST_HALF":
       case "STATUS_HALFTIME":
       case "STATUS_HALF_TIME":
       case "STATUS_SECOND_HALF":

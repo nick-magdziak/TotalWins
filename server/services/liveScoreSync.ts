@@ -188,24 +188,31 @@ async function run(): Promise<void> {
       label = "quiet-hours (1h)";
     } else {
       let mlbLive = false, nbaLive = false, nflLive = false;
+      // wcLiveDuringQuiet may already be true if we bypassed quiet hours for WC
+      let wcLive = wcLiveDuringQuiet;
       try {
-        [mlbLive, nbaLive, nflLive] = await Promise.all([
+        const wcCheck = (!wcLive && isWorldCupTournamentWindow(now))
+          ? storage.hasGamesInProgressBySport("WORLD_CUP")
+          : Promise.resolve(wcLive);
+        [mlbLive, nbaLive, nflLive, wcLive] = await Promise.all([
           storage.hasGamesInProgressBySport("MLB"),
           storage.hasGamesInProgressBySport("NBA"),
           storage.hasGamesInProgressBySport("NFL"),
+          wcCheck,
         ]);
       } catch (err) {
         log("hasGamesInProgressBySport() failed; assuming all live:", err);
         mlbLive = nbaLive = nflLive = true;
       }
 
-      const anyLive = mlbLive || nbaLive || nflLive;
+      const anyLive = mlbLive || nbaLive || nflLive || wcLive;
       if (anyLive) {
         intervalMs = ACTIVE_INTERVAL_MS;
         const liveSports = [
           mlbLive ? "MLB" : null,
           nbaLive ? "NBA" : null,
           nflLive ? "NFL" : null,
+          wcLive ? "WC" : null,
         ].filter(Boolean).join(",");
         const idleSports = [
           !mlbLive ? "MLB" : null,
