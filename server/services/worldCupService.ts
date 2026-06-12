@@ -67,6 +67,52 @@ export class WorldCupDataService {
     }
   }
 
+  /**
+   * Fetch WC games for a specific calendar date (YYYYMMDD) — used for backfill
+   * so completed games aren't lost when the server restarts and re-seeds fixtures.
+   */
+  async syncWorldCupGamesForDate(dateStr: string): Promise<void> {
+    try {
+      const url = `${this.ESPN_WC_URL}?dates=${dateStr}`;
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) return;
+      const data = await response.json();
+      const games = this.parseESPNWorldCupGames(data);
+      if (games.length === 0) return;
+
+      const allExisting = await storage.getGames(undefined, this.SEASON);
+      const wcExisting = allExisting.filter((g) => g.sport === "WORLD_CUP");
+
+      for (const game of games) {
+        const teamA = game.homeTeamId;
+        const teamB = game.awayTeamId;
+        const gameDate = new Date(game.gameDate).getTime();
+        const existing = wcExisting.find((g) => {
+          const sameRound = g.wcRound === game.wcRound;
+          const sameTeams =
+            (g.homeTeamId === teamA && g.awayTeamId === teamB) ||
+            (g.homeTeamId === teamB && g.awayTeamId === teamA);
+          const daysDiff = Math.abs(new Date(g.gameDate).getTime() - gameDate) / 86_400_000;
+          return sameRound && sameTeams && daysDiff <= 3;
+        });
+        if (existing) {
+          const espnFlipped = existing.homeTeamId !== game.homeTeamId;
+          await storage.updateGame(existing.id, {
+            homeScore: espnFlipped ? game.awayScore : game.homeScore,
+            awayScore: espnFlipped ? game.homeScore : game.awayScore,
+            status: game.status,
+            completedAt: game.completedAt,
+            period: game.period,
+            gameDate: game.gameDate,
+          });
+        }
+      }
+      console.log(`⚽ Backfill ${dateStr}: restored ${games.length} WC game(s)`);
+    } catch (err) {
+      console.error(`⚽ Backfill ${dateStr} failed:`, err);
+    }
+  }
+
   private async fetchWorldCupGames(): Promise<Game[]> {
     try {
       const response = await fetch(this.ESPN_WC_URL, {

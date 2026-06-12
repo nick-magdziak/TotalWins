@@ -2310,9 +2310,8 @@ export class DatabaseStorage implements IStorage {
         wcGroup: group,
       }));
 
-      // Delete existing group-stage fixtures and re-seed with correct individual matchups
-      await db.delete(games).where(and(eq(games.sport, "WORLD_CUP"), eq(games.wcRound, "group_stage")));
-      await db.insert(games).values(wcGames);
+      // Upsert fixtures — insert new ones, skip any that already exist (preserves ESPN-synced scores)
+      await db.insert(games).values(wcGames).onConflictDoNothing();
       console.log(`World Cup group stage schedule seeded: ${wcGames.length} fixtures`);
     } catch (error) {
       console.error("Error initializing World Cup games:", error);
