@@ -9,21 +9,23 @@ export class WorldCupDataService {
     try {
       console.log("⚽ Syncing World Cup games from ESPN API...");
 
-      // Fetch yesterday + today + next 2 days so:
+      // Fetch yesterday + today + next 3 days so:
       //  - yesterday: restores completed scores after server restart
       //  - today: live updates for in-progress games
-      //  - +1/+2 days: keeps upcoming kickoff times accurate from ESPN
-      const [yesterdayGames, todayGames, plus1Games, plus2Games] = await Promise.all([
+      //  - +1/+2/+3 days: matches the 3-day Upcoming Matches window so all
+      //    visible fixtures have ESPN-corrected kickoff times
+      const [yesterdayGames, todayGames, plus1Games, plus2Games, plus3Games] = await Promise.all([
         this.fetchWorldCupGamesForDate(this.offsetDateStr(-1)),
         this.fetchWorldCupGamesForDate(this.offsetDateStr(0)),
         this.fetchWorldCupGamesForDate(this.offsetDateStr(1)),
         this.fetchWorldCupGamesForDate(this.offsetDateStr(2)),
+        this.fetchWorldCupGamesForDate(this.offsetDateStr(3)),
       ]);
 
       // Merge, deduplicate by ESPN event id (id = "wc-<espnId>")
       const seenIds = new Set<string>();
       const games: Game[] = [];
-      for (const g of [...yesterdayGames, ...todayGames, ...plus1Games, ...plus2Games]) {
+      for (const g of [...yesterdayGames, ...todayGames, ...plus1Games, ...plus2Games, ...plus3Games]) {
         if (!seenIds.has(g.id)) {
           seenIds.add(g.id);
           games.push(g);
@@ -77,7 +79,7 @@ export class WorldCupDataService {
         }
       }
 
-      console.log(`⚽ Synced ${games.length} World Cup games (yesterday + today + next 2 days)`);
+      console.log(`⚽ Synced ${games.length} World Cup games (yesterday + today + next 3 days)`);
 
       if (games.some((g) => g.status === "completed" || g.status === "in_progress")) {
         await storage.calculateWorldCupPlayerPoints();
