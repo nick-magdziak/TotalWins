@@ -9,21 +9,20 @@ export class WorldCupDataService {
     try {
       console.log("⚽ Syncing World Cup games from ESPN API...");
 
-      // Fetch today's scoreboard + yesterday's — yesterday ensures completed
-      // games are restored even if the server restarted and the startup
-      // backfill hasn't run yet (or was missed).
-      const todayStr = this.todayDateStr();
-      const yesterdayStr = this.offsetDateStr(-1);
-
-      const [todayGames, yesterdayGames] = await Promise.all([
-        this.fetchWorldCupGamesForDate(todayStr),
-        this.fetchWorldCupGamesForDate(yesterdayStr),
+      // Fetch yesterday + today + tomorrow so:
+      //  - yesterday: restores completed scores after server restart
+      //  - today: live updates for in-progress games
+      //  - tomorrow: corrects ESPN kickoff times for upcoming fixtures
+      const [yesterdayGames, todayGames, tomorrowGames] = await Promise.all([
+        this.fetchWorldCupGamesForDate(this.offsetDateStr(-1)),
+        this.fetchWorldCupGamesForDate(this.offsetDateStr(0)),
+        this.fetchWorldCupGamesForDate(this.offsetDateStr(1)),
       ]);
 
       // Merge, deduplicate by ESPN event id (id = "wc-<espnId>")
       const seenIds = new Set<string>();
       const games: Game[] = [];
-      for (const g of [...yesterdayGames, ...todayGames]) {
+      for (const g of [...yesterdayGames, ...todayGames, ...tomorrowGames]) {
         if (!seenIds.has(g.id)) {
           seenIds.add(g.id);
           games.push(g);
@@ -77,7 +76,7 @@ export class WorldCupDataService {
         }
       }
 
-      console.log(`⚽ Synced ${games.length} World Cup games (today + yesterday)`);
+      console.log(`⚽ Synced ${games.length} World Cup games (yesterday + today + tomorrow)`);
 
       if (games.some((g) => g.status === "completed" || g.status === "in_progress")) {
         await storage.calculateWorldCupPlayerPoints();
@@ -272,6 +271,8 @@ export class WorldCupDataService {
     // South Korea — ESPN sometimes uses KOR or PRK variants
     "SKO": "wc-KOR",
     "KOR": "wc-KOR",
+    // Sweden — ESPN uses SWE; seeded as wc-F4 (4th team in Group F)
+    "SWE": "wc-F4",
     // Switzerland — SUI vs SWI
     "SWI": "wc-SUI",
     // Ivory Coast — CIV vs CIV

@@ -2189,7 +2189,7 @@ export class DatabaseStorage implements IStorage {
         // ── GROUP D: USA · Paraguay · Australia · Türkiye ────────────────────────────
         // MD1 – Jun 12 (USA-PAR confirmed) / Jun 13 (AUS-TUR confirmed from ESPN)
         ["wc-gs-D-1",  "D", "wc-USA", "wc-PAR", "2026-06-12", 22], // 6 PM ET
-        ["wc-gs-D-2",  "D", "wc-AUS", "wc-D4",  "2026-06-14",  1], // 9 PM ET Jun 13
+        ["wc-gs-D-2",  "D", "wc-AUS", "wc-D4",  "2026-06-14",  4], // midnight ET Jun 13/14 (confirmed ESPN)
         // MD2 – Jun 19 (from search)
         ["wc-gs-D-3",  "D", "wc-USA", "wc-AUS", "2026-06-19", 19], // 3 PM ET
         ["wc-gs-D-4",  "D", "wc-D4",  "wc-PAR", "2026-06-20",  4], // midnight ET Jun 19/20
@@ -2199,8 +2199,8 @@ export class DatabaseStorage implements IStorage {
 
         // ── GROUP E: Germany · Ecuador · Ivory Coast · Curaçao ───────────────────────
         // MD1 – Jun 14 (confirmed from ESPN)
-        ["wc-gs-E-1",  "E", "wc-GER", "wc-CUW", "2026-06-14", 14], // 10 AM ET
-        ["wc-gs-E-2",  "E", "wc-CIV", "wc-ECU", "2026-06-14", 20], // 4 PM ET
+        ["wc-gs-E-1",  "E", "wc-GER", "wc-CUW", "2026-06-14", 17], // 1 PM ET (confirmed ESPN)
+        ["wc-gs-E-2",  "E", "wc-CIV", "wc-ECU", "2026-06-14", 23], // 7 PM ET (confirmed ESPN)
         // MD2 – Jun 21 (approx; ESPN sync will correct)
         ["wc-gs-E-3",  "E", "wc-GER", "wc-CIV", "2026-06-21", 16], // approx 12 PM ET
         ["wc-gs-E-4",  "E", "wc-ECU", "wc-CUW", "2026-06-21", 20], // approx 4 PM ET
@@ -2210,8 +2210,8 @@ export class DatabaseStorage implements IStorage {
 
         // ── GROUP F: Netherlands · Japan · Tunisia · Sweden ──────────────────────────
         // MD1 – Jun 14 (confirmed from ESPN)
-        ["wc-gs-F-1",  "F", "wc-NED", "wc-JPN", "2026-06-14", 17], // 1 PM ET
-        ["wc-gs-F-2",  "F", "wc-F4",  "wc-TUN", "2026-06-14", 23], // 7 PM ET (Sweden home)
+        ["wc-gs-F-1",  "F", "wc-NED", "wc-JPN", "2026-06-14", 20], // 4 PM ET (confirmed ESPN)
+        ["wc-gs-F-2",  "F", "wc-F4",  "wc-TUN", "2026-06-15",  2], // midnight ET Jun 14/15 (confirmed ESPN)
         // MD2 – Jun 21 (approx)
         ["wc-gs-F-3",  "F", "wc-NED", "wc-F4",  "2026-06-21", 19], // approx 3 PM ET
         ["wc-gs-F-4",  "F", "wc-JPN", "wc-TUN", "2026-06-21", 23], // approx 7 PM ET
