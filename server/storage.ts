@@ -2221,8 +2221,8 @@ export class DatabaseStorage implements IStorage {
 
         // ── GROUP G: Belgium · Iran · Egypt · New Zealand ────────────────────────────
         // MD1 – Jun 15 (from search)
-        ["wc-gs-G-1",  "G", "wc-BEL", "wc-EGY", "2026-06-15", 22], // 6 PM ET
-        ["wc-gs-G-2",  "G", "wc-IRN", "wc-NZL", "2026-06-16",  0], // midnight ET
+        ["wc-gs-G-1",  "G", "wc-BEL", "wc-EGY", "2026-06-15", 19], // 3 PM ET (confirmed ESPN)
+        ["wc-gs-G-2",  "G", "wc-IRN", "wc-NZL", "2026-06-16",  1], // 9 PM ET (confirmed ESPN)
         // MD2 – Jun 21/22 (approx)
         ["wc-gs-G-3",  "G", "wc-BEL", "wc-IRN", "2026-06-21", 16],
         ["wc-gs-G-4",  "G", "wc-EGY", "wc-NZL", "2026-06-21", 22],
@@ -2232,7 +2232,7 @@ export class DatabaseStorage implements IStorage {
 
         // ── GROUP H: Spain · Uruguay · Saudi Arabia · Cape Verde ─────────────────────
         // MD1 – Jun 15 (from search)
-        ["wc-gs-H-1",  "H", "wc-ESP", "wc-CPV", "2026-06-15", 17], // 1 PM ET
+        ["wc-gs-H-1",  "H", "wc-ESP", "wc-CPV", "2026-06-15", 16], // noon ET (confirmed ESPN)
         ["wc-gs-H-2",  "H", "wc-KSA", "wc-URU", "2026-06-15", 22], // 6 PM ET
         // MD2 – Jun 21 (ESP-KSA confirmed from search)
         ["wc-gs-H-3",  "H", "wc-ESP", "wc-KSA", "2026-06-21", 16], // 12 PM ET
