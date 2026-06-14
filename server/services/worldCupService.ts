@@ -59,12 +59,17 @@ export class WorldCupDataService {
           // seeded fixture. Detect the swap and align scores to our fixture's orientation
           // so that win/loss calculations always use the correct team's score.
           const espnFlipped = existing.homeTeamId !== game.homeTeamId;
-          // Update the seeded record in-place; preserve its stable ID and group
+          // Update the seeded record in-place; preserve its stable ID and group.
+          // Only stamp completedAt on the first transition to completed so the
+          // 5-minute post-delay countdown isn't reset on every sync cycle.
+          const completedAt = existing.completedAt
+            ? existing.completedAt
+            : game.completedAt;
           await storage.updateGame(existing.id, {
             homeScore: espnFlipped ? game.awayScore : game.homeScore,
             awayScore: espnFlipped ? game.homeScore : game.awayScore,
             status: game.status,
-            completedAt: game.completedAt,
+            completedAt,
             period: game.period,
             gameDate: game.gameDate, // update to exact ESPN kickoff time
           });
@@ -127,11 +132,14 @@ export class WorldCupDataService {
 
         if (existing) {
           const espnFlipped = existing.homeTeamId !== game.homeTeamId;
+          const completedAt = existing.completedAt
+            ? existing.completedAt
+            : game.completedAt;
           await storage.updateGame(existing.id, {
             homeScore: espnFlipped ? game.awayScore : game.homeScore,
             awayScore: espnFlipped ? game.homeScore : game.awayScore,
             status: game.status,
-            completedAt: game.completedAt,
+            completedAt,
             period: game.period,
             gameDate: game.gameDate,
           });
@@ -239,7 +247,7 @@ export class WorldCupDataService {
           awayScore: awayComp.score != null ? Number(awayComp.score) : null,
           status,
           gameDate: new Date(event.date),
-          completedAt: status === "completed" ? new Date(event.date) : null,
+          completedAt: status === "completed" ? new Date() : null,
           period,
           wcRound,
           wcGroup,
