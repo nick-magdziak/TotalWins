@@ -1837,12 +1837,16 @@ export class DatabaseStorage implements IStorage {
    * is still scheduled/in_progress, or if there are no games today at all.
    */
   async getTodayLastCompletedGameAt(sport: string): Promise<{ allDone: boolean; lastCompletedAt: Date | null }> {
-    // Use ET day boundary (EDT = UTC-4) so late US games (e.g. 10pm ET = 02:00 UTC next day)
-    // stay in the same "today" bucket as early games — matches the pattern in sportsApi.ts.
-    const etOffsetMs = 4 * 60 * 60 * 1000; // EDT = UTC-4
-    const etNow = new Date(Date.now() - etOffsetMs);
+    // World Cup 2026 spans all North American timezones including Pacific (PDT = UTC-7).
+    // Late-evening west-coast kickoffs (e.g. 9 PM PDT = 04:00Z) would be missed by an
+    // EDT boundary, causing the standings post to fire before the last game even starts.
+    // Use PDT (UTC-7) for World Cup; EDT (UTC-4) for MLB/NBA whose latest games end by 02:00Z.
+    const offsetMs = sport === "WORLD_CUP"
+      ? 7 * 60 * 60 * 1000  // PDT = UTC-7 → day boundary at 07:00Z
+      : 4 * 60 * 60 * 1000; // EDT = UTC-4 → day boundary at 04:00Z
+    const localNow = new Date(Date.now() - offsetMs);
     const todayStart = new Date(
-      Date.UTC(etNow.getUTCFullYear(), etNow.getUTCMonth(), etNow.getUTCDate()) + etOffsetMs
+      Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate()) + offsetMs
     );
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
