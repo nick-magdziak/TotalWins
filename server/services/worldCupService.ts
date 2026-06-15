@@ -72,6 +72,7 @@ export class WorldCupDataService {
             completedAt,
             period: game.period,
             gameDate: game.gameDate, // update to exact ESPN kickoff time
+            broadcastNetwork: game.broadcastNetwork ?? null,
           });
         } else {
           // No matching seeded fixture — only add as new record if it has full group info
@@ -142,6 +143,7 @@ export class WorldCupDataService {
             completedAt,
             period: game.period,
             gameDate: game.gameDate,
+            broadcastNetwork: game.broadcastNetwork ?? null,
           });
           updatedCount++;
         }

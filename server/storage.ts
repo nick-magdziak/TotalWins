@@ -1773,6 +1773,7 @@ export class DatabaseStorage implements IStorage {
           status: insertGame.status,
           completedAt: insertGame.completedAt,
           period: insertGame.period,
+          broadcastNetwork: insertGame.broadcastNetwork ?? null,
         }
       })
       .returning();
