@@ -529,7 +529,7 @@ export default function Standings() {
                   recentGames.map((game: any) => (
                     <div
                       key={game.id}
-                      className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-lime"
+                      className="flex justify-between items-start bg-retro-cream p-2 rounded-lg border-l-4 border-retro-lime"
                     >
                       <div className="flex-1">
                         <div className="font-bold text-retro-charcoal retro-font text-xs flex items-center gap-1 flex-wrap">
@@ -557,15 +557,20 @@ export default function Standings() {
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
-                      <Badge className={
-                        game.status === 'completed' 
-                          ? "bg-retro-lime text-retro-charcoal text-xs" 
-                          : game.status === 'in_progress'
-                          ? "bg-red-500 text-white text-xs animate-pulse"
-                          : "bg-retro-orange text-white text-xs"
-                      }>
-                        {game.status === 'completed' ? 'FINAL' : game.status === 'in_progress' ? 'LIVE' : 'SCHEDULED'}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                        <Badge className={
+                          game.status === 'completed' 
+                            ? "bg-retro-lime text-retro-charcoal text-xs" 
+                            : game.status === 'in_progress'
+                            ? "bg-red-500 text-white text-xs animate-pulse"
+                            : "bg-retro-orange text-white text-xs"
+                        }>
+                          {game.status === 'completed' ? 'FINAL' : game.status === 'in_progress' ? 'LIVE' : 'SCHEDULED'}
+                        </Badge>
+                        {game.broadcastNetwork && (
+                          <span className="text-[10px] font-bold text-retro-charcoal opacity-60 uppercase tracking-wide">{game.broadcastNetwork}</span>
+                        )}
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -620,7 +625,7 @@ export default function Standings() {
                   upcomingGames.map((game) => (
                     <div
                       key={game.id}
-                      className="flex justify-between items-center bg-retro-cream p-2 rounded-lg border-l-4 border-retro-orange"
+                      className="flex justify-between items-start bg-retro-cream p-2 rounded-lg border-l-4 border-retro-orange"
                     >
                       <div className="flex-1">
                         <div className="font-bold text-retro-charcoal retro-font text-xs flex items-center gap-1 flex-wrap">
@@ -639,7 +644,12 @@ export default function Standings() {
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
-                      <Badge className="bg-retro-orange text-white text-xs">SCHEDULED</Badge>
+                      <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                        <Badge className="bg-retro-orange text-white text-xs">SCHEDULED</Badge>
+                        {game.broadcastNetwork && (
+                          <span className="text-[10px] font-bold text-retro-charcoal opacity-60 uppercase tracking-wide">{game.broadcastNetwork}</span>
+                        )}
+                      </div>
                     </div>
                   ))
                 ) : (

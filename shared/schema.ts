@@ -176,6 +176,7 @@ export const games = pgTable("games", {
   seasonType: text("season_type").default("regular"), // 'regular' | 'postseason' | 'preseason' (MLB/NBA)
   wcRound: text("wc_round"), // group_stage, round_of_32, round_of_16, quarterfinal, semifinal, third_place, final
   wcGroup: text("wc_group"), // A-L for group stage games
+  broadcastNetwork: text("broadcast_network"), // e.g. "FOX", "ESPN", "FS1", "NBC"
 });
 
 // Insert schemas

@@ -98,6 +98,7 @@ export class SportsApiService {
           period: period,
           wcRound: null,
           wcGroup: null,
+          broadcastNetwork: this.extractBroadcastNetwork(competition),
         };
 
         games.push(game);
@@ -242,6 +243,7 @@ export class SportsApiService {
           period: period,
           wcRound: null,
           wcGroup: null,
+          broadcastNetwork: this.extractBroadcastNetwork(competition),
         };
         
         games.push(game);
@@ -417,6 +419,7 @@ export class SportsApiService {
           period,
           wcRound: null,
           wcGroup: null,
+          broadcastNetwork: this.extractBroadcastNetwork(competition),
         };
         games.push(game);
       } catch (err) {
@@ -627,6 +630,15 @@ export class SportsApiService {
     } catch (error) {
       console.error('Error syncing next week NFL games:', error);
     }
+  }
+
+  /** Pull the first US national broadcast network from an ESPN competition object. */
+  extractBroadcastNetwork(competition: any): string | null {
+    if (!competition?.geoBroadcasts) return null;
+    const national = competition.geoBroadcasts.find(
+      (b: any) => b?.market?.type === "National"
+    );
+    return national?.media?.shortName ?? null;
   }
 }
 

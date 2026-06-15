@@ -235,6 +235,8 @@ export class WorldCupDataService {
           }
         }
 
+        const broadcastNetwork = this.extractBroadcastNetwork(competition);
+
         const game: Game = {
           id: `wc-${event.id}`,
           sport: "WORLD_CUP",
@@ -251,6 +253,7 @@ export class WorldCupDataService {
           period,
           wcRound,
           wcGroup,
+          broadcastNetwork,
         };
 
         games.push(game);
@@ -344,6 +347,15 @@ export class WorldCupDataService {
         }
         return "scheduled";
     }
+  }
+
+  /** Pull the first US national broadcast network from an ESPN competition object. */
+  extractBroadcastNetwork(competition: any): string | null {
+    if (!competition?.geoBroadcasts) return null;
+    const national = competition.geoBroadcasts.find(
+      (b: any) => b?.market?.type === "National"
+    );
+    return national?.media?.shortName ?? null;
   }
 }
 
