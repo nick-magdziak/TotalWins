@@ -557,7 +557,7 @@ export default function Standings() {
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                      <div className="flex flex-col items-end justify-between ml-2 shrink-0 self-stretch">
                         <Badge className={
                           game.status === 'completed' 
                             ? "bg-retro-lime text-retro-charcoal text-xs" 
@@ -644,7 +644,7 @@ export default function Standings() {
                           {game.awayOwner?.displayName || 'N/A'} v {game.homeOwner?.displayName || 'N/A'}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                      <div className="flex flex-col items-end justify-between ml-2 shrink-0 self-stretch">
                         <Badge className="bg-retro-orange text-white text-xs">SCHEDULED</Badge>
                         {game.broadcastNetwork && (
                           <span className="text-[10px] font-bold text-retro-charcoal opacity-60 uppercase tracking-wide">{game.broadcastNetwork}</span>
