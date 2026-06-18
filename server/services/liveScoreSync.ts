@@ -258,6 +258,20 @@ async function run(): Promise<void> {
     } catch (err) {
       log("unexpected cycle error:", err);
     }
+
+    // Post-sync override: if we chose quiet-hours but the sync just discovered a
+    // newly-started WC game (kicked off right around quiet-hours boundary), switch
+    // to active cadence so we don't wait a full hour to update a live score.
+    if (intervalMs === QUIET_INTERVAL_MS && isWorldCupTournamentWindow(now)) {
+      try {
+        const wcNowLive = await storage.hasGamesInProgressBySport("WORLD_CUP");
+        if (wcNowLive) {
+          intervalMs = ACTIVE_INTERVAL_MS;
+          log("quiet-hours override: WC game now in_progress after sync — switching to active (2m)");
+        }
+      } catch (_) { /* safe to stay in quiet mode if check fails */ }
+    }
+
     await checkAndPostDailyStandings();
     setTimeout(tick, intervalMs);
   };
