@@ -1870,8 +1870,23 @@ export class DatabaseStorage implements IStorage {
     const completed = todayGames.filter(g => g.status === "completed");
     if (completed.length === 0) return { allDone: false, lastCompletedAt: null };
 
+    // Typical game durations — used to cap completedAt so that server restarts
+    // (which stamp completedAt = startup_time) don't delay the post window.
+    const SPORT_DURATION_MS: Record<string, number> = {
+      WORLD_CUP: 2 * 60 * 60 * 1000,   // ~2h (90 min + stoppage)
+      MLB:       3.5 * 60 * 60 * 1000,  // ~3.5h
+      NBA:       2.5 * 60 * 60 * 1000,  // ~2.5h
+      NFL:       3.5 * 60 * 60 * 1000,  // ~3.5h
+    };
+    const sportDuration = SPORT_DURATION_MS[sport] ?? 3 * 60 * 60 * 1000;
+
     const lastCompletedAt = completed.reduce<Date>((latest, g) => {
-      const t = g.completedAt ?? g.gameDate;
+      const estimatedEnd = new Date(new Date(g.gameDate).getTime() + sportDuration);
+      // If completedAt was stamped after the estimated game end (e.g. due to a
+      // server restart), cap it at estimatedEnd so restarts don't reset the
+      // 5-minute post-delay countdown.
+      const raw = g.completedAt ?? estimatedEnd;
+      const t = raw > estimatedEnd ? estimatedEnd : raw;
       return t > latest ? t : latest;
     }, new Date(0));
 

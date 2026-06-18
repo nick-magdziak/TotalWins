@@ -310,12 +310,12 @@ const DAILY_POST_DELAY_MS = 5 * 60 * 1000;
  * records it so we don't post again today.
  */
 async function checkAndPostDailyStandings(): Promise<void> {
-  try {
-    const { postStandingsToDiscord } = await import("./discordService");
-    const allLeagues = await storage.getLeaguesWithDiscordWebhook();
-    const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD" UTC
+  const { postStandingsToDiscord } = await import("./discordService");
+  const allLeagues = await storage.getLeaguesWithDiscordWebhook();
+  const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD" UTC
 
-    for (const league of allLeagues) {
+  for (const league of allLeagues) {
+    try {
       if (league.discordStandingsEnabled === false) continue;
       if (league.discordStandingsPostedOn === todayStr) continue;
 
@@ -323,14 +323,18 @@ async function checkAndPostDailyStandings(): Promise<void> {
       if (!allDone || !lastCompletedAt) continue;
 
       const msSince = Date.now() - lastCompletedAt.getTime();
-      if (msSince < DAILY_POST_DELAY_MS) continue;
+      if (msSince < DAILY_POST_DELAY_MS) {
+        log(`daily standings: ${league.name} — waiting (${Math.round(msSince / 60000)}m / 5m delay)`);
+        continue;
+      }
 
+      log(`daily standings: attempting post for ${league.name} (${Math.round(msSince / 60000)}m since last game)`);
       await postStandingsToDiscord(league);
       await storage.updateLeagueDiscordStandingsPostedOn(league.id, todayStr);
-      log(`daily standings posted for ${league.name} (${Math.round(msSince / 60000)}m after last game)`);
+      log(`daily standings: posted for ${league.name} ✓`);
+    } catch (err) {
+      log(`daily standings: ERROR for ${league.name}:`, err);
     }
-  } catch (err) {
-    log("checkAndPostDailyStandings error:", err);
   }
 }
 
