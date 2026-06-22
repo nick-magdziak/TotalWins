@@ -197,7 +197,16 @@ export class WorldCupDataService {
         if (!homeComp || !awayComp) continue;
 
         const statusName: string = event.status?.type?.name || "";
-        const status = this.mapESPNStatus(statusName);
+        let status = this.mapESPNStatus(statusName);
+
+        // If ESPN sends an unrecognised or delay status (e.g. STATUS_DELAYED)
+        // for a game whose kickoff has already passed, treat it as in_progress
+        // rather than defaulting to scheduled. This covers mid-match delays
+        // (VAR, weather hold, etc.) and any future unknown in-play codes.
+        if (status === "scheduled" && new Date(event.date) <= new Date()) {
+          console.log(`⚽ Status override: "${statusName}" → in_progress for ${event.name ?? "unknown"} (kickoff in past)`);
+          status = "in_progress";
+        }
 
         let wcRound: string = "group_stage";
         let wcGroup: string | null = null;
@@ -334,6 +343,7 @@ export class WorldCupDataService {
       case "STATUS_SECOND_HALF":
       case "STATUS_EXTRA_TIME":
       case "STATUS_SHOOTOUT":
+      case "STATUS_DELAYED":       // mid-match delay (VAR, weather, etc.)
         return "in_progress";
       case "STATUS_FINAL":
       case "STATUS_FINAL_AET":
