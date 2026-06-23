@@ -102,21 +102,29 @@ export default function Layout({ children }: LayoutProps) {
 
   // On startup: resolve which league to open using preference tiers
   // 1. Default league (pinned by user)  2. Last viewed  3. First in list
+  // Only runs when there is no ?league= in the URL already (explicit URL wins).
   useEffect(() => {
-    if (!currentLeagueId && userLeagues && userLeagues.length > 0 && currentUser?.id) {
+    if (!currentLeagueId && !urlLeagueId && userLeagues && userLeagues.length > 0 && currentUser?.id) {
       const uid = currentUser.id;
       const memberIds = userLeagues.map(l => l.id);
-      const pinned  = getDefaultLeague(uid);
+      const pinned   = getDefaultLeague(uid);
       const lastSeen = getLastLeague(uid);
+      let resolvedId: string;
       if (pinned && memberIds.includes(pinned)) {
-        setCurrentLeagueId(pinned);
+        resolvedId = pinned;
       } else if (lastSeen && memberIds.includes(lastSeen)) {
-        setCurrentLeagueId(lastSeen);
+        resolvedId = lastSeen;
       } else {
-        setCurrentLeagueId(userLeagues[0].id);
+        resolvedId = userLeagues[0].id;
       }
+      setCurrentLeagueId(resolvedId);
+      // Push the resolved league into the URL so page-level components that
+      // read window.location.search (e.g. standings.tsx) also pick it up on
+      // the same render cycle. replaceState avoids adding a history entry.
+      const currentPath = window.location.pathname;
+      navigate(`${currentPath}?league=${resolvedId}`, { replace: true });
     }
-  }, [userLeagues, currentLeagueId, currentUser?.id]);
+  }, [userLeagues, currentLeagueId, urlLeagueId, currentUser?.id]);
 
   // Persist last-viewed league whenever selection changes
   useEffect(() => {
