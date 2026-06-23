@@ -2,9 +2,10 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare, MoreHorizontal, Shield } from "lucide-react";
-import { getCurrentUser, logout, AUTH_STORAGE_KEY } from "@/lib/auth";
-import { useState, useEffect } from "react";
+import { Menu, Trophy, Users, User, Settings, LogOut, ChevronDown, Plus, MessageSquare, MoreHorizontal, Shield, Pin } from "lucide-react";
+import { getCurrentUser, logout, AUTH_STORAGE_KEY, getDefaultLeague, setDefaultLeague, clearDefaultLeague, getLastLeague, setLastLeague } from "@/lib/auth";
+import { useState, useEffect, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { type League, type DraftStatus } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,10 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [currentLeagueId, setCurrentLeagueId] = useState<string>("");
+  const [defaultLeagueId, setDefaultLeagueId] = useState<string>("");
+  const { toast } = useToast();
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -90,12 +95,62 @@ export default function Layout({ children }: LayoutProps) {
   const currentLeague = userLeagues?.find(league => league.id === currentLeagueId) || 
                        userLeagues?.[0]; // Fallback to first league
 
+  // Sync defaultLeagueId state when user changes (login/logout)
   useEffect(() => {
-    // Set default league when leagues are loaded and none is selected yet
-    if (!currentLeagueId && userLeagues && userLeagues.length > 0) {
-      setCurrentLeagueId(userLeagues[0].id);
+    setDefaultLeagueId(currentUser?.id ? (getDefaultLeague(currentUser.id) ?? "") : "");
+  }, [currentUser?.id]);
+
+  // On startup: resolve which league to open using preference tiers
+  // 1. Default league (pinned by user)  2. Last viewed  3. First in list
+  useEffect(() => {
+    if (!currentLeagueId && userLeagues && userLeagues.length > 0 && currentUser?.id) {
+      const uid = currentUser.id;
+      const memberIds = userLeagues.map(l => l.id);
+      const pinned  = getDefaultLeague(uid);
+      const lastSeen = getLastLeague(uid);
+      if (pinned && memberIds.includes(pinned)) {
+        setCurrentLeagueId(pinned);
+      } else if (lastSeen && memberIds.includes(lastSeen)) {
+        setCurrentLeagueId(lastSeen);
+      } else {
+        setCurrentLeagueId(userLeagues[0].id);
+      }
     }
-  }, [userLeagues, currentLeagueId]);
+  }, [userLeagues, currentLeagueId, currentUser?.id]);
+
+  // Persist last-viewed league whenever selection changes
+  useEffect(() => {
+    if (currentLeagueId && currentUser?.id) {
+      setLastLeague(currentUser.id, currentLeagueId);
+    }
+  }, [currentLeagueId, currentUser?.id]);
+
+  // Long-press handlers for pinning a default league in the dropdown
+  const startLongPress = (leagueId: string) => {
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      if (!currentUser?.id) return;
+      const uid = currentUser.id;
+      const leagueName = userLeagues?.find(l => l.id === leagueId)?.name ?? "League";
+      if (defaultLeagueId === leagueId) {
+        clearDefaultLeague(uid);
+        setDefaultLeagueId("");
+        toast({ description: "Default league cleared", duration: 2000 });
+      } else {
+        setDefaultLeague(uid, leagueId);
+        setDefaultLeagueId(leagueId);
+        toast({ description: `${leagueName} set as default league`, duration: 2000 });
+      }
+    }, 600);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
 
   // Show Admin for global admins OR league creators (anyone who created the current league)
   const isLeagueAdmin = currentUser?.isAdmin || 
@@ -208,10 +263,17 @@ export default function Layout({ children }: LayoutProps) {
                   userLeagues.map((league) => (
                     <DropdownMenuItem
                       key={league.id}
+                      onPointerDown={() => startLongPress(league.id)}
+                      onPointerUp={cancelLongPress}
+                      onPointerLeave={cancelLongPress}
+                      onPointerCancel={cancelLongPress}
+                      onContextMenu={(e) => e.preventDefault()}
                       onClick={() => {
+                        if (longPressTriggered.current) {
+                          longPressTriggered.current = false;
+                          return;
+                        }
                         setCurrentLeagueId(league.id);
-                        // Full reload so every page (which reads the league
-                        // from window.location.search) picks up the change.
                         const currentPath = location.split('?')[0];
                         window.location.href = `${currentPath}?league=${league.id}`;
                       }}
@@ -219,17 +281,22 @@ export default function Layout({ children }: LayoutProps) {
                         league.id === currentLeagueId ? "bg-retro-lime/20" : ""
                       }`}
                     >
-                      <div>
-                        <div className="font-bold text-retro-charcoal retro-font">
-                          {league.name}
-                        </div>
-                        <div className="text-sm text-retro-charcoal/70">
-                          {league.sport === 'WORLD_CUP' ? 'WORLD CUP' : league.sport} • {league.season}
-                        </div>
-                        {league.id === currentLeagueId && (
-                          <div className="text-xs text-retro-teal font-bold mt-1">
-                            Current League
+                      <div className="flex items-start justify-between w-full">
+                        <div>
+                          <div className="font-bold text-retro-charcoal retro-font">
+                            {league.name}
                           </div>
+                          <div className="text-sm text-retro-charcoal/70">
+                            {league.sport === 'WORLD_CUP' ? 'WORLD CUP' : league.sport} • {league.season}
+                          </div>
+                          {league.id === currentLeagueId && (
+                            <div className="text-xs text-retro-teal font-bold mt-1">
+                              Current League
+                            </div>
+                          )}
+                        </div>
+                        {league.id === defaultLeagueId && (
+                          <Pin className="w-3 h-3 mt-1 ml-2 flex-shrink-0 text-retro-teal/40" />
                         )}
                       </div>
                     </DropdownMenuItem>

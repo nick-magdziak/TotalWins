@@ -92,3 +92,28 @@ export function getCurrentUser(): AuthUser | null {
 export function isAdmin(): boolean {
   return currentUser?.isAdmin ?? false;
 }
+
+// --- League open preference helpers (localStorage, per-user) ---
+
+const defaultLeagueKey = (userId: string) => `tw_default_league_${userId}`;
+const lastLeagueKey    = (userId: string) => `tw_last_league_${userId}`;
+
+export function getDefaultLeague(userId: string): string | null {
+  try { return localStorage.getItem(defaultLeagueKey(userId)); } catch { return null; }
+}
+
+export function setDefaultLeague(userId: string, leagueId: string): void {
+  try { localStorage.setItem(defaultLeagueKey(userId), leagueId); } catch {}
+}
+
+export function clearDefaultLeague(userId: string): void {
+  try { localStorage.removeItem(defaultLeagueKey(userId)); } catch {}
+}
+
+export function getLastLeague(userId: string): string | null {
+  try { return localStorage.getItem(lastLeagueKey(userId)); } catch { return null; }
+}
+
+export function setLastLeague(userId: string, leagueId: string): void {
+  try { localStorage.setItem(lastLeagueKey(userId), leagueId); } catch {}
+}
