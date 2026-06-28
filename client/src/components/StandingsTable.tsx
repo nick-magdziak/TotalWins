@@ -89,20 +89,20 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
       const wcTeam = team as unknown as WorldCupTeam & { wins: number; eliminated: boolean };
       const confColors = WC_CONFEDERATION_COLORS[wcTeam.confederation] || { background: '#374151', font: '#ffffff' };
       return (
-        <div key={team.id} style={{ width: '68px' }} className="relative flex items-center">
+        <div key={team.id} style={{ width: '68px' }} className="flex items-center">
           <div
-            className="flex items-center justify-center flex-1 min-w-0 rounded px-1 py-0.5 text-xs font-bold"
+            className="relative flex items-center justify-center flex-1 min-w-0 rounded px-1 py-0.5 text-xs font-bold"
             style={{ backgroundColor: confColors.background, color: confColors.font }}
           >
             <FlagImage teamId={wcTeam.id} emoji={wcTeam.flagEmoji} name={wcTeam.name} size={14} className="mr-0.5 flex-shrink-0" />
             <span>{wcTeam.abbreviation}</span>
+            {wcTeam.eliminated && (
+              <div className="absolute inset-0 rounded bg-gray-500/60 pointer-events-none" />
+            )}
           </div>
           <span className="flex-shrink-0 ml-1 text-xs font-bold text-retro-charcoal" style={{ width: '14px', textAlign: 'right' }}>
             {wcTeam.wins}
           </span>
-          {wcTeam.eliminated && (
-            <div className="absolute inset-0 rounded bg-gray-500/60 pointer-events-none" />
-          )}
         </div>
       );
     }
@@ -215,20 +215,20 @@ export default function StandingsTable({ leagueId }: StandingsTableProps) {
                         const wcTeam = team as unknown as WorldCupTeam & { wins: number; eliminated: boolean };
                         const confColors = WC_CONFEDERATION_COLORS[wcTeam.confederation] || { background: '#374151', font: '#ffffff' };
                         return (
-                          <div key={team.id} style={{ width: '68px' }} className="relative flex items-center">
+                          <div key={team.id} style={{ width: '68px' }} className="flex items-center">
                             <div
-                              className="flex items-center justify-center flex-1 min-w-0 rounded px-1 py-0.5 text-xs font-bold"
+                              className="relative flex items-center justify-center flex-1 min-w-0 rounded px-1 py-0.5 text-xs font-bold"
                               style={{ backgroundColor: confColors.background, color: confColors.font }}
                             >
                               <FlagImage teamId={wcTeam.id} emoji={wcTeam.flagEmoji} name={wcTeam.name} size={14} className="mr-0.5 flex-shrink-0" />
                               <span>{wcTeam.abbreviation}</span>
+                              {wcTeam.eliminated && (
+                                <div className="absolute inset-0 rounded bg-gray-500/60 pointer-events-none" />
+                              )}
                             </div>
                             <span className="flex-shrink-0 ml-1 text-xs font-bold text-retro-charcoal" style={{ width: '14px', textAlign: 'right' }}>
                               {wcTeam.wins}
                             </span>
-                            {wcTeam.eliminated && (
-                              <div className="absolute inset-0 rounded bg-gray-500/60 pointer-events-none" />
-                            )}
                           </div>
                         );
                       })}
