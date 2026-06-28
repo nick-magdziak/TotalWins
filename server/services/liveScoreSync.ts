@@ -151,11 +151,11 @@ async function run(): Promise<void> {
   }
 
   // Restore any WC completed-game scores that the re-seed may have wiped on restart.
-  // Fetches the last 3 days so yesterday's finals are always recovered.
+  // Fetches the last 7 days so scores are recovered even after a multi-day server gap.
   if (isWorldCupTournamentWindow(new Date())) {
     try {
-      log("▶ WC backfill: restoring last 3 days of completed scores");
-      for (let daysAgo = 3; daysAgo >= 0; daysAgo--) {
+      log("▶ WC backfill: restoring last 7 days of completed scores");
+      for (let daysAgo = 7; daysAgo >= 0; daysAgo--) {
         const d = new Date(Date.now() - daysAgo * 86_400_000);
         const dateStr = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}`;
         await worldCupDataService.syncWorldCupGamesForDate(dateStr);

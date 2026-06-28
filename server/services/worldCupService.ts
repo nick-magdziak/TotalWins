@@ -229,6 +229,18 @@ export class WorldCupDataService {
           }
         }
 
+        // Fallback: when ESPN hasn't populated notes yet, use the season slug
+        // (e.g. "round-of-32", "round-of-16", "quarterfinals", etc.) to detect the round.
+        if (wcRound === "group_stage" && wcGroup === null) {
+          const slug: string = (event.season?.slug || "").toLowerCase();
+          if (slug.includes("round-of-32") || slug.includes("round of 32")) wcRound = "round_of_32";
+          else if (slug.includes("round-of-16") || slug.includes("round of 16")) wcRound = "round_of_16";
+          else if (slug.includes("quarter")) wcRound = "quarterfinal";
+          else if (slug.includes("semi")) wcRound = "semifinal";
+          else if (slug.includes("third") || slug.includes("3rd")) wcRound = "third_place";
+          else if (slug.includes("final")) wcRound = "final";
+        }
+
         // Parse soccer game clock (e.g. "32'" or "HT" or "45'+2")
         let period: string | null = null;
         if (status === "in_progress") {
