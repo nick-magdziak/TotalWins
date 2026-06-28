@@ -9,23 +9,18 @@ export class WorldCupDataService {
     try {
       console.log("⚽ Syncing World Cup games from ESPN API...");
 
-      // Fetch yesterday + today + next 3 days so:
+      // Fetch yesterday + today + next 7 days so:
       //  - yesterday: restores completed scores after server restart
       //  - today: live updates for in-progress games
-      //  - +1/+2/+3 days: matches the 3-day Upcoming Matches window so all
-      //    visible fixtures have ESPN-corrected kickoff times
-      const [yesterdayGames, todayGames, plus1Games, plus2Games, plus3Games] = await Promise.all([
-        this.fetchWorldCupGamesForDate(this.offsetDateStr(-1)),
-        this.fetchWorldCupGamesForDate(this.offsetDateStr(0)),
-        this.fetchWorldCupGamesForDate(this.offsetDateStr(1)),
-        this.fetchWorldCupGamesForDate(this.offsetDateStr(2)),
-        this.fetchWorldCupGamesForDate(this.offsetDateStr(3)),
-      ]);
+      //  - +1..+7 days: ensures all upcoming fixtures (R32 through R16 window)
+      //    are imported as soon as ESPN publishes them
+      const datesToFetch = [-1, 0, 1, 2, 3, 4, 5, 6, 7].map(d => this.fetchWorldCupGamesForDate(this.offsetDateStr(d)));
+      const fetchedBatches = await Promise.all(datesToFetch);
 
       // Merge, deduplicate by ESPN event id (id = "wc-<espnId>")
       const seenIds = new Set<string>();
       const games: Game[] = [];
-      for (const g of [...yesterdayGames, ...todayGames, ...plus1Games, ...plus2Games, ...plus3Games]) {
+      for (const g of fetchedBatches.flat()) {
         if (!seenIds.has(g.id)) {
           seenIds.add(g.id);
           games.push(g);
@@ -85,7 +80,7 @@ export class WorldCupDataService {
         }
       }
 
-      console.log(`⚽ Synced ${games.length} World Cup games (yesterday + today + next 3 days)`);
+      console.log(`⚽ Synced ${games.length} World Cup games (yesterday + today + next 7 days)`);
 
       if (games.some((g) => g.status === "completed" || g.status === "in_progress")) {
         await storage.calculateWorldCupPlayerPoints();
