@@ -2658,6 +2658,20 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Eliminated teams: didn't make it to R32, OR lost a completed knockout game.
+    // Only meaningful once the group stage is over (same date gate as the bonus).
+    const eliminatedTeamIds = new Set<string>();
+    if (qualificationBonusActive) {
+      for (const g of allGames) {
+        if (!g.wcRound || g.wcRound === "group_stage") continue;
+        if (g.status !== "completed") continue;
+        if (g.homeScore === null || g.awayScore === null) continue;
+        // In knockout rounds the team with fewer goals is eliminated
+        if (g.homeScore < g.awayScore) eliminatedTeamIds.add(g.homeTeamId);
+        else if (g.awayScore < g.homeScore) eliminatedTeamIds.add(g.awayTeamId);
+      }
+    }
+
     const standings: WCPlayerStanding[] = [];
 
     const picksByUser = await this.getAllLeagueDraftPicks(leagueId);
@@ -2718,7 +2732,13 @@ export class DatabaseStorage implements IStorage {
         teamPointsMap[teamId] = teamPoints;
       }
 
-      const teamsWithWins = validTeams.map(t => ({ ...t, wins: teamPointsMap[t.id] || 0 }));
+      const teamsWithWins = validTeams.map(t => ({
+        ...t,
+        wins: teamPointsMap[t.id] || 0,
+        eliminated: qualificationBonusActive
+          ? (!round32TeamIds.has(t.id) || eliminatedTeamIds.has(t.id))
+          : false,
+      }));
 
       standings.push({
         userId: user.id,
