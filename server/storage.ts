@@ -2609,7 +2609,10 @@ export class DatabaseStorage implements IStorage {
                 else if (gf === ga) points += 1;
               } else if (g.wcRound && g.wcRound !== "third_place") {
                 if (g.wcRound === "round_of_32") points += 1;
-                if (gf > ga) points += 2;
+                // Knockout win: either outscored opponent in regulation/AET,
+                // or won the penalty shootout (scores level, penaltyWinnerId set)
+                const wonInKnockout = gf > ga || g.penaltyWinnerId === teamId;
+                if (wonInKnockout) points += 2;
               }
             }
           }
@@ -2666,9 +2669,18 @@ export class DatabaseStorage implements IStorage {
         if (!g.wcRound || g.wcRound === "group_stage") continue;
         if (g.status !== "completed") continue;
         if (g.homeScore === null || g.awayScore === null) continue;
-        // In knockout rounds the team with fewer goals is eliminated
-        if (g.homeScore < g.awayScore) eliminatedTeamIds.add(g.homeTeamId);
-        else if (g.awayScore < g.homeScore) eliminatedTeamIds.add(g.awayTeamId);
+        if (g.homeScore < g.awayScore) {
+          // Away team won in regulation/AET
+          eliminatedTeamIds.add(g.homeTeamId);
+        } else if (g.awayScore < g.homeScore) {
+          // Home team won in regulation/AET
+          eliminatedTeamIds.add(g.awayTeamId);
+        } else if (g.penaltyWinnerId) {
+          // Scores level — penalty shootout decided it; loser is the other team
+          eliminatedTeamIds.add(
+            g.penaltyWinnerId === g.homeTeamId ? g.awayTeamId : g.homeTeamId
+          );
+        }
       }
     }
 
@@ -2721,7 +2733,8 @@ export class DatabaseStorage implements IStorage {
             if (gf > ga) { fantasyPoints += 2; teamPoints += 2; }
             else if (gf === ga) { fantasyPoints += 1; teamPoints += 1; }
           } else if (g.wcRound && g.wcRound !== "third_place") {
-            if (gf > ga) { fantasyPoints += 2; teamPoints += 2; }
+            const wonInKnockout = gf > ga || g.penaltyWinnerId === teamId;
+            if (wonInKnockout) { fantasyPoints += 2; teamPoints += 2; }
           }
         }
 

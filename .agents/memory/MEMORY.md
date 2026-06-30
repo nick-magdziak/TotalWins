@@ -1,1 +1,1 @@
-- [WC daily standings Discord timing](wc-discord-standings.md) — ET window + DB persistence prevent early/double posts
+- [Penalty shootout tracking](penalty-shootout.md) — STATUS_FINAL_PEN games need penaltyWinnerId column; scores stay level so goal-diff logic alone misses winner/loser.

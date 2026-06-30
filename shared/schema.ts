@@ -177,6 +177,7 @@ export const games = pgTable("games", {
   wcRound: text("wc_round"), // group_stage, round_of_32, round_of_16, quarterfinal, semifinal, third_place, final
   wcGroup: text("wc_group"), // A-L for group stage games
   broadcastNetwork: text("broadcast_network"), // e.g. "FOX", "ESPN", "FS1", "NBC"
+  penaltyWinnerId: text("penalty_winner_id"), // team ID of penalty-shootout winner (when regulation tied)
 });
 
 // Insert schemas

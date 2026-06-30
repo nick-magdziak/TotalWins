@@ -68,6 +68,7 @@ export class WorldCupDataService {
             period: game.period,
             gameDate: game.gameDate, // update to exact ESPN kickoff time
             broadcastNetwork: game.broadcastNetwork ?? null,
+            penaltyWinnerId: game.penaltyWinnerId ?? null,
           });
         } else {
           // No matching seeded fixture — only add as new record if it has full group info
@@ -139,6 +140,7 @@ export class WorldCupDataService {
             period: game.period,
             gameDate: game.gameDate,
             broadcastNetwork: game.broadcastNetwork ?? null,
+            penaltyWinnerId: game.penaltyWinnerId ?? null,
           });
           updatedCount++;
         }
@@ -255,6 +257,27 @@ export class WorldCupDataService {
 
         const broadcastNetwork = this.extractBroadcastNetwork(competition);
 
+        // Penalty shootout winner: STATUS_FINAL_PEN games end level on regular
+        // time but one team advances. ESPN tells us via competitor.winner boolean
+        // and shootoutScore. Store the winning team's internal ID so scoring and
+        // elimination logic can identify winner/loser without relying on goal diff.
+        let penaltyWinnerId: string | null = null;
+        if (statusName === "STATUS_FINAL_PEN") {
+          const homeWins = homeComp.winner === true;
+          const awayWins = awayComp.winner === true;
+          const homeId = this.mapESPNTeamToWCId(homeComp.team);
+          const awayId = this.mapESPNTeamToWCId(awayComp.team);
+          if (homeWins) penaltyWinnerId = homeId;
+          else if (awayWins) penaltyWinnerId = awayId;
+          // Fallback: compare shootout scores if winner flag is unavailable
+          else if (homeComp.shootoutScore != null && awayComp.shootoutScore != null) {
+            penaltyWinnerId = Number(homeComp.shootoutScore) > Number(awayComp.shootoutScore) ? homeId : awayId;
+          }
+          if (penaltyWinnerId) {
+            console.log(`⚽ Penalty winner detected: ${penaltyWinnerId} (${event.name})`);
+          }
+        }
+
         const game: Game = {
           id: `wc-${event.id}`,
           sport: "WORLD_CUP",
@@ -272,6 +295,7 @@ export class WorldCupDataService {
           wcRound,
           wcGroup,
           broadcastNetwork,
+          penaltyWinnerId,
         };
 
         games.push(game);
