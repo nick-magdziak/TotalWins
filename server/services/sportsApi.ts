@@ -100,6 +100,8 @@ export class SportsApiService {
           wcGroup: null,
           broadcastNetwork: this.extractBroadcastNetwork(competition),
           penaltyWinnerId: null,
+          penaltyHomeScore: null,
+          penaltyAwayScore: null,
         };
 
         games.push(game);
@@ -246,6 +248,8 @@ export class SportsApiService {
           wcGroup: null,
           broadcastNetwork: this.extractBroadcastNetwork(competition),
           penaltyWinnerId: null,
+          penaltyHomeScore: null,
+          penaltyAwayScore: null,
         };
         
         games.push(game);
@@ -423,6 +427,8 @@ export class SportsApiService {
           wcGroup: null,
           broadcastNetwork: this.extractBroadcastNetwork(competition),
           penaltyWinnerId: null,
+          penaltyHomeScore: null,
+          penaltyAwayScore: null,
         };
         games.push(game);
       } catch (err) {

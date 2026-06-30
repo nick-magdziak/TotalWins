@@ -538,7 +538,16 @@ export default function Standings() {
                         <div className="text-xs text-retro-charcoal font-bold">
                           {game.status === 'completed' || game.status === 'in_progress' ? (
                             <>
-                              <div>{game.awayScore} - {game.homeScore}</div>
+                              <div>
+                                {game.penaltyWinnerId
+                                  ? <>
+                                      {game.awayScore}{game.penaltyAwayScore != null ? <> ({game.penaltyAwayScore})</> : null}
+                                      {" - "}
+                                      {game.homeScore}{game.penaltyHomeScore != null ? <> ({game.penaltyHomeScore})</> : null}
+                                    </>
+                                  : <>{game.awayScore} - {game.homeScore}</>
+                                }
+                              </div>
                               {game.status === 'in_progress' && game.period && (
                                 <div className="text-xs text-blue-600 font-bold">{game.period}</div>
                               )}

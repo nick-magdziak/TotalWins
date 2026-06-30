@@ -178,6 +178,8 @@ export const games = pgTable("games", {
   wcGroup: text("wc_group"), // A-L for group stage games
   broadcastNetwork: text("broadcast_network"), // e.g. "FOX", "ESPN", "FS1", "NBC"
   penaltyWinnerId: text("penalty_winner_id"), // team ID of penalty-shootout winner (when regulation tied)
+  penaltyHomeScore: integer("penalty_home_score"), // home team shootout score e.g. 3
+  penaltyAwayScore: integer("penalty_away_score"), // away team shootout score e.g. 4
 });
 
 // Insert schemas

@@ -69,6 +69,8 @@ export class WorldCupDataService {
             gameDate: game.gameDate, // update to exact ESPN kickoff time
             broadcastNetwork: game.broadcastNetwork ?? null,
             penaltyWinnerId: game.penaltyWinnerId ?? null,
+            penaltyHomeScore: game.penaltyHomeScore ?? null,
+            penaltyAwayScore: game.penaltyAwayScore ?? null,
           });
         } else {
           // No matching seeded fixture — only add as new record if it has full group info
@@ -141,6 +143,8 @@ export class WorldCupDataService {
             gameDate: game.gameDate,
             broadcastNetwork: game.broadcastNetwork ?? null,
             penaltyWinnerId: game.penaltyWinnerId ?? null,
+            penaltyHomeScore: game.penaltyHomeScore ?? null,
+            penaltyAwayScore: game.penaltyAwayScore ?? null,
           });
           updatedCount++;
         }
@@ -262,19 +266,24 @@ export class WorldCupDataService {
         // and shootoutScore. Store the winning team's internal ID so scoring and
         // elimination logic can identify winner/loser without relying on goal diff.
         let penaltyWinnerId: string | null = null;
+        let penaltyHomeScore: number | null = null;
+        let penaltyAwayScore: number | null = null;
         if (statusName === "STATUS_FINAL_PEN") {
           const homeWins = homeComp.winner === true;
           const awayWins = awayComp.winner === true;
           const homeId = this.mapESPNTeamToWCId(homeComp.team);
           const awayId = this.mapESPNTeamToWCId(awayComp.team);
+          // Store shootout scores for display (e.g. 4-3 on pens)
+          if (homeComp.shootoutScore != null) penaltyHomeScore = Number(homeComp.shootoutScore);
+          if (awayComp.shootoutScore != null) penaltyAwayScore = Number(awayComp.shootoutScore);
           if (homeWins) penaltyWinnerId = homeId;
           else if (awayWins) penaltyWinnerId = awayId;
           // Fallback: compare shootout scores if winner flag is unavailable
-          else if (homeComp.shootoutScore != null && awayComp.shootoutScore != null) {
-            penaltyWinnerId = Number(homeComp.shootoutScore) > Number(awayComp.shootoutScore) ? homeId : awayId;
+          else if (penaltyHomeScore != null && penaltyAwayScore != null) {
+            penaltyWinnerId = penaltyHomeScore > penaltyAwayScore ? homeId : awayId;
           }
           if (penaltyWinnerId) {
-            console.log(`⚽ Penalty winner detected: ${penaltyWinnerId} (${event.name})`);
+            console.log(`⚽ Penalty winner detected: ${penaltyWinnerId} (${event.name}) pen: ${penaltyAwayScore}-${penaltyHomeScore}`);
           }
         }
 
@@ -296,6 +305,8 @@ export class WorldCupDataService {
           wcGroup,
           broadcastNetwork,
           penaltyWinnerId,
+          penaltyHomeScore,
+          penaltyAwayScore,
         };
 
         games.push(game);
