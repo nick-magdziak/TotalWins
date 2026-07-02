@@ -4,7 +4,7 @@ type AnyStanding = {
   rank: number;
   displayName: string;
   totalWins: number;
-  teams: { abbreviation: string; wins?: number | null }[];
+  teams: { abbreviation: string; wins?: number | null; eliminated?: boolean }[];
 };
 
 function escapeXml(s: string): string {
@@ -74,9 +74,12 @@ export async function generateStandingsImage(
     x += COL_WINS;
 
     for (const team of s.teams) {
-      const cellMid = x + TEAM_CELL / 2;
       rows += `<text x="${x + 4}" y="${baselineY - 3}" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="bold" fill="#94a3b8">${escapeXml(team.abbreviation)}</text>`;
       rows += `<text x="${x + 34}" y="${baselineY - 3}" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#e2e8f0">${team.wins ?? 0}</text>`;
+      // Gray overlay for eliminated teams — mirrors the bg-gray-500/60 overlay in StandingsTable
+      if (team.eliminated) {
+        rows += `<rect x="${x + 1}" y="${y + 3}" width="${TEAM_CELL - 3}" height="${ROW_H - 6}" rx="2" fill="#6b7280" fill-opacity="0.6"/>`;
+      }
       rows += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + ROW_H}" stroke="#1e293b" stroke-width="1"/>`;
       x += TEAM_CELL;
     }
