@@ -2868,21 +2868,19 @@ export class DatabaseStorage implements IStorage {
     let upcomingGames: any[];
     
     if (league.sport === 'WORLD_CUP') {
-      // World Cup: tomorrow midnight → day+21 end-of-day (21-day window).
-      // A 3-day window only showed the next round; 21 days covers R16 through
-      // the Final (July 19) even when we're in the QF/SF stage.
+      // World Cup: tomorrow midnight → day+3 end-of-day (3-day window, date-based)
       // localDate is "tomorrow" sent by the frontend
       let windowStart: Date, windowEnd: Date;
       if (localDate) {
         const [year, month, day] = localDate.split('-').map(Number);
         const utcMidnight = Date.UTC(year, month - 1, day, 0, 0, 0);
         windowStart = new Date(utcMidnight + tzOffset * 60 * 1000);
-        windowEnd = new Date(windowStart.getTime() + 21 * 24 * 60 * 60 * 1000 - 1);
+        windowEnd = new Date(windowStart.getTime() + 72 * 60 * 60 * 1000 - 1);
       } else {
         const now = new Date();
         const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         windowStart = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0));
-        windowEnd = new Date(windowStart.getTime() + 21 * 24 * 60 * 60 * 1000 - 1);
+        windowEnd = new Date(windowStart.getTime() + 72 * 60 * 60 * 1000 - 1);
       }
       // Before the tournament starts (June 11, 2026): fast-forward to the opening
       // day so users always see the first batch of fixtures rather than a blank section.
