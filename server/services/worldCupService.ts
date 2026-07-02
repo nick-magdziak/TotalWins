@@ -9,23 +9,34 @@ export class WorldCupDataService {
     try {
       console.log("⚽ Syncing World Cup games from ESPN API...");
 
-      // Fetch yesterday + today + next 7 days so:
+      // Fetch yesterday + today + next 14 days so:
       //  - yesterday: restores completed scores after server restart
       //  - today: live updates for in-progress games
-      //  - +1..+7 days: ensures all upcoming fixtures (R32 through R16 window)
-      //    are imported as soon as ESPN publishes them
-      const datesToFetch = [-1, 0, 1, 2, 3, 4, 5, 6, 7].map(d => this.fetchWorldCupGamesForDate(this.offsetDateStr(d)));
+      //  - +1..+14 days: ensures all upcoming fixtures (R32 through QF/SF/Final)
+      //    are imported as soon as ESPN publishes them. The World Cup final is
+      //    July 19, 2026 — with a 14-day forward window we always cover it.
+      const datesToFetch = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(d => this.fetchWorldCupGamesForDate(this.offsetDateStr(d)));
       const fetchedBatches = await Promise.all(datesToFetch);
 
-      // Merge, deduplicate by ESPN event id (id = "wc-<espnId>")
-      const seenIds = new Set<string>();
-      const games: Game[] = [];
+      // Merge, deduplicate by ESPN event id (id = "wc-<espnId>").
+      // When the same event appears on multiple date queries (e.g. ESPN returns a
+      // placeholder "TBD vs TBD" on one date but the real teams on another), prefer
+      // the version with known team IDs over a placeholder.
+      const gamesById = new Map<string, Game>();
       for (const g of fetchedBatches.flat()) {
-        if (!seenIds.has(g.id)) {
-          seenIds.add(g.id);
-          games.push(g);
+        const prev = gamesById.get(g.id);
+        if (!prev) {
+          gamesById.set(g.id, g);
+        } else {
+          // Prefer real team IDs over "wc-RD32" / "wc-RD16" placeholders
+          const prevIsPlaceholder = prev.homeTeamId.startsWith("wc-RD") || prev.awayTeamId.startsWith("wc-RD");
+          const newHasRealTeams = !g.homeTeamId.startsWith("wc-RD") && !g.awayTeamId.startsWith("wc-RD");
+          if (prevIsPlaceholder && newHasRealTeams) {
+            gamesById.set(g.id, g); // upgrade to the real-team version
+          }
         }
       }
+      const games = Array.from(gamesById.values());
 
       // Fetch all WC games once (seeded + previously synced)
       const allExisting = await storage.getGames(undefined, this.SEASON);
@@ -49,18 +60,31 @@ export class WorldCupDataService {
           return sameRound && sameTeams && daysDiff <= 3;
         });
 
-        if (existing) {
+        // Fallback: match knockout-round placeholder records by ESPN game ID.
+        // For R16+ games, ESPN initially lists fixtures with TBD teams (stored as
+        // "wc-RD32" placeholders). Once actual teams are known, ESPN updates the same
+        // event ID but our team-pair match above fails because placeholder ≠ real team.
+        // In that case find the placeholder by ESPN ID and upgrade it in-place.
+        const existingById = !existing
+          ? wcExisting.find(g => g.id === game.id)
+          : null;
+
+        if (existing || existingById) {
+          const record = (existing ?? existingById)!;
           // ESPN neutral-site games may have home/away orientation flipped vs. our
           // seeded fixture. Detect the swap and align scores to our fixture's orientation
           // so that win/loss calculations always use the correct team's score.
-          const espnFlipped = existing.homeTeamId !== game.homeTeamId;
+          const espnFlipped = existing
+            ? existing.homeTeamId !== game.homeTeamId &&
+              existing.homeTeamId !== "wc-RD32" // never treat placeholder as "flipped"
+            : false;
           // Update the seeded record in-place; preserve its stable ID and group.
           // Only stamp completedAt on the first transition to completed so the
           // 5-minute post-delay countdown isn't reset on every sync cycle.
-          const completedAt = existing.completedAt
-            ? existing.completedAt
+          const completedAt = record.completedAt
+            ? record.completedAt
             : game.completedAt;
-          await storage.updateGame(existing.id, {
+          const updates: Partial<Game> = {
             homeScore: espnFlipped ? game.awayScore : game.homeScore,
             awayScore: espnFlipped ? game.homeScore : game.awayScore,
             status: game.status,
@@ -71,7 +95,19 @@ export class WorldCupDataService {
             penaltyWinnerId: game.penaltyWinnerId ?? null,
             penaltyHomeScore: game.penaltyHomeScore ?? null,
             penaltyAwayScore: game.penaltyAwayScore ?? null,
-          });
+          };
+          // If the DB record still has placeholder team IDs, replace them with real ones.
+          // Guard: only upgrade placeholder → real; never downgrade real → placeholder.
+          const recordIsPlaceholder = record.homeTeamId === "wc-RD32" || record.awayTeamId === "wc-RD32";
+          const gameHasRealTeams = game.homeTeamId !== "wc-RD32" && game.awayTeamId !== "wc-RD32"
+            && !game.homeTeamId.startsWith("wc-RD") && !game.awayTeamId.startsWith("wc-RD")
+            && !game.homeTeamId.startsWith("wc-RD16") && !game.awayTeamId.startsWith("wc-RD16");
+          if (recordIsPlaceholder && gameHasRealTeams) {
+            updates.homeTeamId = game.homeTeamId;
+            updates.awayTeamId = game.awayTeamId;
+            console.log(`⚽ Upgraded placeholder → ${game.homeTeamId} vs ${game.awayTeamId} (${record.id})`);
+          }
+          await storage.updateGame(record.id, updates);
         } else {
           // No matching seeded fixture — only add as new record if it has full group info
           // (group stage games without a wcGroup are likely ESPN schedule previews that
